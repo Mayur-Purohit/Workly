@@ -30,6 +30,26 @@ function getHeaders(isFile=false) {
   return h;
 }
 
+async function safeParseJson(res) {
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    try {
+      return await res.json();
+    } catch (e) {
+      // Fall through to text parsing
+    }
+  }
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    if (!res.ok) {
+      throw new Error(`Server status ${res.status}: ${res.statusText || 'Endpoint Error'}`);
+    }
+    return { success: true, data: text };
+  }
+}
+
 async function req(method, path, body=null, isFile=false) {
   const opts = {
     method,
@@ -40,9 +60,12 @@ async function req(method, path, body=null, isFile=false) {
   }
   
   const res = await fetch(BASE + path, opts)
-  const data = await res.json()
+  const data = await safeParseJson(res)
   
   if (res.status === 401) {
+    if (path.includes("login") || path.includes("register") || path.includes("auth")) {
+      throw new Error(data?.error || "Invalid credentials");
+    }
     localStorage.clear()
     window.location.href = "/login"
     throw new Error("Session expired")
@@ -50,16 +73,19 @@ async function req(method, path, body=null, isFile=false) {
   if (res.status === 429) {
     const e = new Error("Rate limit exceeded")
     e.isRateLimit = true
-    e.limitData = data.data
+    e.limitData = data?.data
     window.dispatchEvent(new CustomEvent("rate-limit", {
-      detail: data.data || { action: "unknown", used: 0, limit: 0 }
+      detail: data?.data || { action: "unknown", used: 0, limit: 0 }
     }))
     throw e
   }
-  if (!data.success) {
-    throw new Error(data.error || "Request failed")
+  if (!data?.success && !res.ok) {
+    throw new Error(data?.error || `Request failed with status ${res.status}`);
   }
-  return data.data
+  if (data?.success === false) {
+    throw new Error(data.error || "Request failed");
+  }
+  return data?.data !== undefined ? data.data : data
 }
 
 // AUTH
@@ -287,15 +313,16 @@ async function seekerReq(method, path, body = null, isFile = false) {
     body: body ? (isFile ? body : JSON.stringify(body)) : undefined,
   };
   const res = await fetch(`${API_HOST}${path}`, opts);
-  const data = await res.json();
+  const data = await safeParseJson(res);
   if (res.status === 401) {
     localStorage.removeItem('vish_seeker_token');
     localStorage.removeItem('vish_seeker_data');
     window.location.href = '/jobs/login';
     throw new Error('Session expired');
   }
-  if (!data.success) throw new Error(data.error || 'Request failed');
-  return data.data;
+  if (!data?.success && !res.ok) throw new Error(data?.error || `Request failed with status ${res.status}`);
+  if (data?.success === false) throw new Error(data.error || 'Request failed');
+  return data?.data !== undefined ? data.data : data;
 }
 
 export const seekerAPI = {
@@ -423,9 +450,10 @@ async function publicReq(method, path) {
     headers: { 'Content-Type': 'application/json' },
   };
   const res = await fetch(`${API_HOST}${path}`, opts);
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || 'Request failed');
-  return data.data;
+  const data = await safeParseJson(res);
+  if (!data?.success && !res.ok) throw new Error(data?.error || `Request failed with status ${res.status}`);
+  if (data?.success === false) throw new Error(data.error || 'Request failed');
+  return data?.data !== undefined ? data.data : data;
 }
 
 export const publicAPI = {
@@ -487,9 +515,10 @@ async function testReq(method, path, body = null, isFile = false) {
     body: body ? (isFile ? body : JSON.stringify(body)) : undefined
   };
   const res = await fetch(`${API_HOST}/api/v1/test${path}`, opts);
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || "Request failed");
-  return data.data;
+  const data = await safeParseJson(res);
+  if (!data?.success && !res.ok) throw new Error(data?.error || `Request failed with status ${res.status}`);
+  if (data?.success === false) throw new Error(data.error || "Request failed");
+  return data?.data !== undefined ? data.data : data;
 }
 
 export const testAPI = {

@@ -1,27 +1,46 @@
 import sys
 from types import ModuleType
 
-# Mock pkg_resources to prevent ModuleNotFoundError in Python 3.12+ environments (e.g. for razorpay)
+# Polyfill/patch pkg_resources to prevent AttributeError or DistributionNotFound in Python 3.12+ environments (e.g. for razorpay)
+class MockDistribution:
+    def __init__(self, version="1.4.1"):
+        self.version = version
+
 try:
     import pkg_resources
 except ImportError:
     class DistributionNotFound(Exception):
         pass
 
-    class MockDistribution:
-        def __init__(self):
-            self.version = "1.0.0"
-            
     class MockPkgResources(ModuleType):
         def __init__(self, name):
             super().__init__(name)
             self.DistributionNotFound = DistributionNotFound
-            
+
         def get_distribution(self, name):
             return MockDistribution()
-            
+
+        def require(self, *args, **kwargs):
+            return [MockDistribution()]
+
     mock_pkg = MockPkgResources("pkg_resources")
     sys.modules["pkg_resources"] = mock_pkg
+    pkg_resources = mock_pkg
+
+if not hasattr(pkg_resources, "require"):
+    pkg_resources.require = lambda *args, **kwargs: [MockDistribution()]
+
+if not hasattr(pkg_resources, "get_distribution"):
+    pkg_resources.get_distribution = lambda *args, **kwargs: MockDistribution()
+
+_orig_require = getattr(pkg_resources, "require", None)
+if _orig_require:
+    def _safe_require(*args, **kwargs):
+        try:
+            return _orig_require(*args, **kwargs)
+        except Exception:
+            return [MockDistribution()]
+    pkg_resources.require = _safe_require
 
 import os
 from pathlib import Path

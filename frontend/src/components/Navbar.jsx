@@ -44,7 +44,7 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
       transition={{ duration: 0.8, ease: [0.21, 0.45, 0.32, 0.9] }}
     >
       <Link to="/" className="nav-left no-underline text-inherit">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-display font-bold text-sm bg-[#2A2A2A] p-1">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-display font-bold text-sm bg-[var(--google-blue)] p-1 shadow-sm">
           <svg viewBox="0 0 100 100" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="logo-grad-nav-new" x1="0%" y1="100%" x2="100%" y2="0%">
@@ -104,7 +104,7 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
                     onClick={(e) => { setProductDropdownOpen(false); handleScrollTo(e, 'how-it-works'); }} 
                     className="product-dropdown-item skeuo-dropdown-item"
                   >
-                    <span className="product-dropdown-item-title">AI Recruiter</span>
+                    <span className="product-dropdown-item-title">AI Recruiter & Screening</span>
                     <span className="product-dropdown-item-desc">Automated resume ranking & matching</span>
                   </a>
                   <a 
@@ -112,16 +112,24 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
                     onClick={(e) => { setProductDropdownOpen(false); handleScrollTo(e, 'features'); }} 
                     className="product-dropdown-item skeuo-dropdown-item"
                   >
-                    <span className="product-dropdown-item-title">Smart Analyzer</span>
-                    <span className="product-dropdown-item-desc">Deep-dive candidate profiles</span>
+                    <span className="product-dropdown-item-title">Smart Platform Features</span>
+                    <span className="product-dropdown-item-desc">Deep-dive candidate profiles & analytics</span>
                   </a>
                   <a 
-                    href="/#detailed-showcase" 
-                    onClick={(e) => { setProductDropdownOpen(false); handleScrollTo(e, 'detailed-showcase'); }} 
+                    href="/#ingest" 
+                    onClick={(e) => { setProductDropdownOpen(false); handleScrollTo(e, 'ingest'); }} 
+                    className="product-dropdown-item skeuo-dropdown-item"
+                  >
+                    <span className="product-dropdown-item-title">Multi-Source Intake</span>
+                    <span className="product-dropdown-item-desc">Gmail, Drive, Forms & ATS ingestion</span>
+                  </a>
+                  <a 
+                    href="/#fraud" 
+                    onClick={(e) => { setProductDropdownOpen(false); handleScrollTo(e, 'fraud'); }} 
                     className="product-dropdown-item skeuo-dropdown-item"
                   >
                     <span className="product-dropdown-item-title">Fraud Protection</span>
-                    <span className="product-dropdown-item-desc">Detect fake resumes & plagiarisms</span>
+                    <span className="product-dropdown-item-desc">Detect fake resumes & AI plagiarism</span>
                   </a>
                 </div>
               </div>

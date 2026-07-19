@@ -4,10 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        accent: "#111111",
-        "accent-dark": "#333333",
+        accent: "var(--accent)",
+        "accent-dark": "var(--accent-dark)",
         cream: "#ffffff",
-        charcoal: "#2A2A2A",
+        charcoal: "var(--foreground)",
         background: "var(--background)",
         foreground: "var(--foreground)",
         card: {
@@ -45,8 +45,8 @@ export default {
         "google-green": "var(--google-green)",
       },
       fontFamily: { 
-        sans: ["Inter", "sans-serif"],
-        display: ["Space Grotesk", "sans-serif"],
+        sans: ["Google Sans Text", "Roboto", "Inter", "system-ui", "sans-serif"],
+        display: ["Google Sans", "Space Grotesk", "Roboto", "Inter", "system-ui", "sans-serif"],
       },
       borderRadius: {
         sm: "calc(var(--radius) - 4px)",

@@ -1,14 +1,14 @@
 
 :root {
-  --text: #2d2d2d;
-  --text-secondary: #5c5c5c;
+  --text: #202124;
+  --text-secondary: #5f6368;
   --bg: #ffffff;
   --border: #e5e7eb;
   --border-light: #e5e7eb;
-  --accent: #111111;
-  --accent-light: #f3f4f6;
-  --sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --serif: 'Playfair Display', serif;
+  --accent: #1a73e8;
+  --accent-light: #e8f0fe;
+  --sans: 'Google Sans Text', 'Roboto', 'Inter', system-ui, -apple-system, sans-serif;
+  --display: 'Google Sans', 'Space Grotesk', system-ui, sans-serif;
 }
 
 body {
@@ -31,30 +31,6 @@ body {
   box-sizing: border-box;
 }
 
-/* Remap hardcoded blue hex values used as inline Tailwind bg-[#hex] to black */
-[class*="bg-[#2563EB]"],
-[class*="bg-[#1D4ED8]"],
-[class*="bg-[#3B82F6]"] {
-  background-color: #111111 !important;
-}
-[class*="hover:bg-[#2563EB]"]:hover,
-[class*="hover:bg-[#1D4ED8]"]:hover,
-[class*="hover:bg-[#3B82F6]"]:hover {
-  background-color: #333333 !important;
-}
-[class*="text-[#2563EB]"],
-[class*="text-[#1D4ED8]"],
-[class*="text-[#3B82F6]"] {
-  color: #111111 !important;
-}
-[class*="border-[#2563EB]"],
-[class*="border-dashed"][class*="border-[#2563EB]"] {
-  border-color: #111111 !important;
-}
-[class*="from-accent"][class*="to-[#1D4ED8]"] {
-  background-image: linear-gradient(to right, #111111, #333333) !important;
-}
-
 /* Hide scrollbar for Chrome, Safari and Opera */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
@@ -73,28 +49,8 @@ body {
   --bg: #0b0b0c;
   --border: #222226;
   --border-light: #222226;
-  --accent: #f3f4f6;
+  --accent: #4285f4;
   --accent-light: #131316;
-}
-
-.dark [class*="bg-[#2563EB]"],
-.dark [class*="bg-[#1D4ED8]"],
-.dark [class*="bg-[#3B82F6]"] {
-  background-color: #f3f4f6 !important;
-  color: #0b0b0c !important;
-}
-.dark [class*="hover:bg-[#2563EB]"]:hover,
-.dark [class*="hover:bg-[#1D4ED8]"]:hover,
-.dark [class*="hover:bg-[#3B82F6]"]:hover {
-  background-color: #e5e7eb !important;
-}
-.dark [class*="text-[#2563EB]"],
-.dark [class*="text-[#1D4ED8]"],
-.dark [class*="text-[#3B82F6]"] {
-  color: #f3f4f6 !important;
-}
-.dark [class*="border-[#2563EB]"] {
-  border-color: #222226 !important;
 }
 
 /* ── Skeuomorphic Dropdown & Items ───────────────────────────────────────── */

@@ -1,27 +1,1280 @@
-import React, { useState, useEffect } from 'react'
-import Navbar from '../components/Navbar'
-import HeroHeader from '../components/HeroHeader'
-import LogoCloud from '../components/LogoCloud'
-import HowItWorks from '../components/HowItWorks'
-import FeaturesList from '../components/FeaturesList'
-import DetailedShowcase from '../components/DetailedShowcase'
-import Pricing from '../components/Pricing'
-import Testimonials from '../components/Testimonials'
-import FinalCTA from '../components/FinalCTA'
-import Footer from '../components/Footer'
-
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import useDocumentTitle from '../hooks/useDocumentTitle';
+import {
+  motion,
+  useInView,
+  useMotionValue,
+  useScroll,
+  useSpring,
+  useTransform,
+  animate,
+  AnimatePresence,
+} from 'framer-motion';
+import {
+  Brain,
+  Target,
+  Shield,
+  MessageSquare,
+  Upload,
+  BarChart3,
+  CheckCircle2,
+  Star,
+  ArrowRight,
+  Code2,
+  Sparkles,
+  Zap,
+  Mail,
+  HardDrive,
+  FileArchive,
+  FormInput,
+  Building2,
+  FileText,
+  Briefcase,
+  ShieldCheck,
+  Play,
+  RefreshCw,
+  TrendingUp,
+  Users,
+  AlertTriangle,
+} from 'lucide-react';
 
+import toast from 'react-hot-toast';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+import useDocumentTitle from '../hooks/useDocumentTitle';
+import { API_HOST, billingAPI } from '../lib/api';
+
+/* ═══════════════════ Animation Variants ═══════════════════ */
+const fadeInUpVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.215, 0.61, 0.355, 1.0] },
+  },
+};
+
+const staggerContainerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const staggerItemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.215, 0.61, 0.355, 1.0] },
+  },
+};
+
+const slideInLeftVariants = {
+  hidden: { opacity: 0, x: -40 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.6, ease: [0.215, 0.61, 0.355, 1.0] },
+  },
+};
+
+const slideInRightVariants = {
+  hidden: { opacity: 0, x: 40 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.6, ease: [0.215, 0.61, 0.355, 1.0] },
+  },
+};
+
+/* ═══════════════════ Data Hook ═══════════════════ */
+const FALLBACK_STATS = {
+  total_candidates: 0,
+  total_companies: 0,
+  total_sessions: 0,
+  fraud_flagged: 0,
+};
+
+const FALLBACK_LIVE = {
+  title: 'Live Session',
+  candidates: [
+    { name: 'A. Chen', initials: 'AC', role: 'Senior ML Engineer', score: 96, recommendation: 'Strong Hire' },
+    { name: 'M. Ortega', initials: 'MO', role: 'Full-stack Developer', score: 91, recommendation: 'Strong Hire' },
+    { name: 'J. Patel', initials: 'JP', role: 'Data Engineer', score: 84, recommendation: 'Consider' },
+    { name: 'S. Kim', initials: 'SK', role: 'Frontend Engineer', score: 78, recommendation: 'Consider' },
+  ],
+};
+
+const FALLBACK_FRAUD = { originality: 94, ai_probability: 38, plagiarism: 12, verdict: 'Authentic' };
+
+const FALLBACK_PLANS = [
+  { id: 'free', name: 'Starter Plan', price: 0, features: ['1 active session', '100 resumes', 'Basic AI screening', 'Standard support'] },
+  { id: 'business', name: 'Business Plan', price: 1499, popular: true, features: ['5 active sessions', '2,000 resumes', 'Advanced matching', 'API access'] },
+  { id: 'enterprise', name: 'Enterprise Plan', price: 3999, features: ['Unlimited sessions', 'Priority VIP support', 'Custom integrations', 'Advanced analytics'] },
+];
+
+function useLandingData() {
+  const [stats, setStats] = useState(FALLBACK_STATS);
+  const [liveSession, setLiveSession] = useState(FALLBACK_LIVE);
+  const [fraudSignals, setFraudSignals] = useState(FALLBACK_FRAUD);
+  const [plans, setPlans] = useState(FALLBACK_PLANS);
+  const [loading, setLoading] = useState(true);
+  const [lastFetched, setLastFetched] = useState(null);
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const statsUrl = `${API_HOST}/api/v1/public/stats`;
+      const plansUrl = `${API_HOST}/api/v1/billing/plans`;
+
+      const [statsRes, plansRes] = await Promise.allSettled([
+        fetch(statsUrl, { cache: 'no-cache' }),
+        fetch(plansUrl, { cache: 'no-cache' }),
+      ]);
+
+      if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+        const data = await statsRes.value.json();
+        if (data.success && data.data) {
+          setStats(prev => ({ ...prev, ...data.data.stats }));
+          if (data.data.live_session?.candidates?.length) {
+            setLiveSession(data.data.live_session);
+          }
+          if (data.data.fraud_signals) {
+            setFraudSignals(data.data.fraud_signals);
+          }
+        }
+      }
+
+      if (plansRes.status === 'fulfilled' && plansRes.value.ok) {
+        const data = await plansRes.value.json();
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          // Merge in popular flag and map description
+          const planDescriptions = {
+            free: 'For small teams getting started',
+            business: 'For growing recruiting teams',
+            enterprise: 'For large-scale operations',
+          };
+          const mapped = data.data.map((p, i) => ({
+            ...p,
+            popular: p.id === 'business' || i === 1,
+            desc: planDescriptions[p.id] || '',
+          }));
+          setPlans(mapped);
+        }
+      }
+
+      setLastFetched(new Date());
+    } catch (err) {
+      console.warn('[LandingPage] Could not fetch live data, using defaults:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAll();
+    // Refresh every 60 seconds for live feel
+    const interval = setInterval(fetchAll, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchAll]);
+
+  return { stats, liveSession, fraudSignals, plans, loading, lastFetched, refresh: fetchAll };
+}
+
+/* ═══════════════════ Hero Section ═══════════════════ */
+const rotatingWords = ["smarter", "faster", "better", "calmer"];
+
+function HeroSection({ onStart, companiesCount }) {
+  const [wordIdx, setWordIdx] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+  const words = useMemo(() => rotatingWords, []);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const t = setInterval(() => setWordIdx((i) => (i + 1) % words.length), 2500);
+    return () => clearInterval(t);
+  }, [words.length]);
+
+  const pillLabel = companiesCount > 0
+    ? `Trusted by ${companiesCount.toLocaleString()}+ recruiting teams worldwide`
+    : 'Trusted by recruiting teams worldwide';
+
+  return (
+    <section className="relative overflow-hidden pt-12 md:pt-16 pb-8">
+      {/* Radial gradient backgrounds */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(55% 50% at 15% 10%, color-mix(in oklab, var(--google-blue) 14%, transparent), transparent 70%), radial-gradient(45% 40% at 95% 0%, color-mix(in oklab, var(--google-red) 10%, transparent), transparent 70%), radial-gradient(45% 50% at 50% 100%, color-mix(in oklab, var(--google-green) 10%, transparent), transparent 70%)",
+        }}
+      />
+
+      <div className="mx-auto w-full flex max-w-4xl flex-col items-center text-center px-6">
+        <div className="flex flex-col items-center w-full">
+          {/* Status pill — dynamic company count */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="pill inline-flex items-center gap-2 border border-border bg-background/70 px-3.5 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur rounded-full shadow-sm"
+          >
+            <span className="h-2 w-2 rounded-full bg-[var(--google-green)] animate-pulse" />
+            {pillLabel}
+          </motion.div>
+
+          {/* Headline with rotating word */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.25 }}
+            className="mt-6 font-display text-4xl font-semibold leading-[1.15] tracking-tight sm:text-5xl lg:text-[3.5rem]"
+          >
+            <span>Recruit </span>
+            <span className="relative inline-flex overflow-hidden h-[1.2em] w-[4em] items-center justify-center align-middle">
+              {!isMounted ? (
+                <span className="gradient-text font-bold">smarter</span>
+              ) : (
+                words.map((word, index) => (
+                  <motion.span
+                    key={word}
+                    className="absolute gradient-text font-bold"
+                    initial={{ opacity: 0, y: "100%" }}
+                    transition={{ type: "spring", stiffness: 75, damping: 15 }}
+                    animate={
+                      wordIdx === index
+                        ? { y: 0, opacity: 1 }
+                        : { y: "-100%", opacity: 0 }
+                    }
+                  >
+                    {word}
+                  </motion.span>
+                ))
+              )}
+            </span>
+            <br />
+            <span>with AI-powered screening</span>
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="mt-5 max-w-[620px] mx-auto text-base text-muted-foreground leading-relaxed"
+          >
+            Parse resumes from any source, match candidates with semantic precision,
+            and detect fraud — all before they reach your pipeline.
+          </motion.p>
+
+          {/* CTA Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.55 }}
+            className="mt-8 flex justify-center"
+          >
+            <button
+              onClick={onStart}
+              className="pill cursor-pointer bg-primary text-primary-foreground px-8 py-3.5 text-base font-semibold hover:opacity-90 shadow-md flex items-center gap-2 rounded-full transition-all"
+            >
+              Start Free Trial
+              <ArrowRight className="h-4.5 w-4.5" />
+            </button>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════ Live Demo Card ═══════════════════ */
+const SCORE_KEYFRAMES = [
+  { t: 0, v: 0 }, { t: 0.15, v: 12 }, { t: 0.28, v: 34 },
+  { t: 0.42, v: 41 }, { t: 0.55, v: 61 }, { t: 0.72, v: 78 },
+  { t: 0.82, v: 87 }, { t: 0.9, v: 92 }, { t: 0.95, v: 95 },
+  { t: 1, v: 98.7 },
+];
+
+function LiveDemoCard() {
+  const [displayScore, setDisplayScore] = useState(0);
+  const [showPills, setShowPills] = useState(false);
+  const [flash, setFlash] = useState(false);
+  const [scanning, setScanning] = useState(true);
+  const [activeLine, setActiveLine] = useState(-1);
+  const [checkedLines, setCheckedLines] = useState(new Set());
+  const [elapsed, setElapsed] = useState(0);
+  const startRef = useRef(Date.now());
+  const cardRef = useRef(null);
+  const isInView = useInView(cardRef, { once: true, margin: "-100px" });
+
+  useEffect(() => {
+    if (!isInView) return;
+    const duration = 3200;
+    const delay = 400;
+    let raf = 0;
+    let startTime = 0;
+    const step = (now) => {
+      if (!startTime) startTime = now;
+      const elapsedMs = now - startTime - delay;
+      if (elapsedMs < 0) { raf = requestAnimationFrame(step); return; }
+      const t = Math.min(1, elapsedMs / duration);
+      let a = SCORE_KEYFRAMES[0]; let b = SCORE_KEYFRAMES[SCORE_KEYFRAMES.length - 1];
+      for (let i = 0; i < SCORE_KEYFRAMES.length - 1; i++) {
+        if (t >= SCORE_KEYFRAMES[i].t && t <= SCORE_KEYFRAMES[i + 1].t) {
+          a = SCORE_KEYFRAMES[i]; b = SCORE_KEYFRAMES[i + 1]; break;
+        }
+      }
+      const segT = (t - a.t) / Math.max(0.0001, b.t - a.t);
+      const eased = 1 - Math.pow(1 - segT, 3);
+      const base = a.v + (b.v - a.v) * eased;
+      const jitter = t < 0.88 ? (Math.random() - 0.5) * 4 : 0;
+      setDisplayScore(Math.max(0, Math.min(99.9, base + jitter)));
+      if (t < 1) { raf = requestAnimationFrame(step); }
+      else {
+        setDisplayScore(98.7); setScanning(false); setFlash(true);
+        setTimeout(() => setShowPills(true), 250);
+      }
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [isInView]);
+
+  useEffect(() => {
+    startRef.current = Date.now();
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const resumeSections = [
+    { type: "header", name: "Sarah Mitchell", title: "Senior Product Designer" },
+    { type: "meta", items: ["New York, NY", "s.mitchell@email.com", "6 yrs exp"] },
+    { type: "section", label: "Experience" },
+    { type: "role", company: "Figma", role: "Lead Product Designer", years: "2022 — Present" },
+    { type: "role", company: "Stripe", role: "Senior Designer", years: "2019 — 2022" },
+    { type: "role", company: "Airbnb", role: "Product Designer", years: "2017 — 2019" },
+    { type: "section", label: "Skills" },
+    { type: "chips", items: ["Figma", "Design Systems", "User Research", "Prototyping", "A/B Testing"] },
+    { type: "section", label: "Education" },
+    { type: "edu", school: "RISD", degree: "BFA Industrial Design" },
+  ];
+
+  useEffect(() => {
+    if (!scanning || !isInView) { setActiveLine(-1); return; }
+    let idx = 0;
+    const id = setInterval(() => {
+      setActiveLine(idx);
+      setCheckedLines((prev) => { const next = new Set(prev); next.add(idx); return next; });
+      idx = (idx + 1) % resumeSections.length;
+    }, 300);
+    return () => clearInterval(id);
+  }, [scanning, isInView]);
+
+  return (
+    <motion.section
+      id="demo"
+      className="mx-auto w-full max-w-4xl px-6 my-8 scroll-mt-24"
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.7, ease: [0.215, 0.61, 0.355, 1.0] }}
+    >
+      <div ref={cardRef} className="relative rounded-2xl border border-border bg-card shadow-lg overflow-hidden">
+        {/* Window chrome */}
+        <div className="border-b border-border bg-muted/30">
+          <div className="flex items-center gap-2 px-5 py-3">
+            <div className="flex gap-1.5">
+              <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="6" fill="#FF5F57" /></svg>
+              <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="6" fill="#FEBC2E" /></svg>
+              <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="6" fill="#28C840" /></svg>
+            </div>
+            <div className="flex-1 flex justify-center min-w-0 px-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-background border border-border/80 text-[11px] text-muted-foreground font-mono max-w-full overflow-hidden">
+                <span className="w-1.5 h-1.5 flex-shrink-0 rounded-full bg-[var(--google-green)]" />
+                <span className="truncate">between.ai/screening/session-482</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px]">
+              <span className={`w-1.5 h-1.5 rounded-full ${scanning ? "bg-[var(--google-blue)] animate-pulse" : "bg-[var(--google-green)]"}`} />
+              <span className="text-muted-foreground font-medium">{scanning ? "Analyzing" : "Complete"}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 md:p-7">
+          <div className="grid md:grid-cols-[1fr_auto] gap-5 items-stretch">
+            {/* Resume scan panel */}
+            <div className="relative bg-surface rounded-2xl p-5 border border-border overflow-hidden min-h-[340px]">
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono mb-4 pb-3 border-b border-border/60">
+                <FileText className="w-3.5 h-3.5" />
+                Sarah_Mitchell_Resume.pdf
+                <span className="ml-auto tabular-nums">2 pages · 184 KB</span>
+              </div>
+              <div className="space-y-3 text-left">
+                {resumeSections.map((s, i) => {
+                  const isActive = activeLine === i;
+                  const isChecked = checkedLines.has(i) && !isActive;
+                  const bc = `relative transition-all duration-300 ${isActive ? "opacity-100 -translate-y-0.5" : isChecked ? "opacity-100" : "opacity-55"}`;
+                  if (s.type === "header") return (
+                    <div key={i} className={`${bc} flex items-center gap-3`}>
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--google-blue)] to-[var(--google-green)] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">SM</div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-foreground truncate">{s.name}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">{s.title}</div>
+                      </div>
+                      {isChecked && <CheckCircle2 className="w-3.5 h-3.5 text-[var(--google-green)] ml-auto flex-shrink-0" />}
+                    </div>
+                  );
+                  if (s.type === "meta") return (
+                    <div key={i} className={`${bc} flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground`}>
+                      {s.items.map((m) => <span key={m} className="tabular-nums">· {m}</span>)}
+                    </div>
+                  );
+                  if (s.type === "section") return (
+                    <div key={i} className={`${bc} text-[10px] font-semibold uppercase tracking-widest text-[var(--google-blue)] pt-1`}>{s.label}</div>
+                  );
+                  if (s.type === "role") return (
+                    <div key={i} className={`${bc} flex items-start justify-between gap-2`}>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-medium text-foreground truncate">{s.role} · {s.company}</div>
+                        <div className="flex gap-1 mt-1.5">
+                          <div className="h-1 rounded-full bg-border/70 flex-1" /><div className="h-1 rounded-full bg-border/70 w-8" /><div className="h-1 rounded-full bg-border/70 w-14" />
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground whitespace-nowrap tabular-nums">{s.years}</div>
+                    </div>
+                  );
+                  if (s.type === "chips") return (
+                    <div key={i} className={`${bc} flex flex-wrap gap-1.5`}>
+                      {s.items.map((c) => (
+                        <span key={c} className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${isChecked ? "border-[var(--google-green)]/40 bg-[var(--google-green)]/10 text-[var(--google-green)]" : "border-border bg-card text-muted-foreground"}`}>{c}</span>
+                      ))}
+                    </div>
+                  );
+                  if (s.type === "edu") return (
+                    <div key={i} className={`${bc} text-xs`}>
+                      <span className="font-medium text-foreground">{s.school}</span>
+                      <span className="text-muted-foreground"> — {s.degree}</span>
+                    </div>
+                  );
+                  return null;
+                })}
+              </div>
+              {scanning && (
+                <motion.div className="absolute left-4 right-4 h-[2px] bg-[var(--google-blue)] pointer-events-none rounded-full"
+                  style={{ boxShadow: "0 0 15px var(--google-blue)" }}
+                  initial={{ top: "12%" }} animate={{ top: ["12%", "95%", "12%"] }}
+                  transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }} />
+              )}
+            </div>
+
+            {/* Score panel */}
+            <div className="flex md:flex-col items-center md:items-stretch justify-between md:justify-center gap-3 md:min-w-[180px] rounded-2xl border border-border bg-surface p-4">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Match Score</div>
+              <motion.div animate={flash ? { scale: [1, 1.12, 1] } : {}} transition={{ duration: 0.9 }}
+                className="font-display text-4xl md:text-5xl font-bold tabular-nums leading-none text-foreground">
+                {displayScore.toFixed(1)}<span className="text-2xl md:text-3xl text-muted-foreground">%</span>
+              </motion.div>
+              <div className="text-[10px] text-muted-foreground tabular-nums md:mt-1">Scanned {elapsed}s ago</div>
+              <div className="hidden md:block space-y-2 mt-3 pt-3 border-t border-border">
+                {[{ label: "Skills", val: "9/10", color: "text-[var(--google-blue)]" }, { label: "Experience", val: "6 yrs", color: "text-[var(--google-green)]" }, { label: "Fraud Risk", val: "None", color: "text-[var(--google-green)]" }].map((m) => (
+                  <div key={m.label} className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted-foreground uppercase tracking-wider">{m.label}</span>
+                    <span className={`font-semibold ${m.color} tabular-nums`}>{m.val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Result pills */}
+          <div className="flex flex-wrap gap-2 mt-5 min-h-[44px]">
+            <AnimatePresence>
+              {showPills && [
+                { icon: Brain, label: "AI Verified", color: "text-[var(--google-blue)]" },
+                { icon: CheckCircle2, label: "Skills Match", color: "text-[var(--google-green)]" },
+                { icon: Shield, label: "Fraud Clear", color: "text-[var(--google-red)]" },
+              ].map((p, i) => (
+                <motion.span key={p.label} initial={{ opacity: 0, y: 8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ delay: i * 0.15, type: "spring", stiffness: 400, damping: 22 }} className="pill rounded-full bg-card border border-border px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                  <p.icon className={`w-4 h-4 ${p.color}`} />{p.label}
+                </motion.span>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════ Stats Strip ═══════════════════ */
+function CountUp({ to, suffix = "" }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (!inView) return;
+    const c = animate(0, to, { duration: 1.5, ease: [0.16, 1, 0.3, 1], onUpdate: (v) => setVal(Math.round(v)) });
+    return () => c.stop();
+  }, [inView, to]);
+  return <span ref={ref}>{val.toLocaleString()}{suffix}</span>;
+}
+
+function StatsStrip({ stats, loading }) {
+  // Format counts for display
+  const formatCount = (n) => {
+    if (n >= 1_000_000) return { v: parseFloat((n / 1_000_000).toFixed(1)), suffix: 'M+' };
+    if (n >= 1_000) return { v: parseFloat((n / 1_000).toFixed(1)), suffix: 'K+' };
+    return { v: n, suffix: '+' };
+  };
+
+  const candidatesFmt = formatCount(Math.max(stats.total_candidates, 0));
+  const companiesFmt = formatCount(Math.max(stats.total_companies, 0));
+  const fraudFmt = formatCount(Math.max(stats.fraud_flagged, 0));
+
+  const statsData = [
+    { label: "Resumes screened", value: candidatesFmt.v, suffix: candidatesFmt.suffix, color: "var(--google-blue)" },
+    { label: "Faster hiring", value: 90, suffix: "%", color: "var(--google-green)" },
+    { label: "Fraud detected", value: fraudFmt.v, suffix: fraudFmt.suffix, color: "var(--google-red)" },
+    { label: "Enterprise clients", value: companiesFmt.v, suffix: companiesFmt.suffix, color: "var(--google-yellow)" },
+  ];
+
+  return (
+    <motion.section className="mx-auto w-full max-w-7xl px-6 my-12"
+      initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.6, ease: "easeOut" }}>
+      <div className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-card p-5 sm:grid-cols-4 sm:p-6 shadow-sm relative">
+        {loading && (
+          <div className="absolute top-2 right-3 flex items-center gap-1 text-[10px] text-muted-foreground">
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
+              <RefreshCw className="w-3 h-3" />
+            </motion.div>
+            Live
+          </div>
+        )}
+        {statsData.map((s) => (
+          <div key={s.label} className="px-2 text-center sm:text-left">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</div>
+            <div className="mt-1 font-display text-2xl font-bold sm:text-3xl" style={{ color: s.color }}>
+              <CountUp to={s.value} suffix={s.suffix} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════ Bento Feature Grid ═══════════════════ */
+function BentoFeatures() {
+  return (
+    <motion.section id="features" className="mx-auto w-full max-w-7xl px-6 my-16 scroll-mt-24"
+      initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainerVariants}>
+      <motion.div variants={fadeInUpVariants} className="text-center mb-10">
+        <div className="text-xs font-semibold uppercase tracking-wider text-[var(--google-blue)]">Platform</div>
+        <h2 className="mt-1.5 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+          Everything you need to screen at scale
+        </h2>
+        <p className="mt-2 text-base text-muted-foreground max-w-lg mx-auto">
+          A complete AI recruitment platform — from resume intake to shortlist.
+        </p>
+      </motion.div>
+      <div className="grid gap-5 md:grid-cols-3">
+        {/* Large card — AI Parsing */}
+        <motion.div variants={staggerItemVariants} className="md:col-span-2 relative z-0 p-[1px] rounded-2xl group transition-all duration-500 ease-out hover:z-10 hover:shadow-xl hover:-translate-y-1 cursor-pointer isolate">
+          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] overflow-hidden opacity-15 md:opacity-0 group-hover:opacity-30 transition-opacity duration-500 blur-lg pointer-events-none -z-20">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] aspect-square animate-[spin_6s_linear_infinite]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
+          </div>
+          <div className="absolute inset-0 opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl overflow-hidden -z-10">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] aspect-square animate-[spin_6s_linear_infinite]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
+          </div>
+          <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
+
+          <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-between">
+            <div aria-hidden className="absolute inset-0 -z-10 opacity-100"
+              style={{ background: "radial-gradient(140px at 0% 100%, color-mix(in oklab, var(--google-blue) 8%, transparent), transparent)" }} />
+            
+            <div className="relative z-10">
+              <div className="flex items-start gap-4">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
+                  style={{ background: "color-mix(in oklab, var(--google-blue) 14%, transparent)" }}>
+                  <Brain className="h-5 w-5 text-[var(--google-blue)]" />
+                </span>
+                <div className="flex-1">
+                  <h3 className="font-display text-xl font-semibold tracking-tight text-foreground">Intelligent Resume Parsing</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                    Multi-format extraction from PDFs, DOCX, images and scanned documents. Our AI understands context,
+                    not just keywords — extracting skills, experience timelines, and career trajectories with enterprise-grade accuracy.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mt-6 w-full">
+                {["PDF & DOCX", "Scanned docs", "Multi-language"].map((t) => (
+                  <div key={t} className="border border-border bg-background hover:bg-muted px-4 py-2 rounded-full text-xs font-semibold text-foreground flex items-center justify-center transition-all duration-200">
+                    {t}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Small card — Fraud */}
+        <motion.div variants={staggerItemVariants} className="relative z-0 p-[1px] rounded-2xl group transition-all duration-500 ease-out hover:z-10 hover:shadow-xl hover:-translate-y-1 cursor-pointer isolate">
+          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] overflow-hidden opacity-15 md:opacity-0 group-hover:opacity-30 transition-opacity duration-500 blur-lg pointer-events-none -z-20">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250%] aspect-square animate-[spin_6s_linear_infinite_reverse]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
+          </div>
+          <div className="absolute inset-0 opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl overflow-hidden -z-10">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250%] aspect-square animate-[spin_6s_linear_infinite_reverse]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
+          </div>
+          <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
+
+          <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-start">
+            <div aria-hidden className="absolute inset-0 -z-10 opacity-100"
+              style={{ background: "radial-gradient(140px at 100% 0%, color-mix(in oklab, var(--google-red) 8%, transparent), transparent)" }} />
+            
+            <div className="relative z-10 flex items-start gap-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
+                style={{ background: "color-mix(in oklab, var(--google-red) 14%, transparent)" }}>
+                <Shield className="h-5 w-5 text-[var(--google-red)]" />
+              </span>
+              <div className="flex-1">
+                <h3 className="font-display text-xl font-semibold tracking-tight text-foreground">Fraud Detection</h3>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                  Three-signal verification: plagiarism, AI-generated content, and originality scoring per candidate.
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Small card — Matching */}
+        <motion.div variants={staggerItemVariants} className="relative z-0 p-[1px] rounded-2xl group transition-all duration-500 ease-out hover:z-10 hover:shadow-xl hover:-translate-y-1 cursor-pointer isolate">
+          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] overflow-hidden opacity-15 md:opacity-0 group-hover:opacity-30 transition-opacity duration-500 blur-lg pointer-events-none -z-20">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250%] aspect-square animate-[spin_6s_linear_infinite]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
+          </div>
+          <div className="absolute inset-0 opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl overflow-hidden -z-10">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250%] aspect-square animate-[spin_6s_linear_infinite]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
+          </div>
+          <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
+
+          <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-start">
+            <div aria-hidden className="absolute inset-0 -z-10 opacity-100"
+              style={{ background: "radial-gradient(140px at 0% 0%, color-mix(in oklab, var(--google-green) 8%, transparent), transparent)" }} />
+            
+            <div className="relative z-10 flex items-start gap-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
+                style={{ background: "color-mix(in oklab, var(--google-green) 14%, transparent)" }}>
+                <Target className="h-5 w-5 text-[var(--google-green)]" />
+              </span>
+              <div className="flex-1">
+                <h3 className="font-display text-xl font-semibold tracking-tight text-foreground">Semantic Matching</h3>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                  Context-aware scoring that understands role equivalency, transferable skills, and career progression.
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Large card — Multi-Source */}
+        <motion.div variants={staggerItemVariants} className="md:col-span-2 relative z-0 p-[1px] rounded-2xl group transition-all duration-500 ease-out hover:z-10 hover:shadow-xl hover:-translate-y-1 cursor-pointer isolate">
+          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] overflow-hidden opacity-15 md:opacity-0 group-hover:opacity-30 transition-opacity duration-500 blur-lg pointer-events-none -z-20">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] aspect-square animate-[spin_6s_linear_infinite_reverse]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
+          </div>
+          <div className="absolute inset-0 opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl overflow-hidden -z-10">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] aspect-square animate-[spin_6s_linear_infinite_reverse]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
+          </div>
+          <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
+
+          <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-between">
+            <div aria-hidden className="absolute inset-0 -z-10 opacity-100"
+              style={{ background: "radial-gradient(140px at 100% 100%, color-mix(in oklab, var(--google-yellow) 8%, transparent), transparent)" }} />
+            
+            <div className="relative z-10">
+              <div className="flex items-start gap-4">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
+                  style={{ background: "color-mix(in oklab, var(--google-yellow) 14%, transparent)" }}>
+                  <Upload className="h-5 w-5 text-[var(--google-yellow)]" />
+                </span>
+                <div className="flex-1">
+                  <h3 className="font-display text-xl font-semibold tracking-tight text-foreground">Six-Source Resume Intake</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                    The only platform combining direct upload, ZIP batch, Gmail sync, Google Drive, Google Forms, and ATS import
+                    into one normalized pipeline. Candidates arrive from everywhere — Between unifies them.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mt-6 w-full">
+                {[
+                  { icon: FileText, label: "Direct Upload" },
+                  { icon: FileArchive, label: "ZIP Batch" },
+                  { icon: Mail, label: "Gmail" },
+                  { icon: HardDrive, label: "Google Drive" },
+                  { icon: FormInput, label: "Forms" },
+                  { icon: Building2, label: "ATS" },
+                ].map((s) => (
+                  <div key={s.label} className="border border-border bg-background px-3 py-1.5 rounded-full text-xs font-semibold text-muted-foreground flex items-center gap-1.5 hover:bg-muted transition-all duration-200">
+                    <s.icon className="h-3.5 w-3.5 text-muted-foreground" /> {s.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════ Ingest Showcase ═══════════════════ */
+function IngestShowcase({ onNavigateDev }) {
+  const sources = [
+    { icon: FileText, label: "Direct Upload", color: "var(--google-blue)" },
+    { icon: FileArchive, label: "ZIP Archive", color: "var(--google-green)" },
+    { icon: Mail, label: "Gmail Sync", color: "var(--google-red)" },
+    { icon: HardDrive, label: "Google Drive", color: "var(--google-yellow)" },
+    { icon: FormInput, label: "Google Form", color: "var(--google-blue)" },
+    { icon: Building2, label: "ATS Import", color: "var(--google-green)" },
+  ];
+  return (
+    <motion.section id="ingest" className="mx-auto w-full max-w-7xl px-6 my-16 scroll-mt-24"
+      initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainerVariants}>
+      <div className="grid items-center gap-10 lg:grid-cols-2">
+        <motion.div variants={slideInLeftVariants} className="order-2 lg:order-1">
+          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--google-blue)]">Multi-Source Ingest</div>
+          <h2 className="mt-1.5 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+            Every channel your candidates use
+          </h2>
+          <p className="mt-3 text-base text-muted-foreground leading-relaxed">
+            No competitor combines Gmail sync, Google Drive sync, Google Form intake, and ATS import in one platform. Pipe resumes in from six sources — Between normalizes them into one clean session.
+          </p>
+          <button onClick={onNavigateDev} className="pill rounded-full mt-6 cursor-pointer inline-flex items-center gap-2 border border-border bg-background px-6 py-2.5 text-sm font-medium hover:bg-muted shadow-sm transition-all">
+            See ingest docs <ArrowRight className="w-4 h-4" />
+          </button>
+        </motion.div>
+        
+        <motion.div variants={slideInRightVariants} className="order-1 lg:order-2 grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+          {sources.map((s) => (
+            <motion.div
+              key={s.label}
+              variants={staggerItemVariants}
+              className="rounded-2xl border border-border bg-card p-5 flex flex-col items-center gap-3 shadow-sm hover:shadow-md transition-all"
+            >
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center"
+                style={{ color: s.color, backgroundColor: `color-mix(in oklab, ${s.color} 10%, transparent)` }}
+              >
+                <s.icon className="w-5.5 h-5.5" />
+              </div>
+              <div className="text-xs font-semibold text-center text-foreground">{s.label}</div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════ Workflow Section — Dynamic ═══════════════════ */
+function WorkflowSection({ liveSession }) {
+  const steps = [
+    { icon: Briefcase, title: "Create a session", desc: "Define your role requirements — title, description, must-have skills, and evaluation criteria.", color: "var(--google-blue)" },
+    { icon: Upload, title: "Ingest from any source", desc: "Upload directly, sync from Gmail or Drive, accept via Google Forms, or pull from your ATS.", color: "var(--google-yellow)" },
+    { icon: CheckCircle2, title: "Review your shortlist", desc: "AI parses, scores, and ranks every candidate. Fraud checks run automatically. Your shortlist is ready.", color: "var(--google-green)" },
+  ];
+
+  const candidates = liveSession.candidates;
+  const sessionTitle = liveSession.title;
+
+  return (
+    <motion.section id="how-it-works" className="mx-auto w-full max-w-7xl px-6 my-16 scroll-mt-24"
+      initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainerVariants}>
+      <div className="grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+        {/* Live session card — dynamic data */}
+        <motion.div variants={slideInLeftVariants} className="order-2 lg:order-1">
+          <div className="rounded-2xl border border-border bg-card shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Live Session</div>
+                {sessionTitle && sessionTitle !== 'Live Session' && (
+                  <div className="text-xs text-muted-foreground mt-0.5 font-medium truncate max-w-[180px]" title={sessionTitle}>
+                    {sessionTitle}
+                  </div>
+                )}
+              </div>
+              <span className="pill px-3 py-1 text-xs font-semibold rounded-full bg-[var(--google-green)]/10 text-[var(--google-green)] border border-[var(--google-green)]/30 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--google-green)] animate-pulse" /> Ranking
+              </span>
+            </div>
+            {candidates.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                No candidates yet. Upload resumes to see live rankings.
+              </div>
+            ) : (
+              candidates.map((c, i) => {
+                // Color the recommendation badge
+                const recLower = (c.recommendation || '').toLowerCase();
+                const badgeColor = recLower.includes('strong')
+                  ? 'text-[var(--google-green)]'
+                  : recLower.includes('reject')
+                  ? 'text-[var(--google-red)]'
+                  : 'text-[var(--google-blue)]';
+                const barColor = recLower.includes('reject')
+                  ? 'bg-[var(--google-red)]'
+                  : 'bg-[var(--google-blue)]';
+
+                return (
+                  <motion.div key={c.name + i} initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+                    className="flex items-center gap-3.5 p-3 rounded-xl hover:bg-surface transition-colors group/row">
+                    {/* Avatar */}
+                    <div className="w-9 h-9 rounded-full bg-surface flex items-center justify-center text-sm font-semibold border border-border flex-shrink-0">
+                      {c.initials || c.name?.[0] || '?'}
+                    </div>
+                    {/* Name + role */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-foreground truncate">{c.name}</div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-muted-foreground truncate">{c.role}</span>
+                        {c.experience > 0 && (
+                          <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+                            · {c.experience}y exp
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="hidden sm:block w-24 h-1.5 bg-border/70 rounded-full overflow-hidden">
+                      <motion.div initial={{ width: 0 }} whileInView={{ width: `${Math.min(c.score, 100)}%` }}
+                        viewport={{ once: true }} transition={{ delay: 0.4 + i * 0.08, duration: 0.8 }}
+                        className={`h-full ${barColor} rounded-full`} />
+                    </div>
+                    {/* Score */}
+                    <div className={`w-8 text-right text-sm font-bold tabular-nums ${badgeColor}`}>
+                      {Math.round(c.score)}
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
+        </motion.div>
+
+        {/* Steps */}
+        <div className="order-1 lg:order-2">
+          <motion.div variants={fadeInUpVariants}>
+            <div className="text-xs font-semibold uppercase tracking-wider text-[var(--google-green)]">How it works</div>
+            <h2 className="mt-1.5 font-display text-3xl font-semibold tracking-tight sm:text-4xl">From upload to shortlist in minutes</h2>
+          </motion.div>
+          <div className="mt-6 space-y-3.5">
+            {steps.map((s, idx) => (
+              <motion.div key={s.title} variants={staggerItemVariants} className="flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+                  style={{ background: `color-mix(in oklab, ${s.color} 14%, transparent)` }}>
+                  <s.icon className="h-5 w-5" style={{ color: s.color }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">STEP 0{idx + 1}</span>
+                  <h3 className="mt-0.5 font-display text-base font-semibold tracking-tight text-foreground">{s.title}</h3>
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════ Fraud Showcase — Dynamic ═══════════════════ */
+function FraudShowcase({ fraudSignals, stats }) {
+  const scores = [
+    { label: "Originality", value: fraudSignals.originality, color: "var(--google-green)" },
+    { label: "AI Probability", value: fraudSignals.ai_probability, color: "var(--google-yellow)" },
+    { label: "Plagiarism", value: fraudSignals.plagiarism, color: "var(--google-red)" },
+  ];
+
+  const isAuthentic = fraudSignals.verdict === 'Authentic';
+  const fraudFmt = stats.fraud_flagged >= 1000
+    ? `${(stats.fraud_flagged / 1000).toFixed(1)}K+`
+    : `${stats.fraud_flagged}+`;
+
+  return (
+    <motion.section id="fraud" className="mx-auto w-full max-w-7xl px-6 my-16 scroll-mt-24"
+      initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainerVariants}>
+      <div className="grid items-center gap-10 lg:grid-cols-2">
+        <motion.div variants={slideInLeftVariants}>
+          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--google-red)]">Integrity</div>
+          <h2 className="mt-1.5 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+            Catch fraud before the interview
+          </h2>
+          <p className="mt-3 text-base text-muted-foreground leading-relaxed">
+            Every resume is automatically scanned for plagiarism, AI-generated content, and originality.
+            Get an instant three-signal fraud verdict — no manual review needed.
+          </p>
+          <div className="mt-6 grid grid-cols-2 gap-3.5">
+            {[
+              { k: "Resumes flagged", v: fraudFmt, c: "var(--google-red)" },
+              { k: "Avg detection time", v: "1.2s", c: "var(--google-blue)" },
+            ].map((s) => (
+              <div key={s.k} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{s.k}</div>
+                <div className="mt-1 font-display text-2xl font-bold" style={{ color: s.c }}>{s.v}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div variants={slideInRightVariants} className="rounded-2xl border border-border bg-card shadow-md p-6 sm:p-7">
+          <div className="flex items-center justify-between mb-6">
+            <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Fraud Analysis — Live Sample</div>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isAuthentic ? 'bg-[var(--google-green)]/10 text-[var(--google-green)]' : 'bg-[var(--google-red)]/10 text-[var(--google-red)]'}`}>
+              {isAuthentic ? '● Live' : '● Flagged'}
+            </span>
+          </div>
+          <div className="space-y-6">
+            {scores.map((s, i) => (
+              <div key={s.label}>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="font-medium text-foreground">{s.label}</span>
+                  <motion.span
+                    key={s.value}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="font-display font-bold tabular-nums"
+                    style={{ color: s.color }}
+                  >
+                    {s.value}%
+                  </motion.span>
+                </div>
+                <div className="h-2.5 bg-border/70 rounded-full overflow-hidden">
+                  <motion.div
+                    key={s.value}
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${s.value}%` }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.15, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: s.color }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 pt-4 border-t border-border flex flex-wrap items-center gap-2 text-xs">
+            {isAuthentic ? (
+              <CheckCircle2 className="w-4 h-4 text-[var(--google-green)] flex-shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-[var(--google-red)] flex-shrink-0" />
+            )}
+            <span className={`font-semibold ${isAuthentic ? 'text-[var(--google-green)]' : 'text-[var(--google-red)]'}`}>
+              Verdict: {fraudSignals.verdict}
+            </span>
+            <span className="text-muted-foreground sm:ml-auto tabular-nums">Processed in 1.2s</span>
+          </div>
+        </motion.div>
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════ Pricing — Dynamic & Razorpay ═══════════════════ */
+function PricingSection({ onStart, plans }) {
+  const [yearly, setYearly] = useState(false);
+  const [subscribingId, setSubscribingId] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!document.getElementById('razorpay-sdk')) {
+      const script = document.createElement("script");
+      script.id = "razorpay-sdk";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  const handleSubscribe = async (plan) => {
+    const rawPrice = typeof plan.price === 'number' ? plan.price : parseInt(plan.price) || 0;
+    if (plan.id === 'free' || rawPrice === 0) {
+      onStart();
+      return;
+    }
+
+    const jwt = localStorage.getItem("vish_jwt");
+    if (!jwt) {
+      toast.error(`Please sign in to subscribe to ${plan.name}`);
+      navigate('/login');
+      return;
+    }
+
+    setSubscribingId(plan.id);
+    try {
+      const orderData = await billingAPI.subscribe(plan.id);
+
+      // Handle mock order flow if Razorpay credentials are test/mock
+      if (orderData.order_id?.startsWith("order_mock_")) {
+        setTimeout(async () => {
+          try {
+            await billingAPI.verifyPayment({
+              razorpay_payment_id: "pay_mock_" + Math.random().toString(36).substring(7),
+              razorpay_order_id: orderData.order_id,
+              razorpay_signature: "sig_mock_" + Math.random().toString(36).substring(7),
+              plan: plan.id
+            });
+            toast.success(`Successfully activated ${plan.name}! (Mock Payment)`);
+            navigate('/dashboard');
+          } catch (err) {
+            toast.error("Payment verification failed: " + (err.message || "Unknown error"));
+          } finally {
+            setSubscribingId(null);
+          }
+        }, 1000);
+        return;
+      }
+
+      // Real Razorpay checkout flow
+      if (!window.Razorpay) {
+        toast.error("Razorpay SDK failed to load. Please refresh and try again.");
+        setSubscribingId(null);
+        return;
+      }
+
+      const options = {
+        key: orderData.razorpay_key_id || "rzp_test_mock",
+        order_id: orderData.order_id,
+        amount: orderData.amount,
+        currency: orderData.currency || "INR",
+        name: "Between AI",
+        description: `Upgrade to ${plan.name}`,
+        theme: { color: "#4285F4" },
+        handler: async function (response) {
+          try {
+            await billingAPI.verifyPayment({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              plan: plan.id
+            });
+            toast.success(`Payment successful! Welcome to ${plan.name}.`);
+            navigate('/dashboard');
+          } catch (err) {
+            toast.error("Payment verification failed");
+          } finally {
+            setSubscribingId(null);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setSubscribingId(null);
+            toast("Payment window closed", { icon: "ℹ️" });
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        toast.error("Payment failed: " + (response.error?.description || "Declined"));
+        setSubscribingId(null);
+      });
+      rzp.open();
+    } catch (err) {
+      toast.error(err.message || "Failed to initiate subscription");
+      setSubscribingId(null);
+    }
+  };
+
+  return (
+    <motion.section id="pricing" className="mx-auto w-full max-w-7xl px-6 my-16 scroll-mt-24"
+      initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainerVariants}>
+      <motion.div variants={fadeInUpVariants} className="text-center mb-10">
+        <div className="text-xs font-semibold uppercase tracking-wider text-[var(--google-yellow)]">Pricing</div>
+        <h2 className="mt-1.5 font-display text-3xl font-semibold tracking-tight sm:text-4xl">Transparent pricing, no surprises</h2>
+        <div className="mt-5 inline-flex p-1.5 rounded-full border border-border bg-card shadow-sm relative">
+          {["Monthly", "Yearly"].map((t, i) => {
+            const active = (i === 1) === yearly;
+            return (
+              <button key={t} onClick={() => setYearly(i === 1)}
+                className={`relative flex items-center justify-center px-6 py-2 text-sm font-semibold rounded-full transition-colors cursor-pointer ${active ? "text-white" : "text-muted-foreground"}`}>
+                {active && <motion.div layoutId="pricing-pill" className="absolute inset-0 bg-[var(--google-blue)] rounded-full"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }} />}
+                <span className="relative">{t}{i === 1 && <span className="ml-1 text-[11px]">(Save 20%)</span>}</span>
+              </button>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      <div className="grid md:grid-cols-3 gap-6 items-stretch">
+        {plans.map((p) => {
+          const rawPrice = typeof p.price === 'number' ? p.price : parseInt(p.price) || 0;
+          const price = yearly ? Math.round(rawPrice * 0.8 * 12) : rawPrice;
+          const currency = rawPrice > 100 ? '₹' : '$';
+          const isSubscribing = subscribingId === p.id;
+
+          return (
+            <motion.div key={p.id || p.name} variants={staggerItemVariants}
+              className={`rounded-2xl border p-7 flex flex-col ${p.popular ? "border-[var(--google-blue)] bg-card shadow-lg md:scale-105" : "border-border bg-card shadow-sm"}`}>
+              {p.popular && (
+                <span className="self-start pill mb-4 bg-[var(--google-blue)] text-white border-transparent text-xs px-3 py-1 font-semibold rounded-full flex items-center gap-1">
+                  <Star className="w-3.5 h-3.5 fill-current" /> Most Popular
+                </span>
+              )}
+              <div className="font-display font-bold text-xl text-foreground">{p.name}</div>
+              <div className="text-xs text-muted-foreground mt-1">{p.desc || p.description || ''}</div>
+              <div className="mt-5 flex items-baseline gap-1">
+                <span className="font-display font-extrabold text-4xl text-foreground">
+                  {rawPrice === 0 ? 'Free' : `${currency}${price.toLocaleString()}`}
+                </span>
+                {rawPrice > 0 && <span className="text-muted-foreground text-sm">/{yearly ? "yr" : "mo"}</span>}
+              </div>
+              <ul className="mt-6 space-y-3.5 flex-1">
+                {(p.features || []).map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 text-sm text-foreground">
+                    <CheckCircle2 className="w-4 h-4 text-[var(--google-green)] mt-0.5 flex-shrink-0" /><span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => handleSubscribe(p)}
+                disabled={isSubscribing}
+                className={`mt-8 flex items-center justify-center gap-2 h-12 rounded-full font-semibold transition-all cursor-pointer ${p.popular ? "bg-[var(--google-blue)] text-white hover:opacity-90 shadow-md" : "border border-border bg-background hover:bg-muted text-foreground"}`}
+              >
+                {isSubscribing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Connecting...
+                  </>
+                ) : rawPrice === 0 ? (
+                  "Start free"
+                ) : (
+                  "Subscribe with Razorpay"
+                )}
+              </button>
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════ Split CTA ═══════════════════ */
+function SplitCTA({ onStart, onNavigateDev }) {
+  const navigate = useNavigate();
+
+  return (
+    <motion.section id="enterprise" className="mx-auto w-full max-w-7xl px-6 my-16 scroll-mt-24"
+      initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainerVariants}>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Recruiting Teams Card */}
+        <motion.div variants={slideInLeftVariants} className="relative overflow-hidden rounded-2xl border border-border bg-card p-8 shadow-sm">
+          <div aria-hidden className="absolute inset-0 -z-10"
+            style={{ background: "radial-gradient(60% 70% at 0% 100%, color-mix(in oklab, var(--google-blue) 16%, transparent), transparent 70%)" }} />
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-3 py-1 text-xs font-semibold text-muted-foreground shadow-sm">
+            <Sparkles className="h-3.5 w-3.5 text-[var(--google-blue)]" /> For Recruiting Teams
+          </div>
+          <h3 className="mt-4 font-display text-2xl font-bold tracking-tight sm:text-3xl text-foreground">Screen candidates in minutes, not days</h3>
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">Upload resumes from any source. AI handles parsing, matching, and fraud checks automatically.</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button onClick={onStart} className="pill cursor-pointer inline-flex items-center gap-2 bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 rounded-full shadow-sm">
+              Start free trial
+            </button>
+            <button onClick={() => navigate('/contact')} className="pill cursor-pointer inline-flex items-center gap-2 border border-border bg-background px-5 py-2.5 text-xs font-semibold hover:bg-muted rounded-full">
+              <Briefcase className="h-3.5 w-3.5" /> Book a demo
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Developers Card */}
+        <motion.div variants={slideInRightVariants} className="relative overflow-hidden rounded-2xl border border-border bg-card p-8 shadow-sm">
+          <div aria-hidden className="absolute inset-0 -z-10"
+            style={{ background: "radial-gradient(60% 70% at 100% 0%, color-mix(in oklab, var(--google-green) 16%, transparent), transparent 70%)" }} />
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-3 py-1 text-xs font-semibold text-muted-foreground shadow-sm">
+            <Code2 className="h-3.5 w-3.5 text-[var(--google-green)]" /> For Developers
+          </div>
+          <h3 className="mt-4 font-display text-2xl font-bold tracking-tight sm:text-3xl text-foreground">Build on our API</h3>
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">RESTful API with 15+ endpoints, webhooks, and embed tokens. Full docs and SDK included.</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button onClick={() => navigate('/developer')} className="pill cursor-pointer inline-flex items-center gap-2 bg-foreground px-5 py-2.5 text-xs font-semibold text-background hover:opacity-90 rounded-full shadow-sm">
+              Read the docs
+            </button>
+            <button onClick={() => navigate('/developer/portal/docs')} className="pill cursor-pointer inline-flex items-center gap-2 border border-border bg-background px-5 py-2.5 text-xs font-semibold hover:bg-muted rounded-full">
+              API reference
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════ Final CTA ═══════════════════ */
+function MagneticButton({ onClick }) {
+  const x = useMotionValue(0); const y = useMotionValue(0);
+  const sx = useSpring(x, { stiffness: 200, damping: 15 });
+  const sy = useSpring(y, { stiffness: 200, damping: 15 });
+  const ref = useRef(null);
+  return (
+    <motion.button ref={ref} style={{ x: sx, y: sy }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      onMouseMove={(e) => { const r = ref.current.getBoundingClientRect(); x.set((e.clientX - r.left - r.width / 2) * 0.3); y.set((e.clientY - r.top - r.height / 2) * 0.3); }}
+      onMouseLeave={() => { x.set(0); y.set(0); }}
+      className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-[var(--google-blue)] text-white font-semibold text-base sm:text-lg shadow-md hover:opacity-90 transition-opacity cursor-pointer">
+      Start Free Trial <ArrowRight className="w-5 h-5" />
+    </motion.button>
+  );
+}
+
+function FinalCTA({ onStart, companiesCount }) {
+  const label = companiesCount > 0
+    ? `Join ${companiesCount.toLocaleString()}+ recruiting teams using Between to screen candidates faster, with fraud detection and semantic matching built in.`
+    : 'Join recruiting teams worldwide using Between to screen candidates faster, with fraud detection and semantic matching built in.';
+  return (
+    <motion.section className="mx-auto w-full max-w-7xl px-6 my-16"
+      initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={fadeInUpVariants}>
+      <div className="rounded-3xl border border-border bg-card p-10 md:p-16 text-center shadow-md">
+        <h2 className="font-display font-bold text-3xl sm:text-5xl max-w-3xl mx-auto text-foreground tracking-tight">Ready to transform your hiring?</h2>
+        <p className="mt-4 text-muted-foreground max-w-lg mx-auto text-sm sm:text-base leading-relaxed">
+          {label}
+        </p>
+        <div className="mt-10 flex flex-col items-center gap-3">
+          <MagneticButton onClick={onStart} />
+          <span className="text-xs text-muted-foreground mt-2">No credit card required · 14-day free trial · Cancel anytime</span>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════ Main Landing Page Component ═══════════════════ */
 export default function LandingPage() {
   useDocumentTitle(
-    "AI Resume Parsing & Intelligent Recruiter Screening",
-    "Vishleshan is a next-generation resume intelligence platform that automates candidate matching, ATS scoring, and background verification."
+    "AI Resume Parsing & Intelligent Recruiter Screening | Between",
+    "Between is a next-generation resume intelligence platform that automates candidate matching, ATS scoring, and background verification."
   );
 
   const navigate = useNavigate();
   const location = useLocation();
   const isLoggedIn = !!localStorage.getItem("vish_jwt");
+
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 150, damping: 30 });
+  const width = useTransform(scaleX, [0, 1], ["0%", "100%"]);
+
+  // ── Live data from backend ──────────────────────────────────────────────────
+  const { stats, liveSession, fraudSignals, plans, loading } = useLandingData();
 
   useEffect(() => {
     if (location.hash) {
@@ -44,19 +1297,29 @@ export default function LandingPage() {
     }
   };
 
+  const handleNavigateDev = () => {
+    navigate('/developer');
+  };
+
   return (
     <div style={{ padding: '0', backgroundColor: 'var(--bg)', color: 'var(--text)', minHeight: '100vh', transition: 'background-color 0.3s, color 0.3s' }}>
+      <motion.div style={{ width }} className="fixed top-0 left-0 h-[3px] bg-[var(--google-blue)] z-[60]" />
+      
       <Navbar onSignIn={handleAuth} isLoggedIn={isLoggedIn} />
-      <main>
-        <HeroHeader onStart={handleAuth} isLoggedIn={isLoggedIn} />
-        <LogoCloud />
-        <HowItWorks />
-        <FeaturesList />
-        <DetailedShowcase />
-        <Pricing onStart={handleAuth} isLoggedIn={isLoggedIn} />
-        <Testimonials />
-        <FinalCTA onStart={handleAuth} isLoggedIn={isLoggedIn} />
+      
+      <main className="flex flex-col w-full overflow-x-hidden pt-16">
+        <HeroSection onStart={handleAuth} companiesCount={stats.total_companies} />
+        <LiveDemoCard />
+        <StatsStrip stats={stats} loading={loading} />
+        <BentoFeatures />
+        <IngestShowcase onNavigateDev={handleNavigateDev} />
+        <WorkflowSection liveSession={liveSession} />
+        <FraudShowcase fraudSignals={fraudSignals} stats={stats} />
+        <PricingSection onStart={handleAuth} plans={plans} />
+        <SplitCTA onStart={handleAuth} onNavigateDev={handleNavigateDev} />
+        <FinalCTA onStart={handleAuth} companiesCount={stats.total_companies} />
       </main>
+
       <Footer />
     </div>
   );

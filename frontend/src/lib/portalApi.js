@@ -21,7 +21,26 @@ async function req(method, path, body=null, auth=true) {
     body: body ? JSON.stringify(body) : undefined
   })
   
-  const data = await res.json()
+  const contentType = res.headers.get("content-type") || "";
+  let data;
+  if (contentType.includes("application/json")) {
+    try {
+      data = await res.json();
+    } catch (e) {
+      data = null;
+    }
+  }
+  if (!data) {
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`Server returned status ${res.status}: ${res.statusText || 'Error'}`);
+    }
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = { success: true, data: text };
+    }
+  }
   
   if (res.status === 401) {
     if (typeof window !== "undefined") {
@@ -30,10 +49,13 @@ async function req(method, path, body=null, auth=true) {
     }
     throw new Error("Session expired")
   }
-  if (!data.success) {
-    throw new Error(data.error || "Request failed")
+  if (!data?.success && !res.ok) {
+    throw new Error(data?.error || `Request failed with status ${res.status}`);
   }
-  return data.data
+  if (data?.success === false) {
+    throw new Error(data.error || "Request failed");
+  }
+  return data?.data !== undefined ? data.data : data
 }
 
 // Auth

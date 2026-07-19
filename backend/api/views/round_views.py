@@ -209,12 +209,14 @@ def auto_progress_candidate(candidate, session, round_score):
     rounds = session.rounds or []
     max_round = len(rounds) if rounds else 1
     
-    current_sr = SessionRound.objects.filter(session=session, round_number=candidate.current_round_index).first()
+    current_round = candidate.current_round_index if candidate.current_round_index > 0 else 1
+    
+    current_sr = SessionRound.objects.filter(session=session, round_number=current_round).first()
     passing_threshold = current_sr.passing_score if current_sr else 50
     
     if round_score >= passing_threshold:
-        if candidate.current_round_index < max_round:
-            candidate.current_round_index += 1
+        if current_round < max_round:
+            candidate.current_round_index = current_round + 1
             candidate.status = "forwarded"
             candidate.save(update_fields=['current_round_index', 'status'])
             
@@ -1235,13 +1237,13 @@ def finalize_interview(request):
     attempt.overall_score = summary.get("overall_score", 0)
     attempt.save()
 
-    # Recruiter review decision required: skip auto progression for interview attempts.
+    # Automatically evaluate candidate pipeline progression for interview attempts
     cand = attempt.candidate
     rec = summary.get("recommendation", "").lower()
     score = summary.get("overall_score", 0)
     if score == 0 and ("proceed" in rec or "hire" in rec):
         score = 70.0
-    # auto_progress_candidate is skipped here to let recruiter decide manually
+    auto_progress_candidate(attempt.candidate, attempt.round.session, score)
 
     return JsonResponse(success_response(summary))
 
@@ -1654,7 +1656,7 @@ print(json.dumps({{"results": results, "peak_memory_bytes": peak}}))
             runner_code = f"""
 const fs = require('fs');
 
-# User submitted code
+// User submitted code
 {code}
 
 const inputs = JSON.parse('{inputs_json}');
@@ -1749,6 +1751,7 @@ console.log(JSON.stringify({{results: results, peak_memory_bytes: 0}}));
     return all_passed, run_results, user_stdout, user_stderr, elapsed_seconds, peak_memory_kb
 
 
+@csrf_exempt
 def create_mock_attempt(request):
     """
     POST /api/v1/seeker/mock-interview/create
@@ -2073,11 +2076,11 @@ def seeker_transcribe_audio(request):
             file_bytes = audio_file.read()
             file_name = audio_file.name or "audio.webm"
             transcription = client.audio.transcriptions.create(
-                file=(file_name, io.BytesIO(file_bytes)),
-                model="whisper-large-v3",
-                response_format="text"
+                file=(file_name, file_bytes, "audio/webm"),
+                model="whisper-large-v3-turbo",
+                language="en"
             )
-            return JsonResponse(success_response({"text": transcription}))
+            return JsonResponse(success_response({"text": transcription.text}))
         except Exception as e:
             logger.error("Audio transcription failed: %s", e)
             return JsonResponse(error_response("Audio transcription failed. Please check network connectivity."), status=500)

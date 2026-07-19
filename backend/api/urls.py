@@ -42,6 +42,7 @@ urlpatterns = [
     # ── Health Check ──────────────────────────────────────────────────────────
     path('health', recruiter_auth.health_check, name='health-check'),
     path('api/v1/dynamic-data', recruiter_auth.dynamic_data, name='dynamic-data'),
+    path('api/v1/public/stats', recruiter_auth.public_stats, name='public-stats'),
 
     # ── Recruiter Auth ─────────────────────────────────────────────────────────
     path('api/v1/auth/register', recruiter_auth.register, name='auth-register'),
@@ -49,6 +50,7 @@ urlpatterns = [
     path('api/v1/auth/login-google', google_auth.recruiter_auth_google, name='auth-login-google'),
     path('api/v1/auth/login-github', github_auth.recruiter_auth_github, name='auth-login-github'),
     path('api/v1/auth/cross-login', recruiter_auth.cross_portal_login, name='auth-cross-login'),
+    path('api/v1/auth/cross-login/', recruiter_auth.cross_portal_login, name='auth-cross-login-slash'),
     path('api/v1/auth/me', recruiter_auth.me, name='auth-me'),
     path('api/v1/auth/logout', recruiter_auth.logout, name='auth-logout'),
     path('api/v1/auth/change-password', recruiter_auth.change_password, name='auth-change-password'),
@@ -173,6 +175,7 @@ urlpatterns = [
     path('api/v1/billing/verify-payment', recruiter_billing.verify_payment, name='recruiter-billing-verify'),
     path('api/v1/billing/subscription', recruiter_billing.current_subscription, name='recruiter-billing-subscription'),
     path('api/v1/billing/current', recruiter_billing.current_subscription, name='recruiter-billing-current'),
+    path('api/v1/billing/current/', recruiter_billing.current_subscription, name='recruiter-billing-current-slash'),
     path('api/v1/billing/cancel', recruiter_billing.cancel_subscription, name='recruiter-billing-cancel'),
 
 
@@ -240,6 +243,7 @@ urlpatterns = [
     path('api/v1/public/companies', companies.public_list_companies, name='public-companies-list'),
     path('api/v1/public/companies/<str:company_id>', companies.public_get_company, name='public-companies-detail'),
     path('api/v1/public/market-trends', companies.public_market_trends, name='public-market-trends'),
+    path('api/v1/public/market-trends/', companies.public_market_trends, name='public-market-trends-slash'),
 
     # ── Job Seeker Companies ──────────────────────────────────────────────────
     path('api/v1/seeker/companies', companies.seeker_list_companies, name='seeker-companies-list'),

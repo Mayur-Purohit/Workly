@@ -78,3 +78,7 @@ backend/models/ner_resume_parser/
 backend/datasets/Salary.csv
 backend/datasets/DSL-StrongPasswordData.csv
 backend/datasets/Resume/
+
+# Exclude directories per user request
+OK/
+OLD ONES/
