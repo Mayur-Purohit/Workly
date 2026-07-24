@@ -896,97 +896,7 @@ function WorkflowSection({ liveSession }) {
   );
 }
 
-/* ═══════════════════ Fraud Showcase — Dynamic ═══════════════════ */
-function FraudShowcase({ fraudSignals, stats }) {
-  const scores = [
-    { label: "Originality", value: fraudSignals.originality, color: "var(--google-green)" },
-    { label: "AI Probability", value: fraudSignals.ai_probability, color: "var(--google-yellow)" },
-    { label: "Plagiarism", value: fraudSignals.plagiarism, color: "var(--google-red)" },
-  ];
 
-  const isAuthentic = fraudSignals.verdict === 'Authentic';
-  const fraudFmt = stats.fraud_flagged >= 1000
-    ? `${(stats.fraud_flagged / 1000).toFixed(1)}K+`
-    : `${stats.fraud_flagged}+`;
-
-  return (
-    <motion.section id="fraud" className="mx-auto w-full max-w-7xl px-6 my-16 scroll-mt-24"
-      initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainerVariants}>
-      <div className="grid items-center gap-10 lg:grid-cols-2">
-        <motion.div variants={slideInLeftVariants}>
-          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--google-red)]">Integrity</div>
-          <h2 className="mt-1.5 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            Catch fraud before the interview
-          </h2>
-          <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-            Every resume is automatically scanned for plagiarism, AI-generated content, and originality.
-            Get an instant three-signal fraud verdict — no manual review needed.
-          </p>
-          <div className="mt-6 grid grid-cols-2 gap-3.5">
-            {[
-              { k: "Resumes flagged", v: fraudFmt, c: "var(--google-red)" },
-              { k: "Avg detection time", v: "1.2s", c: "var(--google-blue)" },
-            ].map((s) => (
-              <div key={s.k} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{s.k}</div>
-                <div className="mt-1 font-display text-2xl font-bold" style={{ color: s.c }}>{s.v}</div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        <motion.div variants={slideInRightVariants} className="rounded-2xl border border-border bg-card shadow-md p-6 sm:p-7">
-          <div className="flex items-center justify-between mb-6">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Fraud Analysis — Live Sample</div>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isAuthentic ? 'bg-[var(--google-green)]/10 text-[var(--google-green)]' : 'bg-[var(--google-red)]/10 text-[var(--google-red)]'}`}>
-              {isAuthentic ? '● Live' : '● Flagged'}
-            </span>
-          </div>
-          <div className="space-y-6">
-            {scores.map((s, i) => (
-              <div key={s.label}>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="font-medium text-foreground">{s.label}</span>
-                  <motion.span
-                    key={s.value}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="font-display font-bold tabular-nums"
-                    style={{ color: s.color }}
-                  >
-                    {s.value}%
-                  </motion.span>
-                </div>
-                <div className="h-2.5 bg-border/70 rounded-full overflow-hidden">
-                  <motion.div
-                    key={s.value}
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${s.value}%` }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.15, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-                    className="h-full rounded-full"
-                    style={{ backgroundColor: s.color }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 pt-4 border-t border-border flex flex-wrap items-center gap-2 text-xs">
-            {isAuthentic ? (
-              <CheckCircle2 className="w-4 h-4 text-[var(--google-green)] flex-shrink-0" />
-            ) : (
-              <AlertTriangle className="w-4 h-4 text-[var(--google-red)] flex-shrink-0" />
-            )}
-            <span className={`font-semibold ${isAuthentic ? 'text-[var(--google-green)]' : 'text-[var(--google-red)]'}`}>
-              Verdict: {fraudSignals.verdict}
-            </span>
-            <span className="text-muted-foreground sm:ml-auto tabular-nums">Processed in 1.2s</span>
-          </div>
-        </motion.div>
-      </div>
-    </motion.section>
-  );
-}
 
 /* ═══════════════════ Pricing — Dynamic & Razorpay ═══════════════════ */
 function PricingSection({ onStart, plans }) {
@@ -1314,7 +1224,6 @@ export default function LandingPage() {
         <BentoFeatures />
         <IngestShowcase onNavigateDev={handleNavigateDev} />
         <WorkflowSection liveSession={liveSession} />
-        <FraudShowcase fraudSignals={fraudSignals} stats={stats} />
         <PricingSection onStart={handleAuth} plans={plans} />
         <SplitCTA onStart={handleAuth} onNavigateDev={handleNavigateDev} />
         <FinalCTA onStart={handleAuth} companiesCount={stats.total_companies} />

@@ -11,12 +11,13 @@ import os
 import logging
 from django.core.mail import send_mail
 from django.conf import settings
+from api.constants import APP_NAME, APP_EMAIL_DOMAIN, EMAIL_SIGN_OFF
 
 logger = logging.getLogger(__name__)
 
 # Sender address — falls back to settings.DEFAULT_FROM_EMAIL
-FROM_EMAIL = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@vishleshan.ai")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://between.indevs.in")
+FROM_EMAIL = getattr(settings, "DEFAULT_FROM_EMAIL", APP_EMAIL_DOMAIN)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://workly.ai")
 
 
 def send_application_received_to_company(
@@ -35,10 +36,10 @@ Hi {company_name},
 
 You have received a new application from {seeker_name} for the position of {job_title}.
 
-Log in to your Vishleshan dashboard to review the application:
+Log in to your {APP_NAME} dashboard to review the application:
 {FRONTEND_URL}/dashboard/sessions/{session_id}
 
-— Vishleshan Platform
+{EMAIL_SIGN_OFF}
 """
     return _send(company_email, subject, message)
 
@@ -57,13 +58,13 @@ def send_application_confirmation_to_seeker(
     message = f"""
 Hi {seeker_name},
 
-Your application for {job_title} at {company_name} has been successfully submitted through Vishleshan.
+Your application for {job_title} at {company_name} has been successfully submitted through {APP_NAME}.
 
 You can track the status of all your applications here:
 {FRONTEND_URL}/jobs/dashboard/applications
 
 Good luck!
-— Vishleshan Platform
+{EMAIL_SIGN_OFF}
 """
     email_sent = _send(seeker_email, subject, message)
     
@@ -127,7 +128,7 @@ Hi {seeker_name},
 View your applications:
 {FRONTEND_URL}/jobs/dashboard/applications
 
-— Vishleshan Platform
+{EMAIL_SIGN_OFF}
 """
     email_sent = _send(seeker_email, subject, message)
 
@@ -150,7 +151,7 @@ View your applications:
                     "rejected": "updated (rejected)",
                     "hired": "offered 🎉"
                 }.get(new_status, new_status)
-                sms_msg = f"Hi {seeker_name}, your application for {job_title} at {company_name} has been {status_text}. Log in to Vishleshan to view details."
+                sms_msg = f"Hi {seeker_name}, your application for {job_title} at {company_name} has been {status_text}. Log in to {APP_NAME} to view details."
                 send_sms(recipient_phone=seeker.phone, message_content=sms_msg)
                 
             # 3. Track automation event
@@ -323,7 +324,7 @@ If you have any questions, reply to this email or contact our support team.
         </div>
         <div style="background: #f9fafb; padding: 16px 24px; text-align: center; border-top: 1px solid #f3f4f6;">
             <p style="color: #d1d5db; font-size: 11px; margin: 0;">
-                Between AI — Vishleshan Platform
+                Between AI {EMAIL_SIGN_OFF}
             </p>
         </div>
     </div>

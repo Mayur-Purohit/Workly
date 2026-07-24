@@ -1,6 +1,7 @@
 import os
 import uuid
 import json
+import traceback
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -11,6 +12,7 @@ from workers.celery_worker import _parse_resume_sync, _normalize_skills_sync
 from models.schemas import success_response, error_response
 from agents.fraud_agent import FraudDetectionAgent
 from api.views.seeker_jobs import _parse_job_description_meta, _get_salary_range
+from api.constants import FALLBACK_COMPANY_NAME
 
 def _calculate_match_score(candidate, session):
     """Calculates and updates candidate match score synchronously against session criteria."""
@@ -63,6 +65,16 @@ def _calculate_match_score(candidate, session):
     min_match_score = criteria.get("min_match_score", 0)
     if min_match_score > 0 and score < min_match_score:
         candidate.status = "rejected"
+    elif min_match_score > 0 and score >= min_match_score and candidate.status == "rejected":
+        # Restore candidates that were auto-rejected by score threshold
+        # but now pass after criteria change. Only restore score-based rejections
+        # (not round-based rejections from failed test attempts).
+        from api.models import ApplicantRoundAttempt
+        has_failed_round = ApplicantRoundAttempt.objects.filter(
+            candidate=candidate, status="failed"
+        ).exists()
+        if not has_failed_round:
+            candidate.status = "new"
         
     candidate.save()
     return candidate.match_details
@@ -114,7 +126,7 @@ def list_public_jobs(request):
                 if not loc_match:
                     continue
             
-            company_name = s.company.name if s.company else "Vishleshan Partner"
+            company_name = s.company.name if s.company else FALLBACK_COMPANY_NAME
             meta = _parse_job_description_meta(s.job_description)
             
             jobs.append({
@@ -168,7 +180,7 @@ def get_public_job(request, session_id):
             return JsonResponse(error_response("Job posting not found"), status=404)
             
         criteria = s.criteria or {}
-        company_name = s.company.name if s.company else "Vishleshan Partner"
+        company_name = s.company.name if s.company else FALLBACK_COMPANY_NAME
         meta = _parse_job_description_meta(s.job_description)
         
         return JsonResponse(success_response({
@@ -302,8 +314,7 @@ def apply_public_job(request, session_id):
             
         return JsonResponse(success_response(response_data))
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        traceback.print_exc()
         return JsonResponse(error_response(f"Server error: {str(e)}"), status=500)
 
 @csrf_exempt
@@ -389,7 +400,7 @@ def scan_job_safety_public(request, session_id):
         return JsonResponse(success_response({
             "id": str(log.id),
             "job_title": session.job_title,
-            "company_name": session.company.name if session.company else "Vishleshan Partner",
+            "company_name": session.company.name if session.company else FALLBACK_COMPANY_NAME,
             "originality_score": log.originality_score,
             "ai_probability": log.ai_probability,
             "plagiarism_score": log.plagiarism_score,
@@ -402,8 +413,7 @@ def scan_job_safety_public(request, session_id):
         }))
 
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
+        traceback.print_exc()
         return JsonResponse(error_response(f"Server error: {str(e)}"), status=500)
 
 @csrf_exempt

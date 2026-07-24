@@ -27,7 +27,6 @@ const SmartAnalyzerPage = lazy(() => import('./pages/SmartAnalyzerPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const AiRecruiterPage = lazy(() => import('./pages/AiRecruiterPage'));
 const GoogleCallbackPage = lazy(() => import('./pages/GoogleCallbackPage'));
-const FraudDetectionPage = lazy(() => import('./pages/FraudDetectionPage'));
 
 // Public pages
 const AboutPage = lazy(() => import('./pages/public/AboutPage'));
@@ -293,7 +292,7 @@ export default function App() {
             <Route path="sessions/:id/results" element={<ApplicantResultsPage />} />
             <Route path="smart-analyzer" element={<SmartAnalyzerPage />} />
             <Route path="ai-recruiter" element={<AiRecruiterPage />} />
-            <Route path="protection" element={<FraudDetectionPage />} />
+            <Route path="protection" element={<Navigate to="/dashboard" replace />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 

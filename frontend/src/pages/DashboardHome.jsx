@@ -10,7 +10,8 @@ import {
   Shield, 
   FileText, 
   ArrowUpRight, 
-  Plus 
+  Plus,
+  Bot
 } from 'lucide-react';
 import { sessionsAPI } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
@@ -117,10 +118,10 @@ export default function DashboardHome() {
             desc="Rank resumes against a job description with AI."
           />
           <QuickAction
-            to="/dashboard/protection"
-            icon={Shield}
-            title="Fraud Detection"
-            desc="Scan resumes and job posts for AI-generated content."
+            to="/dashboard/ai-recruiter"
+            icon={Bot}
+            title="AI Recruiter"
+            desc="Automated resume screening and AI interviewing."
           />
           <QuickAction
             to="/dashboard/sessions"
@@ -194,13 +195,14 @@ function StatCard({ icon: Icon, label, value, trend, tone }) {
 }
 
 function QuickAction({ to, icon: Icon, title, desc }) {
+  const SafeIcon = Icon || Sparkles;
   return (
     <Link
       to={to}
       className="group bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-sm hover:border-accent/30 transition flex items-start gap-4"
     >
       <div className="w-11 h-11 rounded-xl bg-gray-100 text-[#111111] flex items-center justify-center shrink-0">
-        <Icon size={20} />
+        <SafeIcon size={20} />
       </div>
       <div className="flex-1">
         <div className="font-display text-base text-charcoal group-hover:text-[#111111] transition">{title}</div>

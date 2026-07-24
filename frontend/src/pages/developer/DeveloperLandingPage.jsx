@@ -499,7 +499,7 @@ function DeveloperPricingSection({ plans, isDevLoggedIn, currentTier, navigate }
 export default function DeveloperLandingPage() {
   useDocumentTitle(
     "Developer Hub - Between API",
-    "Integrate ATS scoring, resume parser, and fraud protection APIs into your platform."
+    "Integrate ATS scoring and resume parser APIs into your platform."
   );
   const navigate = useNavigate();
 

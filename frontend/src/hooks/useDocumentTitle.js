@@ -1,11 +1,12 @@
 import { useEffect } from "react";
+import { APP_NAME, APP_FULL_TITLE } from "../lib/constants";
 
 export default function useDocumentTitle(title, description) {
   useEffect(() => {
     if (title) {
-      document.title = `${title} | Vishleshan`;
+      document.title = `${title} | ${APP_NAME}`;
     } else {
-      document.title = "Vishleshan — Modern AI Resume Analyzer & Recruiter Platform";
+      document.title = APP_FULL_TITLE;
     }
 
     if (description) {

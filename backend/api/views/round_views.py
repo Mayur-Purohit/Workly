@@ -20,6 +20,7 @@ from api.decorators import require_api_key
 from models.schemas import success_response, error_response
 from agents.round_recommendation_agent import RoundRecommendationAgent
 from agents.interview_agent import InterviewAgent
+from agents.llm import RotateLLMClient
 from openai import OpenAI
 
 logger = logging.getLogger(__name__)
@@ -108,12 +109,6 @@ def recommend_rounds(request, session_id):
 
 
 def generate_coding_problems_for_job(job_title, job_description):
-    from agents.llm import RotateLLMClient
-    from api.models import CodingProblem
-    import json
-    import logging
-    logger = logging.getLogger(__name__)
-
     llm = RotateLLMClient()
     prompt = f"""
 You are an expert software engineering interviewer. Generate exactly 2 programming challenges (one Easy, one Medium) tailored to the following role:
@@ -199,13 +194,6 @@ def auto_progress_candidate(candidate, session, round_score):
     Automatically updates candidate round progress based on score.
     Passing threshold is read from SessionRound, defaulting to 50%.
     """
-    from api.models import SessionRound, ApplicantRoundAttempt
-    from django.utils import timezone
-    from datetime import timedelta
-    import secrets
-    import logging
-    logger = logging.getLogger(__name__)
-
     rounds = session.rounds or []
     max_round = len(rounds) if rounds else 1
     
@@ -276,7 +264,6 @@ def create_session_rounds(request, session_id):
 
         custom_question_ids = r.get("custom_question_ids", [])
         if custom_question_ids and round_type == 'mcq':
-            from api.models import MCQQuestion
             for qid in custom_question_ids:
                 mq = MCQQuestion.objects.filter(id=qid).first()
                 if mq:
@@ -288,7 +275,6 @@ def create_session_rounds(request, session_id):
 
         custom_slugs = r.get("custom_slugs", [])
         if custom_slugs and round_type == 'coding':
-            from api.models import CodingProblem
             for slug in custom_slugs:
                 cp = CodingProblem.objects.filter(slug=slug).first()
                 if cp:
@@ -420,7 +406,8 @@ def generate_interview_questions(request, session_id, round_id):
         job_description=session.job_description,
         candidate_resume=candidate_resume,
         manual_questions=manual_questions,
-        total_questions=total_questions
+        total_questions=total_questions,
+        round_name=sr.name
     )
 
     sr.interview_questions = questions
@@ -1120,7 +1107,8 @@ def get_interview_questions(request):
             job_description=sr.session.job_description,
             candidate_resume=attempt.candidate.raw_resume_data or {},
             manual_questions=[],
-            total_questions=sr.mcq_question_count or 5  # default/suggested questions count
+            total_questions=sr.mcq_question_count or 5,  # default/suggested questions count
+            round_name=sr.name
         )
         sr.interview_questions = questions
         sr.save()

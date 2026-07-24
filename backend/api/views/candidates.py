@@ -4,15 +4,20 @@ import logging
 import ast
 import re
 import uuid
+import secrets
+from datetime import timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, F
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import is_aware, make_aware
 
-from api.models import Company, Session, Candidate, JobApplication, Notification
+from api.models import Company, Session, Candidate, JobApplication, Notification, SessionRound, ApplicantRoundAttempt
 from api.decorators import require_api_key
 from models.schemas import success_response, error_response
 from api.services.email_service import send_status_update_to_seeker
+from api.constants import FALLBACK_COMPANY_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -336,11 +341,6 @@ def candidate_action(request, session_id, cand_id):
             candidate.status = "forwarded"
 
             # Pre-generate next round attempt proactively so they receive their test_link immediately
-            from api.models import SessionRound, ApplicantRoundAttempt
-            from django.utils import timezone
-            from datetime import timedelta
-            import secrets
-            
             next_sr = SessionRound.objects.filter(session=session, round_number=candidate.current_round_index).first()
             if next_sr:
                 token = secrets.token_urlsafe(32)
@@ -410,10 +410,6 @@ def candidate_action(request, session_id, cand_id):
                 }
                 notify_status = status_map.get(action)
                 if notify_status:
-                    # Determine if result declaration date is in the future
-                    from django.utils.dateparse import parse_datetime
-                    from django.utils.timezone import is_aware, make_aware
-                    
                     announcement_time = None
                     # Find completed round (order == prior_round_order)
                     for r in rounds:
@@ -450,7 +446,7 @@ def candidate_action(request, session_id, cand_id):
                             seeker=seeker,
                             type='status_updated',
                             title=f'Application Update — {session.job_title}',
-                            message=f'Your application at {session.company.name if session.company else "Vishleshan Partner"} has been updated to: {notify_status.title()}.',
+                            message=f'Your application at {session.company.name if session.company else FALLBACK_COMPANY_NAME} has been updated to: {notify_status.title()}.',
                             link=f'/jobs/applications?app_id={app.id}',
                         )
 
@@ -459,7 +455,7 @@ def candidate_action(request, session_id, cand_id):
                             seeker_email=seeker.email,
                             seeker_name=seeker.full_name,
                             job_title=session.job_title,
-                            company_name=session.company.name if session.company else "Vishleshan Partner",
+                            company_name=session.company.name if session.company else FALLBACK_COMPANY_NAME,
                             new_status=notify_status,
                         )
         except Exception as notify_err:

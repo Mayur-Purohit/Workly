@@ -67,7 +67,9 @@ class InterviewAgent:
         job_description: str,
         candidate_resume: dict,
         manual_questions: list,
-        total_questions: int = 5
+        total_questions: int = 5,
+        round_name: str = "",
+        is_hr: bool = False
     ) -> list:
         """
         Merges company's manual questions with AI-generated resume-aware questions.
@@ -95,7 +97,41 @@ class InterviewAgent:
                 for e in parsed_resume.get('experience', []) if e.get('title')
             ]
 
-            prompt = f"""
+            r_name_lower = (round_name or "").lower()
+            if is_hr or "hr" in r_name_lower or "behavioral" in r_name_lower or "human resource" in r_name_lower or "culture" in r_name_lower:
+                prompt = f"""
+You are an HR Executive & Talent Acquisition Director conducting a professional HR & Behavioral interview.
+Generate exactly {ai_needed} HR interview questions for this candidate.
+
+Job Title: {job_title}
+Job Requirements: {job_description[:400]}
+
+Candidate Profile:
+- Listed Skills: {skills_list}
+- Work Experience: {experience}
+
+Already planned questions (do NOT repeat these topics):
+{json.dumps(manual_questions)}
+
+Rules:
+1. Focus STRICTLY on HR, behavioral scenarios, communication, teamwork, handling workplace conflict, salary expectations, notice period, and career growth.
+2. Do NOT ask technical coding, syntax, framework, database, or algorithm questions.
+3. Ask naturally like an experienced HR leader.
+
+Return ONLY valid JSON (no markdown block):
+{{
+  "questions": [
+    {{
+      "q": "Question here...",
+      "type": "hr_behavioral",
+      "source": "hr",
+      "expected_keywords": ["keyword1", "keyword2"]
+    }}
+  ]
+}}
+"""
+            else:
+                prompt = f"""
 You are a senior technical interviewer conducting a job interview.
 Generate exactly {ai_needed} interview questions for this candidate.
 

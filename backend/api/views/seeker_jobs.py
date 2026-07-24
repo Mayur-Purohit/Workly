@@ -11,10 +11,15 @@ Handles:
 
 import os
 import json
+import uuid
+import secrets
 import logging
+from datetime import timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import is_aware, make_aware
 
 from api.models import Session, Candidate, JobApplication, Notification, JobSeekerAccount, SavedJob, ApplicantRoundAttempt, SessionRound
 from api.views.seeker_auth import require_seeker_jwt
@@ -24,8 +29,20 @@ from api.services.email_service import (
     send_status_update_to_seeker,
 )
 from models.schemas import success_response, error_response
+from api.constants import FALLBACK_COMPANY_NAME
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_announcement_date(date_str):
+    """Parse an announcement date string into a timezone-aware datetime.
+    Shared helper to eliminate repeated inline date parsing."""
+    if not date_str:
+        return None
+    dt = parse_datetime(date_str)
+    if dt and not is_aware(dt):
+        dt = make_aware(dt)
+    return dt
 
 
 def _parse_job_description_meta(description: str) -> dict:
@@ -73,12 +90,12 @@ def _get_salary_range(session) -> str:
     
     if salary_min is not None and salary_max is not None:
         try:
-            return f"{symbol}{int(salary_min):,} - {symbol}{int(salary_max):,}"
+            return f"{symbol}{int(float(salary_min)):,} - {symbol}{int(float(salary_max)):,}"
         except (ValueError, TypeError):
             pass
     elif salary_min is not None:
         try:
-            return f"{symbol}{int(salary_min):,}+"
+            return f"{symbol}{int(float(salary_min)):,}+"
         except (ValueError, TypeError):
             pass
             
@@ -93,7 +110,7 @@ def _session_to_job(session: Session, match_score=None, applied=False, is_saved=
     return {
         "id": str(session.id),
         "job_title": session.job_title,
-        "company_name": session.company.name if session.company else "Vishleshan Partner",
+        "company_name": session.company.name if session.company else FALLBACK_COMPANY_NAME,
         "company_logo_path": session.company.logo_path if session.company else None,
         "job_description": session.job_description[:500] + "..." if len(session.job_description) > 500 else session.job_description,
         "full_description": session.job_description,
@@ -229,7 +246,6 @@ def job_detail(request, session_id):
     if request.method != "GET":
         return JsonResponse(error_response("Method not allowed"), status=405)
 
-    import uuid
     try:
         uuid.UUID(str(session_id))
     except ValueError:
@@ -283,7 +299,6 @@ def apply_job(request, session_id):
     if request.method != "POST":
         return JsonResponse(error_response("Method not allowed"), status=405)
 
-    import uuid
     try:
         uuid.UUID(str(session_id))
     except ValueError:
@@ -297,8 +312,6 @@ def apply_job(request, session_id):
 
         # Enforce free plan limits
         if seeker.tier != "premium":
-            from django.utils import timezone
-            from datetime import timedelta
             thirty_days_ago = timezone.now() - timedelta(days=30)
             app_count = JobApplication.objects.filter(seeker=seeker, applied_at__gte=thirty_days_ago).count()
             if app_count >= 3:
@@ -382,7 +395,7 @@ def apply_job(request, session_id):
         # Send emails (non-blocking — failure won't break apply)
         send_application_received_to_company(
             company_email=session.company.email,
-            company_name=session.company.name if session.company else "Vishleshan Partner",
+            company_name=session.company.name if session.company else FALLBACK_COMPANY_NAME,
             seeker_name=seeker.full_name,
             job_title=session.job_title,
             session_id=session_id,
@@ -391,7 +404,7 @@ def apply_job(request, session_id):
             seeker_email=seeker.email,
             seeker_name=seeker.full_name,
             job_title=session.job_title,
-            company_name=session.company.name if session.company else "Vishleshan Partner",
+            company_name=session.company.name if session.company else FALLBACK_COMPANY_NAME,
         )
 
         return JsonResponse(success_response({
@@ -406,14 +419,6 @@ def apply_job(request, session_id):
 
 
 def release_due_results_for_seeker(seeker):
-    from django.utils import timezone
-    from django.utils.dateparse import parse_datetime
-    from django.utils.timezone import is_aware, make_aware
-    from api.models import JobApplication, Notification
-    from api.services.email_service import send_status_update_to_seeker
-    import logging
-    logger = logging.getLogger(__name__)
-
     apps = JobApplication.objects.filter(seeker=seeker).select_related('session', 'candidate')
     now = timezone.now()
 
@@ -455,10 +460,8 @@ def release_due_results_for_seeker(seeker):
                     if int(r.get("order")) == int(completed_round_order):
                         ann_date = r.get("result_announcement_date")
                         if ann_date:
-                            dt = parse_datetime(ann_date)
+                            dt = _parse_announcement_date(ann_date)
                             if dt:
-                                if not is_aware(dt):
-                                    dt = make_aware(dt)
                                 announcement_time = dt
                         break
                 except (ValueError, TypeError):
@@ -483,7 +486,7 @@ def release_due_results_for_seeker(seeker):
                         seeker=seeker,
                         type='status_updated',
                         title=f'Application Update — {session.job_title}',
-                        message=f'Your application at {session.company.name if session.company else "Vishleshan Partner"} has been updated to: {target_app_status.title()}.',
+                        message=f'Your application at {session.company.name if session.company else FALLBACK_COMPANY_NAME} has been updated to: {target_app_status.title()}.',
                         link=f'/jobs/applications?app_id={app.id}',
                     )
                     
@@ -492,7 +495,7 @@ def release_due_results_for_seeker(seeker):
                         seeker_email=seeker.email,
                         seeker_name=seeker.full_name,
                         job_title=session.job_title,
-                        company_name=session.company.name if session.company else "Vishleshan Partner",
+                        company_name=session.company.name if session.company else FALLBACK_COMPANY_NAME,
                         new_status=target_app_status,
                     )
                     logger.info(f"Released pending result on-the-fly: {target_app_status} for app {app.id}")
@@ -522,17 +525,12 @@ def my_applications(request):
             
             # Find max declared order
             max_declared_order = 0
-            from django.utils.dateparse import parse_datetime
-            from django.utils.timezone import is_aware, make_aware
             for r in sorted_rounds:
                 ann_date = r.get("result_announcement_date")
                 if ann_date:
                     try:
-                        dt = parse_datetime(ann_date)
-                        if dt:
-                            if not is_aware(dt):
-                                dt = make_aware(dt)
-                            if now >= dt:
+                        dt = _parse_announcement_date(ann_date)
+                        if dt and now >= dt:
                                 max_declared_order = int(r.get("order", 1))
                     except Exception:
                         pass
@@ -611,8 +609,6 @@ def my_applications(request):
                         round_number=candidate.current_round_index
                     ).first()
                     if sr and sr.round_type in ["mcq", "coding", "interview"]:
-                        import secrets
-                        from datetime import timedelta
                         token = secrets.token_urlsafe(32)
                         active_attempt, created = ApplicantRoundAttempt.objects.get_or_create(
                             candidate=candidate,
@@ -651,7 +647,7 @@ def my_applications(request):
                 "id": str(app.id),
                 "job_id": str(session.id),
                 "job_title": session.job_title,
-                "company_name": session.company.name if session.company else "Vishleshan Partner",
+                "company_name": session.company.name if session.company else FALLBACK_COMPANY_NAME,
                 "company_logo_path": None,
                 "status": seeker_status,
                 "accepted_terms": app.accepted_terms,
@@ -698,7 +694,7 @@ def accept_offer(request, app_id):
         session.status = "completed"
         session.save(update_fields=["status"])
 
-        return JsonResponse(success_response({"accepted": True, "company_name": app.session.company.name if app.session.company else "Vishleshan Partner"}))
+        return JsonResponse(success_response({"accepted": True, "company_name": app.session.company.name if app.session.company else FALLBACK_COMPANY_NAME}))
     except Exception as e:
         return JsonResponse(error_response(f"Server error: {e}"), status=500)
 
@@ -784,7 +780,7 @@ def save_job(request, session_id):
     if request.method not in ["POST", "DELETE"]:
         return JsonResponse(error_response("Method not allowed"), status=405)
         
-    import uuid
+
     try:
         uuid.UUID(str(session_id))
     except ValueError:

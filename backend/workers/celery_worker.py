@@ -20,14 +20,21 @@ from celery import Celery
 import asyncio
 from pathlib import Path
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import concurrent.futures
 import fitz  # PyMuPDF
 from docx import Document
 import re
 import uuid
+import traceback
+import base64
+import io
+import threading
+import logging
+import secrets
 
 from api.models import Candidate, Session as SessionModel, IngestJob, SkillTaxonomy
+from api.constants import FALLBACK_COMPANY_NAME
 
 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
 if redis_url.startswith("rediss://") and "ssl_cert_reqs" not in redis_url:
@@ -264,7 +271,6 @@ def _parse_resume_sync(file_path: str, skip_llm: bool = False) -> dict:
         }
 
     except Exception as e:
-        import traceback
         traceback.print_exc()
         return {
             "parsed": {"name": Path(file_path).stem, "email": None, "phone": None, "location": "Unknown",
@@ -408,7 +414,6 @@ def process_resume_batch(self, job_id: str, file_paths: list, session_id: str, s
                 if parsed_res.get("parsing_method") == "llm":
                     try:
                         from agents.llm import RotateLLMClient
-                        import json as py_json
                         llm = RotateLLMClient()
                         system_prompt = (
                             "You are an expert technical recruiter analyzing a candidate's fit for a job. "
@@ -427,14 +432,14 @@ def process_resume_batch(self, job_id: str, file_paths: list, session_id: str, s
                             f"Job Description:\n{session_row.job_description[:1000]}\n\n"
                             f"Candidate Name: {new_cand.name}\n"
                             f"Candidate Skills: {', '.join(flat_skills)}\n"
-                            f"Candidate Experience:\n{py_json.dumps(raw_data.get('experience', [])[:3])}\n"
+                            f"Candidate Experience:\n{json.dumps(raw_data.get('experience', [])[:3])}\n"
                         )
                         response_text = llm.generate(prompt, system_prompt)
                         if "```json" in response_text:
                             response_text = response_text.split("```json")[1].split("```")[0]
                         elif "```" in response_text:
                             response_text = response_text.split("```")[1].split("```")[0]
-                        ai_insights = py_json.loads(response_text.strip())
+                        ai_insights = json.loads(response_text.strip())
                         new_cand.match_details["ai_insights"] = ai_insights
                     except Exception as inline_ex:
                         print(f"[Inline LLM] AI Insights pre-computation failed: {inline_ex}")
@@ -471,7 +476,6 @@ def process_resume_batch(self, job_id: str, file_paths: list, session_id: str, s
                 )
 
     except Exception as e:
-        import traceback
         try:
             active_job = IngestJob.objects.get(id=job_id)
             active_job.status = "failed"
@@ -534,7 +538,6 @@ def enrich_candidates_llm(candidate_ids: list):
                 # Pre-generate AI insights after LLM enrichment
                 try:
                     from agents.llm import RotateLLMClient
-                    import json as py_json
                     llm = RotateLLMClient()
                     system_prompt = (
                         "You are an expert technical recruiter analyzing a candidate's fit for a job. "
@@ -553,14 +556,14 @@ def enrich_candidates_llm(candidate_ids: list):
                         f"Job Description:\n{cand.session.job_description[:1000]}\n\n"
                         f"Candidate Name: {cand.name}\n"
                         f"Candidate Skills: {', '.join(flat_skills)}\n"
-                        f"Candidate Experience:\n{py_json.dumps(parsed.get('experience', [])[:3])}\n"
+                        f"Candidate Experience:\n{json.dumps(parsed.get('experience', [])[:3])}\n"
                     )
                     response_text = llm.generate(prompt, system_prompt)
                     if "```json" in response_text:
                         response_text = response_text.split("```json")[1].split("```")[0]
                     elif "```" in response_text:
                         response_text = response_text.split("```")[1].split("```")[0]
-                    ai_insights = py_json.loads(response_text.strip())
+                    ai_insights = json.loads(response_text.strip())
                     
                     cand.refresh_from_db()
                     m_details = cand.match_details or {}
@@ -808,7 +811,6 @@ def sync_google_form_resumes(session_id: str, job_id: str):
             # Pre-generate AI insights for the synced candidate
             try:
                 from agents.llm import RotateLLMClient
-                import json as py_json
                 llm = RotateLLMClient()
                 system_prompt = (
                     "You are an expert technical recruiter analyzing a candidate's fit for a job. "
@@ -833,7 +835,7 @@ def sync_google_form_resumes(session_id: str, job_id: str):
                     response_text = response_text.split("```json")[1].split("```")[0]
                 elif "```" in response_text:
                     response_text = response_text.split("```")[1].split("```")[0]
-                ai_insights = py_json.loads(response_text.strip())
+                ai_insights = json.loads(response_text.strip())
                 cand.match_details["ai_insights"] = ai_insights
                 cand.save()
             except Exception as insights_ex:
@@ -855,16 +857,16 @@ def sync_google_form_resumes(session_id: str, job_id: str):
 
 @celery_app.task(name="match_all_candidates")
 def match_all_candidates(session_id: str, job_id: str):
+    """Re-scores all candidates using the canonical _calculate_match_score.
+    Called when session criteria change (e.g. min_match_score threshold edited).
+    """
+    from api.views.jobs import _calculate_match_score
+
     try:
         session_row = SessionModel.objects.get(id=session_id)
         job = IngestJob.objects.get(id=job_id)
     except (SessionModel.DoesNotExist, IngestJob.DoesNotExist):
         return
-
-    criteria = session_row.criteria or {}
-    min_match_score = criteria.get("min_match_score", 0)
-    required_skills = criteria.get("required_skills", [])
-    req_lower = [r.lower() for r in required_skills]
 
     candidates = Candidate.objects.filter(session_id=session_id)
     total_count = candidates.count()
@@ -875,50 +877,7 @@ def match_all_candidates(session_id: str, job_id: str):
 
     processed_count = 0
     for cand in candidates:
-        norm_skills = cand.normalized_skills or []
-        cand_skill_names = {
-            (s.get("canonical_skill") or s.get("skill") or s.get("raw_skill") or str(s)).lower()
-            if isinstance(s, dict) else str(s).lower()
-            for s in norm_skills if s
-        }
-        matched_list = [r for r in required_skills if any(r.lower() in s for s in cand_skill_names)]
-        missing_list = [r for r in required_skills if r.lower() not in [m.lower() for m in matched_list]]
-        matched = len(matched_list)
-        skill_score = round((matched / len(req_lower)) * 100) if req_lower else 0
-
-        # Experience score
-        min_exp = criteria.get("min_experience", 0)
-        exp_years = float(cand.total_experience_years or 0)
-        experience_score = min(100, round((exp_years / max(min_exp, 1)) * 100)) if min_exp > 0 else 50
-
-        # Location score
-        preferred_locs = criteria.get("preferred_locations", [])
-        cand_location = (cand.location or "").lower()
-        location_score = 100 if not preferred_locs else (100 if any(l.lower() in cand_location for l in preferred_locs) else 30)
-
-        # Weighted overall score
-        weights = criteria.get("weights", {"skills": 0.5, "experience": 0.3, "location": 0.2})
-        score = round(
-            skill_score * weights.get("skills", 0.5) + 
-            experience_score * weights.get("experience", 0.3) + 
-            location_score * weights.get("location", 0.2)
-        )
-        score = min(100, score)
-        cand.match_score = score
-        cand.recommendation = "Strong" if score >= 70 else ("Moderate" if score >= 40 else "Weak")
-        cand.match_details = {
-            "match_score": score,
-            "skill_score": skill_score,
-            "experience_score": experience_score,
-            "location_score": location_score,
-            "matched_skills": matched_list,
-            "missing_skills": missing_list,
-            "matched_count": matched
-        }
-        if min_match_score > 0 and score < min_match_score:
-            cand.status = "rejected"
-        
-        cand.save()
+        _calculate_match_score(cand, session_row)
         processed_count += 1
         job.processed_files = processed_count
         job.save()
@@ -931,25 +890,26 @@ def match_all_candidates(session_id: str, job_id: str):
 def release_round_results(application_id: str, notify_status: str):
     from api.models import JobApplication, Notification
     from api.services.email_service import send_status_update_to_seeker
-    import logging
-    logger = logging.getLogger(__name__)
+    _logger = logging.getLogger(__name__)
 
     try:
-        app = JobApplication.objects.filter(id=application_id).select_related('seeker', 'session').first()
+        app = JobApplication.objects.filter(id=application_id).select_related('seeker', 'session', 'session__company').first()
         if not app:
-            logger.warning(f"release_round_results: Application {application_id} not found")
+            _logger.warning('release_round_results: Application %s not found', application_id)
             return
 
         # Update application status
         app.status = notify_status
         app.save(update_fields=['status'])
 
+        company_name = app.session.company.name if app.session.company else FALLBACK_COMPANY_NAME
+
         # Create in-app notification
         Notification.objects.create(
             seeker=app.seeker,
             type='status_updated',
             title=f'Application Update — {app.session.job_title}',
-            message=f'Your application at {app.session.name} has been updated to: {notify_status.title()}.',
+            message=f'Your application at {company_name} has been updated to: {notify_status.title()}.',
             link=f'/jobs/applications?app_id={app.id}',
         )
 
@@ -958,12 +918,12 @@ def release_round_results(application_id: str, notify_status: str):
             seeker_email=app.seeker.email,
             seeker_name=app.seeker.full_name,
             job_title=app.session.job_title,
-            company_name=app.session.name,
+            company_name=company_name,
             new_status=notify_status,
         )
-        logger.info(f"release_round_results: Released status {notify_status} for app {application_id}")
+        _logger.info('release_round_results: Released status %s for app %s', notify_status, application_id)
     except Exception as e:
-        logger.error(f"release_round_results failed: {e}")
+        _logger.error('release_round_results failed: %s', e)
 
 # Celery app alias
 app = celery_app

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { testAPI } from "../../lib/api";
+import { ASSESSMENT_PORTAL_TITLE } from "../../lib/constants";
 
 export default function TestEntry() {
   const navigate = useNavigate();
@@ -85,7 +86,7 @@ export default function TestEntry() {
           <span className="grid h-12 w-12 mx-auto place-items-center rounded-2xl bg-blue-50 text-blue-600 font-bold text-xl">
             W
           </span>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight text-gray-900">Workly Assessment Portal</h1>
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-gray-900">{ASSESSMENT_PORTAL_TITLE}</h1>
           <p className="mt-1 text-sm text-gray-500">Secure proctored testing environment</p>
         </div>
 

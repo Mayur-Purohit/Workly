@@ -1,15 +1,21 @@
 import json
+import secrets
+from datetime import timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import is_aware, make_aware
 from asgiref.sync import async_to_sync
 
-from api.models import Company, Session, Candidate, IngestJob
+from api.models import Company, Session, Candidate, IngestJob, SessionRound, ApplicantRoundAttempt
 from api.decorators import require_api_key, check_rate_limit
 from models.schemas import success_response, error_response
 from agents.inference_agent import SkillInferenceAgent
+from agents.jd_generator_agent import JobDescriptionGeneratorAgent
 from workers.celery_worker import match_all_candidates
+from api.constants import FALLBACK_COMPANY_NAME
 
 def _verify_session_ownership(session, company):
     if str(session.company_id) != str(company.id):
@@ -28,12 +34,21 @@ def session_root(request):
             if not name or not job_title or not job_description:
                 return JsonResponse(error_response("name, job_title, job_description are required"), status=400)
 
+            now = timezone.now()
             rounds_req = data.get("rounds") or []
             rounds_data = []
             for r in rounds_req:
                 ann_date = r.get("result_announcement_date")
+                if ann_date:
+                    dt = parse_datetime(ann_date)
+                    if dt:
+                        if not is_aware(dt):
+                            dt = make_aware(dt)
+                        if dt < now:
+                            return JsonResponse(error_response(f"Announcement date '{ann_date}' cannot be in the past"), status=400)
                 rounds_data.append({
                     "name": r.get("name"),
+                    "round_type": r.get("round_type") or r.get("type"),
                     "interviewer": r.get("interviewer"),
                     "order": r.get("order"),
                     "result_announcement_date": ann_date if ann_date else None
@@ -184,22 +199,25 @@ def session_detail(request, session_id):
             if "job_description" in data and data["job_description"] is not None:
                 session.job_description = data["job_description"]
             if "rounds" in data and data["rounds"] is not None:
+                now = timezone.now()
                 rounds_data = []
                 for r in data["rounds"]:
                     ann_date = r.get("result_announcement_date")
+                    if ann_date:
+                        dt = parse_datetime(ann_date)
+                        if dt:
+                            if not is_aware(dt):
+                                dt = make_aware(dt)
+                            if dt < now:
+                                return JsonResponse(error_response(f"Announcement date '{ann_date}' cannot be in the past"), status=400)
                     rounds_data.append({
                         "name": r.get("name"),
+                        "round_type": r.get("round_type") or r.get("type"),
                         "interviewer": r.get("interviewer"),
                         "order": r.get("order"),
                         "result_announcement_date": ann_date if ann_date else None
                     })
                 session.rounds = rounds_data
-
-                # Synchronize SessionRound database table to match updated rounds
-                from api.models import SessionRound, ApplicantRoundAttempt
-                import secrets
-                from django.utils import timezone
-                from datetime import timedelta
 
                 # Delete existing rounds
                 SessionRound.objects.filter(session=session).delete()
@@ -207,14 +225,18 @@ def session_detail(request, session_id):
                 # Recreate rounds matching the updated JSONField payload
                 created_rounds = []
                 for idx, r in enumerate(rounds_data):
-                    name = r.get("name")
+                    name = r.get("name") or f"Round {idx+1}"
                     name_lower = name.lower()
                     
-                    rtype = "interview"
-                    if "aptitude" in name_lower or "mcq" in name_lower:
+                    explicit_type = r.get("round_type")
+                    if explicit_type in ["mcq", "coding", "interview"]:
+                        rtype = explicit_type
+                    elif "aptitude" in name_lower or "mcq" in name_lower:
                         rtype = "mcq"
                     elif "coding" in name_lower or "technical" in name_lower or "programming" in name_lower:
                         rtype = "coding"
+                    else:
+                        rtype = "interview"
                     
                     time_limit = 20 if rtype == "mcq" else (45 if rtype == "coding" else 25)
                     coding_problems = []
@@ -432,12 +454,11 @@ def generate_jd(request):
         job_title = data.get("job_title")
         skills = data.get("skills", [])
         experience_years = data.get("experience_years", 3)
-        company_name = request.company.name if request.company else "Our Company"
+        company_name = request.company.name if request.company else FALLBACK_COMPANY_NAME
         
         if not job_title:
             return JsonResponse(error_response("job_title is required"), status=400)
             
-        from agents.jd_generator_agent import JobDescriptionGeneratorAgent
         agent = JobDescriptionGeneratorAgent()
         jd_text = agent.generate_jd(job_title, skills, experience_years, company_name)
         

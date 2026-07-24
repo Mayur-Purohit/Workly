@@ -401,38 +401,70 @@ def public_market_trends(request):
             "time_to_offer": time_to_offer
         }
 
-        # 3. Market Trends Dashboard stats
-        regions = ["Bengaluru", "San Francisco", "Zurich", "London"]
+        # 3. Market Trends Dashboard stats - Dynamic location aggregation from DB
+        STATE_CODES = {
+            "CA", "NY", "TX", "MA", "IL", "WA", "FL", "GA", "NC", "VA", "PA", "OH", "MI", 
+            "AZ", "CO", "UT", "MO", "TN", "OR", "NV", "OK", "CT", "SC", "IN", "WI", "MD", 
+            "KY", "LA", "AL", "IA", "KS", "AR", "MS", "NE", "NM", "WV", "ID", "HI", "NH", 
+            "ME", "MT", "RI", "DE", "SD", "ND", "AK", "VT", "WY", "US", "USA", "INDIA"
+        }
+        NON_CITY_WORDS = {"remote", "hybrid", "onsite", "full time", "contract", "part time", "full-time", "part-time"}
+
+        db_city_counter = Counter()
+        for sess in Session.objects.filter(status="active"):
+            crit = sess.criteria if isinstance(sess.criteria, dict) else {}
+            locs = crit.get("preferred_locations", []) or []
+            if isinstance(locs, str):
+                locs = [locs]
+            
+            for loc in locs:
+                if not loc:
+                    continue
+                # Split comma-separated e.g. "Ahmedabad, Gujarat" or "San Francisco, CA"
+                parts = [p.strip() for p in str(loc).split(",") if p.strip()]
+                for part in parts:
+                    clean_p = part.strip()
+                    if clean_p.upper() in STATE_CODES or clean_p.lower() in NON_CITY_WORDS or len(clean_p) <= 2:
+                        continue
+                    db_city_counter[clean_p.title()] += 1
+
+        color_palette = ["#2563EB", "#0F56B3", "#22C55E", "#8B5CF6", "#EC4899", "#F59E0B", "#10B981"]
         region_distribution = []
-        
-        base_counts = {
-            "Bengaluru": 450,
-            "San Francisco": 380,
-            "Zurich": 180,
-            "London": 240
-        }
-        
-        colors = {
-            "Bengaluru": "#2563EB",
-            "San Francisco": "#0F56B3",
-            "Zurich": "#22C55E",
-            "London": "#8b5cf6"
-        }
 
-        for r in regions:
-            count = Session.objects.filter(status="active").filter(
-                Q(criteria__preferred_locations__icontains=r) |
-                Q(job_description__icontains=r) |
-                Q(job_title__icontains=r)
-            ).count()
-            val = (count if active_sessions_count > 0 else base_counts[r] + count)
-            region_distribution.append({
-                "name": r,
-                "value": val,
-                "color": colors[r]
-            })
+        if db_city_counter:
+            for idx, (city_name, count) in enumerate(db_city_counter.most_common(5)):
+                region_distribution.append({
+                    "name": city_name,
+                    "value": count,
+                    "color": color_palette[idx % len(color_palette)]
+                })
+        else:
+            base_counts = {
+                "Bengaluru": 450,
+                "San Francisco": 380,
+                "Zurich": 180,
+                "London": 240
+            }
+            colors = {
+                "Bengaluru": "#2563EB",
+                "San Francisco": "#0F56B3",
+                "Zurich": "#22C55E",
+                "London": "#8B5CF6"
+            }
+            for r in ["Bengaluru", "San Francisco", "Zurich", "London"]:
+                count = Session.objects.filter(status="active").filter(
+                    Q(criteria__preferred_locations__icontains=r) |
+                    Q(job_description__icontains=r) |
+                    Q(job_title__icontains=r)
+                ).count()
+                val = base_counts[r] + count
+                region_distribution.append({
+                    "name": r,
+                    "value": val,
+                    "color": colors[r]
+                })
 
-        top_region = max(region_distribution, key=lambda x: x["value"])
+        top_region = max(region_distribution, key=lambda x: x["value"]) if region_distribution else {"name": "Bengaluru", "value": 100}
         total_val = sum(x["value"] for x in region_distribution)
         top_hub_pct = round((top_region["value"] / total_val) * 100) if total_val > 0 else 32
 
