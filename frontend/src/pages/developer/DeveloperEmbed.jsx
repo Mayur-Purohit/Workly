@@ -66,27 +66,27 @@ export default function DeveloperEmbed() {
   };
 
   const codeSnippets = (tokenVal) => ({
-    HTML: `<div id="between-panel"></div>
-<script src="https://cdn.between.indevs.in/embed.js"></script>
+    HTML: `<div id="workly-panel"></div>
+<script src="https://cdn.workly.indevs.in/embed.js"></script>
 <script>
-Between.init({
+Workly.init({
   token: "${tokenVal || "YOUR_EMBED_TOKEN"}",
-  container: "#between-panel",
+  container: "#workly-panel",
   theme: "light"
 });
 </script>`,
-    React: `import { BetweenPanel } from '@between/react';
+    React: `import { WorklyPanel } from '@workly/react';
 
 export default function CandidateView() {
   return (
-    <BetweenPanel
+    <WorklyPanel
       token="${tokenVal || "YOUR_EMBED_TOKEN"}"
       theme="light"
     />
   );
 }`,
     Vue: `<template>
-  <BetweenPanel
+  <WorklyPanel
     token="${tokenVal || "YOUR_EMBED_TOKEN"}"
     theme="light"
   />
@@ -120,7 +120,7 @@ import { BetweenPanel } from '@between/vue';
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
            <h1 className="text-3xl font-black text-charcoal">Embed UI</h1>
-           <p className="text-gray-500 font-medium mt-1">Configure your domains to mount Between directly inside your app.</p>
+           <p className="text-gray-500 font-medium mt-1">Configure your domains to mount Workly directly inside your app.</p>
         </div>
       </div>
 
@@ -128,7 +128,7 @@ import { BetweenPanel } from '@between/vue';
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-8 flex items-start gap-4 shadow-sm">
         <Component className="text-amber-500 shrink-0 mt-1" size={24} />
         <div>
-          <h3 className="font-bold text-amber-900 text-lg mb-1">Embed the Between panel directly in your HR platform.</h3>
+          <h3 className="font-bold text-amber-900 text-lg mb-1">Embed the Workly panel directly in your HR platform.</h3>
           <p className="text-amber-800 font-medium text-sm">Your users get AI-powered candidate intelligence without ever leaving your application. Manage access per domain below securely.</p>
         </div>
       </div>

@@ -317,7 +317,7 @@ function DeveloperPricingSection({ plans, isDevLoggedIn, currentTier, navigate }
         order_id: orderData.order_id,
         amount: orderData.amount,
         currency: orderData.currency || "INR",
-        name: "Between Developer API",
+        name: "Workly Developer API",
         description: `Upgrade to ${plan.name} Plan`,
         theme: { color: "#4285F4" },
         handler: async function (response) {
@@ -498,7 +498,7 @@ function DeveloperPricingSection({ plans, isDevLoggedIn, currentTier, navigate }
 /* ═══════════════════ Main Developer Landing Page Component ═══════════════════ */
 export default function DeveloperLandingPage() {
   useDocumentTitle(
-    "Developer Hub - Between API",
+    "Developer Hub - Workly API",
     "Integrate ATS scoring and resume parser APIs into your platform."
   );
   const navigate = useNavigate();
@@ -627,7 +627,7 @@ console.log(data);`,
                 <circle cx="68" cy="32" r="24" fill="white" />
               </svg>
             </div>
-            <span className="font-display text-[22px] text-foreground tracking-tight font-bold">Between</span>
+            <span className="font-display text-[22px] text-foreground tracking-tight font-bold">Workly</span>
             <span className="text-[13px] text-muted-foreground font-medium ml-1">for Developers</span>
           </div>
 
@@ -958,7 +958,7 @@ console.log(data);`,
                   <circle cx="68" cy="32" r="24" fill="white" />
                 </svg>
               </div>
-              <span className="font-display text-lg font-bold tracking-tight text-foreground">Between</span>
+              <span className="font-display text-lg font-bold tracking-tight text-foreground">Workly</span>
             </div>
             <p className="text-xs mt-1">Built for high performance resume parsing & intelligence.</p>
           </div>
@@ -971,7 +971,7 @@ console.log(data);`,
 
           <div className="flex flex-col items-center md:items-end gap-4">
             <SocialTooltip items={socialLinks} className="justify-center md:justify-end" />
-            <div className="text-xs">© {new Date().getFullYear()} Between Developer Hub.</div>
+            <div className="text-xs">© {new Date().getFullYear()} Workly Developer Hub.</div>
           </div>
         </div>
       </footer>

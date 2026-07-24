@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, LogOut, Upload, Briefcase, TrendingUp, FolderGit, Home, Shield, Bell, Sparkles, LayoutDashboard, ChevronDown, Building2 } from 'lucide-react';
+import { User, LogOut, Upload, Briefcase, TrendingUp, FolderGit, Home, Shield, Bell, Sparkles, LayoutDashboard, ChevronDown, Building2, Grid3x3, Code2 } from 'lucide-react';
 import ResumeUploadModal from './ResumeUploadModal';
 
 export default function JobsNavbar({ onUploadClick }) {
@@ -10,8 +10,10 @@ export default function JobsNavbar({ onUploadClick }) {
   const [profile, setProfile] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [appsOpen, setAppsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const toolsDropdownRef = useRef(null);
+  const appsDropdownRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -20,6 +22,9 @@ export default function JobsNavbar({ onUploadClick }) {
       }
       if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(event.target)) {
         setToolsOpen(false);
+      }
+      if (appsDropdownRef.current && !appsDropdownRef.current.contains(event.target)) {
+        setAppsOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -129,16 +134,16 @@ export default function JobsNavbar({ onUploadClick }) {
             </svg>
           </div>
           <span className="font-display text-[22px] text-foreground tracking-tight font-semibold">
-            Between
+            Workly
           </span>
         </Link>
 
         {/* Links */}
         <div className="hidden md:flex items-center space-x-2 xl:space-x-4 lg:space-x-3">
           <Link
-            to="/"
+            to="/jobs"
             className={`flex items-center space-x-1.5 px-2.5 lg:px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-              isActive('/')
+              isActive('/jobs')
                 ? 'text-[#111111] bg-gray-100 font-semibold'
                 : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
             }`}
@@ -149,9 +154,9 @@ export default function JobsNavbar({ onUploadClick }) {
 
           {isSeekerLoggedIn && (
             <Link
-              to="/jobs"
+              to="/jobs/dashboard"
               className={`flex items-center space-x-1.5 px-2.5 lg:px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                isActive('/jobs')
+                isActive('/jobs/dashboard')
                   ? 'text-[#111111] bg-gray-100 font-semibold'
                   : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
               }`}
@@ -274,7 +279,66 @@ export default function JobsNavbar({ onUploadClick }) {
       </div>
 
       {/* Action buttons */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-3">
+        {/* 9-Dots App Switcher */}
+        <div className="relative" ref={appsDropdownRef}>
+          <button
+            onClick={() => setAppsOpen(!appsOpen)}
+            title="Switch Platform"
+            aria-label="Switch Platform"
+            className="w-9 h-9 rounded-full hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center text-foreground transition-all duration-200"
+          >
+            <Grid3x3 size={18} />
+          </button>
+          {appsOpen && (
+            <div className="absolute right-0 mt-2 w-60 rounded-2xl p-2 z-50 flex flex-col gap-1 skeuo-dropdown-panel bg-white/95 dark:bg-zinc-950/95 border border-gray-200 dark:border-zinc-800 shadow-2xl backdrop-blur-md">
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-zinc-500">Switch Platform</div>
+              <Link
+                to="/"
+                onClick={() => setAppsOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-charcoal dark:text-zinc-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Building2 size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-charcoal dark:text-white">Workly Recruiter</div>
+                  <div className="text-[10px] text-gray-400 dark:text-zinc-400 truncate">Company & Hiring Platform</div>
+                </div>
+              </Link>
+              <Link
+                to="/jobs"
+                onClick={() => setAppsOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-charcoal dark:text-zinc-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <Briefcase size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-charcoal dark:text-white flex items-center gap-1.5">
+                    Workly Jobs
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  </div>
+                  <div className="text-[10px] text-gray-400 dark:text-zinc-400 truncate">Job Seeker Portal</div>
+                </div>
+              </Link>
+              <Link
+                to="/developer"
+                onClick={() => setAppsOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-charcoal dark:text-zinc-200 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-all group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                  <Code2 size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-charcoal dark:text-white">Workly Developer</div>
+                  <div className="text-[10px] text-gray-400 dark:text-zinc-400 truncate">APIs & Integrations</div>
+                </div>
+              </Link>
+            </div>
+          )}
+        </div>
+
         {profile ? (
           <div className="relative" ref={dropdownRef}>
             <button

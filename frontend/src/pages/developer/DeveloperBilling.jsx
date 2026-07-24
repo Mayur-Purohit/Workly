@@ -114,7 +114,7 @@ export default function DeveloperBilling() {
         order_id: orderData.order_id,
         amount: orderData.amount,
         currency: orderData.currency || "INR",
-        name: "Between Developer API",
+        name: "Workly Developer API",
         description: `Upgrade to ${plans.find(p=>p.id===planId)?.name || planId} Plan`,
         theme: { color: "#4285F4" },
         handler: async function(response) {

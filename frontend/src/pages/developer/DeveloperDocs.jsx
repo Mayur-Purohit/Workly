@@ -300,7 +300,7 @@ export default function DeveloperDocs() {
           <section id="getting-started" className="mb-16 pt-8">
             <h1 className="text-4xl font-black text-charcoal dark:text-zinc-100 mb-4">Getting Started</h1>
             <p className="text-gray-600 font-medium mb-6 leading-relaxed">
-              Welcome to the Between Developer API. Our REST API allows you to programmatically ingest resumes, match candidate skills to job descriptions, interact with our AI-powered candidate querying chatbot, and stream structural entity extraction securely into your HR infrastructure.
+              Welcome to the Workly Developer API. Our REST API allows you to programmatically ingest resumes, match candidate skills to job descriptions, interact with our AI-powered candidate querying chatbot, and stream structural entity extraction securely into your HR infrastructure.
             </p>
             <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 mb-6">
               <h3 className="font-bold text-charcoal mb-4">Quick Start</h3>
@@ -725,7 +725,7 @@ export default function DeveloperDocs() {
           <section id="webhooks" className="mb-16 pt-8 border-t border-gray-200">
             <h2 className="text-3xl font-black text-charcoal mb-4">Webhooks</h2>
             <p className="text-gray-600 font-medium mb-6 leading-relaxed">
-              Between sends webhook events to notify your application when async tasks complete. Register your endpoint URL in the developer portal or pass <code className="bg-gray-100 rounded px-1">webhook_url</code> inline with any request.
+              Workly sends webhook events to notify your application when async tasks complete. Register your endpoint URL in the developer portal or pass <code className="bg-gray-100 rounded px-1">webhook_url</code> inline with any request.
             </p>
             <h4 className="font-bold text-charcoal text-sm uppercase mb-3 text-gray-400">Event Types</h4>
             <div className="overflow-x-auto mb-6 border border-gray-200 rounded-xl">
@@ -759,13 +759,13 @@ export default function DeveloperDocs() {
 }`}
             </SyntaxHighlighter>
             <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800 font-semibold">
-              <strong>Signature Verification:</strong> Each webhook includes a <code>X-Between-Signature</code> header. Verify it using your webhook secret to ensure authenticity.
+              <strong>Signature Verification:</strong> Each webhook includes a <code>X-Workly-Signature</code> header. Verify it using your webhook secret to ensure authenticity.
             </div>
           </section>
 <section id="rate-limits" className="mb-16 pt-8 border-t border-gray-200">
             <h2 className="text-3xl font-black text-charcoal mb-4">Rate Limits & Errors</h2>
             <p className="text-gray-600 font-medium mb-6 leading-relaxed">
-              Between uses standard HTTP response codes to indicate the success or failure of an API request.
+              Workly uses standard HTTP response codes to indicate the success or failure of an API request.
             </p>
             
             <h4 className="font-bold text-charcoal text-sm uppercase mb-3 text-gray-400">Plan Quotas</h4>
@@ -838,7 +838,7 @@ export default function DeveloperDocs() {
           <section id="sdks" className="mb-16 pt-8 border-t border-gray-200">
             <h2 className="text-3xl font-black text-charcoal mb-4">SDKs &amp; Examples</h2>
             <p className="text-gray-600 font-medium mb-6 leading-relaxed">
-              Official client libraries and code examples to help you integrate Between into your stack quickly.
+              Official client libraries and code examples to help you integrate Workly into your stack quickly.
             </p>
             <div className="grid md:grid-cols-3 gap-4 mb-8">
               {sdksData.map(sdk => (

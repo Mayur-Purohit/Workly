@@ -13,7 +13,7 @@ const DEVELOPER_TOUR_STEPS = [
   {
     id: 'welcome',
     title: 'Welcome to the Dev Portal',
-    content: 'Build powerful recruitment tools using the Between API. Take a quick tour to explore what you can do here.',
+    content: 'Build powerful recruitment tools using the Workly API. Take a quick tour to explore what you can do here.',
     icon: Code,
     target: null,
   },
@@ -28,7 +28,7 @@ const DEVELOPER_TOUR_STEPS = [
   {
     id: 'keys',
     title: 'API Keys',
-    content: 'Generate and manage your API keys. Use them to authenticate all API calls to Between.',
+    content: 'Generate and manage your API keys. Use them to authenticate all API calls to Workly.',
     icon: Key,
     target: '[data-tour="dev-nav-keys"]',
     placement: 'right',
@@ -145,7 +145,7 @@ export default function DeveloperPortalLayout() {
             </svg>
           </div>
           <span className="font-display text-[22px] text-foreground tracking-tight font-semibold">
-            Between
+            Workly
           </span>
           <span className="text-muted-foreground text-sm hidden sm:inline ml-1 font-medium">Developer Portal</span>
         </div>

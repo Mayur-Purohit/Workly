@@ -707,7 +707,7 @@ function BentoFeatures() {
                   <h3 className="font-display text-xl font-semibold tracking-tight text-foreground">Six-Source Resume Intake</h3>
                   <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                     The only platform combining direct upload, ZIP batch, Gmail sync, Google Drive, Google Forms, and ATS import
-                    into one normalized pipeline. Candidates arrive from everywhere — Between unifies them.
+                    into one normalized pipeline. Candidates arrive from everywhere — Workly unifies them.
                   </p>
                 </div>
               </div>
@@ -754,7 +754,7 @@ function IngestShowcase({ onNavigateDev }) {
             Every channel your candidates use
           </h2>
           <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-            No competitor combines Gmail sync, Google Drive sync, Google Form intake, and ATS import in one platform. Pipe resumes in from six sources — Between normalizes them into one clean session.
+            No competitor combines Gmail sync, Google Drive sync, Google Form intake, and ATS import in one platform. Pipe resumes in from six sources — Workly normalizes them into one clean session.
           </p>
           <button onClick={onNavigateDev} className="pill rounded-full mt-6 cursor-pointer inline-flex items-center gap-2 border border-border bg-background px-6 py-2.5 text-sm font-medium hover:bg-muted shadow-sm transition-all">
             See ingest docs <ArrowRight className="w-4 h-4" />
@@ -965,7 +965,7 @@ function PricingSection({ onStart, plans }) {
         order_id: orderData.order_id,
         amount: orderData.amount,
         currency: orderData.currency || "INR",
-        name: "Between AI",
+        name: "Workly AI",
         description: `Upgrade to ${plan.name}`,
         theme: { color: "#4285F4" },
         handler: async function (response) {
@@ -1149,8 +1149,8 @@ function MagneticButton({ onClick }) {
 
 function FinalCTA({ onStart, companiesCount }) {
   const label = companiesCount > 0
-    ? `Join ${companiesCount.toLocaleString()}+ recruiting teams using Between to screen candidates faster, with fraud detection and semantic matching built in.`
-    : 'Join recruiting teams worldwide using Between to screen candidates faster, with fraud detection and semantic matching built in.';
+    ? `Join ${companiesCount.toLocaleString()}+ recruiting teams using Workly to screen candidates faster, with fraud detection and semantic matching built in.`
+    : 'Join recruiting teams worldwide using Workly to screen candidates faster, with fraud detection and semantic matching built in.';
   return (
     <motion.section className="mx-auto w-full max-w-7xl px-6 my-16"
       initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={fadeInUpVariants}>
@@ -1171,8 +1171,8 @@ function FinalCTA({ onStart, companiesCount }) {
 /* ═══════════════════ Main Landing Page Component ═══════════════════ */
 export default function LandingPage() {
   useDocumentTitle(
-    "AI Resume Parsing & Intelligent Recruiter Screening | Between",
-    "Between is a next-generation resume intelligence platform that automates candidate matching, ATS scoring, and background verification."
+    "AI Resume Parsing & Intelligent Recruiter Screening | Workly",
+    "Workly is a next-generation resume intelligence platform that automates candidate matching, ATS scoring, and background verification."
   );
 
   const navigate = useNavigate();

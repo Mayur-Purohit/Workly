@@ -116,8 +116,9 @@ DATABASES = {
     'default': db_config
 }
 
-# Use PostgreSQL engine
-DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql'
+# Use PostgreSQL engine if URL is postgresql
+if 'postgresql' in SYNC_DATABASE_URL:
+    DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql'
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
@@ -132,14 +133,18 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS Config
-CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
-allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "")
-if allowed_origins_str:
-    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in allowed_origins_str.split(",") if origin.strip()]
+if DEBUG:
+    # Local development: allow all origins to avoid port/hostname CORS mismatches
+    CORS_ALLOW_ALL_ORIGINS = True
 else:
-    CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:3000", "https://between.indevs.in"]
+    CORS_ALLOW_ALL_ORIGINS = False
+    allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "")
+    if allowed_origins_str:
+        CORS_ALLOWED_ORIGINS = [origin.strip() for origin in allowed_origins_str.split(",") if origin.strip()]
+    else:
+        CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:3000", "https://between.indevs.in"]
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -171,6 +176,10 @@ ANYMAIL = {
     "BREVO_API_KEY": os.getenv("BREVO_API_KEY"),
 }
 
-EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+if ANYMAIL["BREVO_API_KEY"]:
+    EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
 DEFAULT_FROM_EMAIL = os.getenv("MAIL_FROM", "noreply@vishleshan.ai")
 

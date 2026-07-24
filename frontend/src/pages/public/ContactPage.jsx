@@ -55,7 +55,7 @@ export default function ContactPage() {
             <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl p-7 space-y-6 overflow-hidden">
               <div>
                 <h3 className="text-xs font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-1">Entity Details</h3>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Between Technologies Private Limited</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">Workly Technologies Private Limited</p>
               </div>
 
               <div className="space-y-4">

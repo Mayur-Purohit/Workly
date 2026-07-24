@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Briefcase, Search, Building2, User, LayoutDashboard, LogOut, Shield, TrendingUp, FileText, HelpCircle, Sparkles, Home, BarChart3, ChevronRight, ChevronDown, Info, Heart } from "lucide-react";
+import { Briefcase, Search, Building2, User, LayoutDashboard, LogOut, Shield, TrendingUp, FileText, HelpCircle, Sparkles, Home, BarChart3, ChevronRight, ChevronDown, Info, Heart, Grid3x3, Code2 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { OnboardingTour, useTour } from "../OnboardingTour";
 import { SocialTooltip } from "../ui/social-media";
@@ -10,7 +10,7 @@ import { seekerAPI, API_HOST } from "../../lib/api";
 const SEEKER_TOUR_STEPS = [
   {
     id: 'welcome',
-    title: 'Welcome to Between',
+    title: 'Welcome to Workly',
     content: 'A calmer, AI-powered job search experience. Take a quick tour to get started and make the most of every feature.',
     icon: Sparkles,
     target: null,
@@ -58,7 +58,7 @@ const SEEKER_TOUR_STEPS = [
 ];
 
 const links = [
-  { to: "/", label: "Home", icon: LayoutDashboard },
+  { to: "/jobs", label: "Home", icon: Home },
   { to: "/jobs/search", label: "Find Jobs", icon: Search },
   { to: "/jobs/companies", label: "Companies", icon: Building2 },
   { to: "/jobs/following", label: "Following", icon: Heart },
@@ -132,12 +132,17 @@ export function Header() {
   };
 
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [appsOpen, setAppsOpen] = useState(false);
   const toolsDropdownRef = useRef(null);
+  const appsDropdownRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(event.target)) {
         setToolsOpen(false);
+      }
+      if (appsDropdownRef.current && !appsDropdownRef.current.contains(event.target)) {
+        setAppsOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -161,7 +166,7 @@ export function Header() {
     return true;
   });
 
-  const filteredPrimary = filteredLinks.filter(l => l.to === "/" || l.to === "/jobs/search" || l.to === "/jobs/applications");
+  const filteredPrimary = filteredLinks.filter(l => l.to === "/jobs" || l.to === "/jobs/search" || l.to === "/jobs/applications");
   const filteredTools = filteredLinks.filter(l => l.to === "/resume-builder" || l.to === "/jobs/safety-checker" || l.to === "/jobs/trends" || l.to === "/jobs/companies" || l.to === "/jobs/following" || l.to === "/jobs/mock-interview");
 
   return (
@@ -189,7 +194,7 @@ export function Header() {
             </svg>
           </div>
           <span className="font-display text-[22px] text-foreground tracking-tight font-semibold">
-            Between
+            Workly
           </span>
         </Link>
 
@@ -275,6 +280,65 @@ export function Header() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* 9-Dots App Switcher */}
+          <div className="relative" ref={appsDropdownRef}>
+            <button
+              onClick={() => setAppsOpen(!appsOpen)}
+              title="Switch Platform"
+              aria-label="Switch Platform"
+              className="pill p-2 text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center transition shrink-0"
+            >
+              <Grid3x3 className="h-4 w-4" />
+            </button>
+            {appsOpen && (
+              <div className="absolute right-0 mt-2 w-60 rounded-2xl p-2 z-50 flex flex-col gap-1 skeuo-dropdown-panel bg-background/95 border border-border shadow-2xl backdrop-blur-md">
+                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Switch Platform</div>
+                <Link
+                  to="/"
+                  onClick={() => setAppsOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-foreground hover:bg-muted transition-all group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                    <Building2 size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-foreground">Workly Recruiter</div>
+                    <div className="text-[10px] text-muted-foreground truncate">Company & Hiring Platform</div>
+                  </div>
+                </Link>
+                <Link
+                  to="/jobs"
+                  onClick={() => setAppsOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-foreground hover:bg-muted transition-all group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                    <Briefcase size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-foreground flex items-center gap-1.5">
+                      Workly Jobs
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground truncate">Job Seeker Portal</div>
+                  </div>
+                </Link>
+                <Link
+                  to="/developer"
+                  onClick={() => setAppsOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-foreground hover:bg-muted transition-all group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+                    <Code2 size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-foreground">Workly Developer</div>
+                    <div className="text-[10px] text-muted-foreground truncate">APIs & Integrations</div>
+                  </div>
+                </Link>
+              </div>
+            )}
+          </div>
+
           <ThemeToggle />
           {isLoggedIn && (
             <button
@@ -298,23 +362,27 @@ export function Header() {
               </Link>
               <div className="flex items-center gap-2">
                 <NotificationBell />
-                <Link
-                  to="/jobs/profile"
-                  className="flex items-center justify-center h-10 w-10 rounded-full bg-accent/10 text-accent hover:bg-accent/20 transition shrink-0"
-                  aria-label="Profile"
-                >
-                  {seekerData?.avatar_url ? (
+                {seekerData?.avatar_url ? (
+                  <Link
+                    to="/jobs/profile"
+                    className="flex items-center justify-center h-10 w-10 rounded-full border border-accent/20 bg-muted overflow-hidden transition shrink-0 hover:opacity-90"
+                    aria-label="Profile"
+                  >
                     <img
                       src={seekerData.avatar_url.startsWith('http') ? seekerData.avatar_url : `${API_HOST}${seekerData.avatar_url}`}
                       alt={seekerData.full_name}
-                      className="h-8 w-8 rounded-full object-cover border border-accent/20 bg-muted"
+                      className="h-full w-full object-cover"
                     />
-                  ) : (
-                    <div className="grid h-8 w-8 place-items-center rounded-full bg-accent text-xs font-bold text-white uppercase">
-                      {getSeekerInitial(seekerData?.full_name)}
-                    </div>
-                  )}
-                </Link>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/jobs/profile"
+                    className="flex items-center justify-center h-10 w-10 rounded-full bg-[#1a73e8] text-white font-extrabold text-sm uppercase transition shrink-0 hover:bg-[#155cb0] shadow-sm"
+                    aria-label="Profile"
+                  >
+                    {getSeekerInitial(seekerData?.full_name)}
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
                   className="pill p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
@@ -463,7 +531,7 @@ export function Footer() {
                 ? "text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-600" 
                 : "text-foreground"
             }`}>
-              Between
+              Workly
             </span>
           </Link>
           <p className="text-sm text-muted-foreground leading-relaxed">
@@ -514,7 +582,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground relative z-10 bg-background/80 backdrop-blur-sm">
-        © 2026 Between · Designed with care
+        © 2026 Workly · Designed with care
       </div>
     </footer>
   );

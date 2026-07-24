@@ -64,7 +64,7 @@ export default function JobSeekerRegisterPage() {
       setAuth(data);
       localStorage.setItem('vish_seeker_token', data.seeker_token);
       localStorage.setItem('vish_seeker_data', JSON.stringify(data.seeker));
-      toast.success('Account created! Welcome to Between!');
+      toast.success('Account created! Welcome to Workly!');
       navigate('/jobs/dashboard');
     } catch (err) {
       toast.error(err.message || 'Registration failed');

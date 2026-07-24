@@ -531,7 +531,7 @@ const AuthPage = ({ isLogin: initialIsLogin = true }) => {
           seekerAuth.setAuth(data);
           localStorage.setItem('vish_seeker_token', data.seeker_token);
           localStorage.setItem('vish_seeker_data', JSON.stringify(data.seeker));
-          toast.success('Account created! Welcome to Between!');
+          toast.success('Account created! Welcome to Workly!');
           navigate('/jobs/dashboard');
         }
       }
@@ -658,7 +658,7 @@ const AuthPage = ({ isLogin: initialIsLogin = true }) => {
         )}
 
         <div className="auth-header" style={{ transform: "translateZ(50px)" }}>
-          <span className="auth-logo">Between</span>
+          <span className="auth-logo">Workly</span>
           <h2 className="auth-title">
             {isLogin ? 'Sign In' : 'Create Account'}
           </h2>
@@ -1293,7 +1293,7 @@ const AuthPage = ({ isLogin: initialIsLogin = true }) => {
         {/* Footer Actions (Only visible in Step 1) */}
         {step === 1 && (
           <div className="auth-footer" style={{ transform: "translateZ(10px)" }}>
-            {isLogin ? "New to Between?" : "Have an account?"}
+            {isLogin ? "New to Workly?" : "Have an account?"}
             <button 
               className="auth-toggle-link" 
               onClick={() => {
