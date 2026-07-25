@@ -1257,18 +1257,17 @@ export default function LandingPage() {
           pointer-events: none;
         }
 
-        /* Semi-transparent section layers to allow background video visibility */
+        /* Solid card backgrounds so rainbow gradient only shows as a border and glow */
         section {
           background-color: transparent !important;
         }
         .bg-card, .bg-surface {
-          backdrop-filter: blur(12px);
-          background-color: rgba(255, 255, 255, 0.45) !important;
-          border-color: rgba(228, 228, 231, 0.5) !important;
+          background-color: #ffffff !important;
+          border-color: rgba(228, 228, 231, 0.8) !important;
         }
         .dark .bg-card, .dark .bg-surface {
-          background-color: rgba(23, 21, 31, 0.45) !important;
-          border-color: rgba(63, 63, 70, 0.4) !important;
+          background-color: #121214 !important;
+          border-color: rgba(63, 63, 70, 0.8) !important;
         }
 
         /* Rainbow borders and reflection animations for cards */
