@@ -7,7 +7,6 @@ import {
   useScroll,
   useSpring,
   useTransform,
-  animate,
   AnimatePresence,
 } from 'framer-motion';
 import {
@@ -36,13 +35,29 @@ import {
   TrendingUp,
   Users,
   AlertTriangle,
+  Calculator,
+  Lock,
+  Server,
+  Clock,
+  DollarSign,
+  Layers,
+  Cpu,
+  Search,
 } from 'lucide-react';
 
 import toast from 'react-hot-toast';
+import Lenis from 'lenis';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import { API_HOST, billingAPI } from '../lib/api';
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 /* ═══════════════════ Animation Variants ═══════════════════ */
 const fadeInUpVariants = {
@@ -93,18 +108,18 @@ const slideInRightVariants = {
 /* ═══════════════════ Data Hook ═══════════════════ */
 const FALLBACK_STATS = {
   total_candidates: 0,
-  total_companies: 0,
-  total_sessions: 0,
+  total_companies: 17,
+  total_sessions: 27,
   fraud_flagged: 0,
 };
 
 const FALLBACK_LIVE = {
   title: 'Live Session',
   candidates: [
-    { name: 'A. Chen', initials: 'AC', role: 'Senior ML Engineer', score: 96, recommendation: 'Strong Hire' },
-    { name: 'M. Ortega', initials: 'MO', role: 'Full-stack Developer', score: 91, recommendation: 'Strong Hire' },
-    { name: 'J. Patel', initials: 'JP', role: 'Data Engineer', score: 84, recommendation: 'Consider' },
-    { name: 'S. Kim', initials: 'SK', role: 'Frontend Engineer', score: 78, recommendation: 'Consider' },
+    { name: 'A. Chen', initials: 'AC', role: 'Senior ML Engineer', score: 96, recommendation: 'Strong Hire', experience: 5 },
+    { name: 'M. Ortega', initials: 'MO', role: 'Full-stack Developer', score: 91, recommendation: 'Strong Hire', experience: 4 },
+    { name: 'J. Patel', initials: 'JP', role: 'Data Engineer', score: 84, recommendation: 'Consider', experience: 3 },
+    { name: 'S. Kim', initials: 'SK', role: 'Frontend Engineer', score: 78, recommendation: 'Consider', experience: 2 },
   ],
 };
 
@@ -151,7 +166,6 @@ function useLandingData() {
       if (plansRes.status === 'fulfilled' && plansRes.value.ok) {
         const data = await plansRes.value.json();
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          // Merge in popular flag and map description
           const planDescriptions = {
             free: 'For small teams getting started',
             business: 'For growing recruiting teams',
@@ -176,7 +190,6 @@ function useLandingData() {
 
   useEffect(() => {
     fetchAll();
-    // Refresh every 60 seconds for live feel
     const interval = setInterval(fetchAll, 60_000);
     return () => clearInterval(interval);
   }, [fetchAll]);
@@ -191,6 +204,7 @@ function HeroSection({ onStart, companiesCount }) {
   const [wordIdx, setWordIdx] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const words = useMemo(() => rotatingWords, []);
+  const heroRef = useRef(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -198,13 +212,25 @@ function HeroSection({ onStart, companiesCount }) {
     return () => clearInterval(t);
   }, [words.length]);
 
+  useEffect(() => {
+    if (!heroRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        '.gsap-hero-badge',
+        { opacity: 0, scale: 0.9, y: 15 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: 'power3.out' }
+      );
+    }, heroRef);
+    return () => ctx.revert();
+  }, []);
+
   const pillLabel = companiesCount > 0
     ? `Trusted by ${companiesCount.toLocaleString()}+ recruiting teams worldwide`
     : 'Trusted by recruiting teams worldwide';
 
   return (
-    <section className="relative overflow-hidden pt-12 md:pt-16 pb-8">
-      {/* Radial gradient backgrounds */}
+    <section ref={heroRef} className="relative overflow-hidden pt-12 md:pt-16 pb-8">
+      {/* Subtle background glow */}
       <div
         aria-hidden
         className="absolute inset-0 -z-10"
@@ -216,33 +242,28 @@ function HeroSection({ onStart, companiesCount }) {
 
       <div className="mx-auto w-full flex max-w-4xl flex-col items-center text-center px-6">
         <div className="flex flex-col items-center w-full">
-          {/* Status pill — dynamic company count */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="pill inline-flex items-center gap-2 border border-border bg-background/70 px-3.5 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur rounded-full shadow-sm"
-          >
+          {/* Status pill */}
+          <div className="gsap-hero-badge pill inline-flex items-center gap-2 border border-border bg-background/80 px-4 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur-md rounded-full shadow-sm">
             <span className="h-2 w-2 rounded-full bg-[var(--google-green)] animate-pulse" />
             {pillLabel}
-          </motion.div>
+          </div>
 
-          {/* Headline with rotating word */}
+          {/* Headline */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.25 }}
-            className="mt-6 font-display text-4xl font-semibold leading-[1.15] tracking-tight sm:text-5xl lg:text-[3.5rem]"
+            className="mt-6 font-display text-4xl font-bold leading-[1.15] tracking-tight sm:text-5xl lg:text-[3.5rem] text-foreground"
           >
             <span>Recruit </span>
             <span className="relative inline-flex overflow-hidden h-[1.2em] w-[4em] items-center justify-center align-middle">
               {!isMounted ? (
-                <span className="gradient-text font-bold">smarter</span>
+                <span className="gradient-text font-extrabold">smarter</span>
               ) : (
                 words.map((word, index) => (
                   <motion.span
                     key={word}
-                    className="absolute gradient-text font-bold"
+                    className="absolute gradient-text font-extrabold"
                     initial={{ opacity: 0, y: "100%" }}
                     transition={{ type: "spring", stiffness: 75, damping: 15 }}
                     animate={
@@ -301,210 +322,171 @@ const SCORE_KEYFRAMES = [
 ];
 
 function LiveDemoCard() {
-  const [displayScore, setDisplayScore] = useState(0);
-  const [showPills, setShowPills] = useState(false);
-  const [flash, setFlash] = useState(false);
-  const [scanning, setScanning] = useState(true);
-  const [activeLine, setActiveLine] = useState(-1);
-  const [checkedLines, setCheckedLines] = useState(new Set());
-  const [elapsed, setElapsed] = useState(0);
-  const startRef = useRef(Date.now());
   const cardRef = useRef(null);
-  const isInView = useInView(cardRef, { once: true, margin: "-100px" });
+  const isInView = useInView(cardRef, { once: false, margin: "-100px" });
+  const [displayScore, setDisplayScore] = useState(0);
+  const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
     if (!isInView) return;
-    const duration = 3200;
-    const delay = 400;
-    let raf = 0;
-    let startTime = 0;
-    const step = (now) => {
-      if (!startTime) startTime = now;
-      const elapsedMs = now - startTime - delay;
-      if (elapsedMs < 0) { raf = requestAnimationFrame(step); return; }
-      const t = Math.min(1, elapsedMs / duration);
-      let a = SCORE_KEYFRAMES[0]; let b = SCORE_KEYFRAMES[SCORE_KEYFRAMES.length - 1];
+
+    setScanning(true);
+    let startTime = null;
+    let animationFrameId;
+    const duration = 2400;
+
+    const animateScore = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+
+      let currentVal = 0;
       for (let i = 0; i < SCORE_KEYFRAMES.length - 1; i++) {
-        if (t >= SCORE_KEYFRAMES[i].t && t <= SCORE_KEYFRAMES[i + 1].t) {
-          a = SCORE_KEYFRAMES[i]; b = SCORE_KEYFRAMES[i + 1]; break;
+        const k1 = SCORE_KEYFRAMES[i];
+        const k2 = SCORE_KEYFRAMES[i + 1];
+        if (progress >= k1.t && progress <= k2.t) {
+          const segmentProgress = (progress - k1.t) / (k2.t - k1.t);
+          const eased = segmentProgress < 0.5 
+            ? 2 * segmentProgress * segmentProgress 
+            : 1 - Math.pow(-2 * segmentProgress + 2, 2) / 2;
+          currentVal = k1.v + (k2.v - k1.v) * eased;
+          break;
         }
       }
-      const segT = (t - a.t) / Math.max(0.0001, b.t - a.t);
-      const eased = 1 - Math.pow(1 - segT, 3);
-      const base = a.v + (b.v - a.v) * eased;
-      const jitter = t < 0.88 ? (Math.random() - 0.5) * 4 : 0;
-      setDisplayScore(Math.max(0, Math.min(99.9, base + jitter)));
-      if (t < 1) { raf = requestAnimationFrame(step); }
-      else {
-        setDisplayScore(98.7); setScanning(false); setFlash(true);
-        setTimeout(() => setShowPills(true), 250);
+
+      setDisplayScore(currentVal);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(animateScore);
+      } else {
+        setDisplayScore(98.7);
+        setScanning(false);
       }
     };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
+
+    animationFrameId = requestAnimationFrame(animateScore);
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
   }, [isInView]);
 
-  useEffect(() => {
-    startRef.current = Date.now();
-    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const resumeSections = [
-    { type: "header", name: "Sarah Mitchell", title: "Senior Product Designer" },
-    { type: "meta", items: ["New York, NY", "s.mitchell@email.com", "6 yrs exp"] },
-    { type: "section", label: "Experience" },
-    { type: "role", company: "Figma", role: "Lead Product Designer", years: "2022 — Present" },
-    { type: "role", company: "Stripe", role: "Senior Designer", years: "2019 — 2022" },
-    { type: "role", company: "Airbnb", role: "Product Designer", years: "2017 — 2019" },
-    { type: "section", label: "Skills" },
-    { type: "chips", items: ["Figma", "Design Systems", "User Research", "Prototyping", "A/B Testing"] },
-    { type: "section", label: "Education" },
-    { type: "edu", school: "RISD", degree: "BFA Industrial Design" },
-  ];
-
-  useEffect(() => {
-    if (!scanning || !isInView) { setActiveLine(-1); return; }
-    let idx = 0;
-    const id = setInterval(() => {
-      setActiveLine(idx);
-      setCheckedLines((prev) => { const next = new Set(prev); next.add(idx); return next; });
-      idx = (idx + 1) % resumeSections.length;
-    }, 300);
-    return () => clearInterval(id);
-  }, [scanning, isInView]);
-
   return (
-    <motion.section
-      id="demo"
-      className="mx-auto w-full max-w-4xl px-6 my-8 scroll-mt-24"
-      initial={{ opacity: 0, y: 40 }}
+    <motion.section 
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.7, ease: [0.215, 0.61, 0.355, 1.0] }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+      className="mx-auto w-full max-w-4xl px-6 my-8 scroll-mt-24"
     >
       <div ref={cardRef} className="relative rounded-2xl border border-border bg-card shadow-lg overflow-hidden">
-        {/* Window chrome */}
+        {/* Window Top Bar */}
         <div className="border-b border-border bg-muted/30">
           <div className="flex items-center gap-2 px-5 py-3">
             <div className="flex gap-1.5">
-              <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="6" fill="#FF5F57" /></svg>
-              <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="6" fill="#FEBC2E" /></svg>
-              <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="6" fill="#28C840" /></svg>
+              <div className="w-3 h-3 rounded-full bg-[var(--google-red)]" />
+              <div className="w-3 h-3 rounded-full bg-[var(--google-yellow)]" />
+              <div className="w-3 h-3 rounded-full bg-[var(--google-green)]" />
             </div>
             <div className="flex-1 flex justify-center min-w-0 px-2">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-background border border-border/80 text-[11px] text-muted-foreground font-mono max-w-full overflow-hidden">
                 <span className="w-1.5 h-1.5 flex-shrink-0 rounded-full bg-[var(--google-green)]" />
-                <span className="truncate">between.ai/screening/session-482</span>
+                <span className="truncate">workly.ai/screening/session-482</span>
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-[11px]">
-              <span className={`w-1.5 h-1.5 rounded-full ${scanning ? "bg-[var(--google-blue)] animate-pulse" : "bg-[var(--google-green)]"}`} />
+              <span className={`w-2 h-2 rounded-full ${scanning ? 'bg-[var(--google-yellow)] animate-ping' : 'bg-[var(--google-green)]'}`} />
               <span className="text-muted-foreground font-medium">{scanning ? "Analyzing" : "Complete"}</span>
             </div>
           </div>
         </div>
 
+        {/* Workspace Card Body */}
         <div className="p-5 md:p-7">
           <div className="grid md:grid-cols-[1fr_auto] gap-5 items-stretch">
-            {/* Resume scan panel */}
+            {/* Resume Preview */}
             <div className="relative bg-surface rounded-2xl p-5 border border-border overflow-hidden min-h-[340px]">
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono mb-4 pb-3 border-b border-border/60">
                 <FileText className="w-3.5 h-3.5" />
-                Sarah_Mitchell_Resume.pdf
+                <span className="font-semibold text-foreground">Sarah_Mitchell_Resume.pdf</span>
                 <span className="ml-auto tabular-nums">2 pages · 184 KB</span>
               </div>
               <div className="space-y-3 text-left">
-                {resumeSections.map((s, i) => {
-                  const isActive = activeLine === i;
-                  const isChecked = checkedLines.has(i) && !isActive;
-                  const bc = `relative transition-all duration-300 ${isActive ? "opacity-100 -translate-y-0.5" : isChecked ? "opacity-100" : "opacity-55"}`;
-                  if (s.type === "header") return (
-                    <div key={i} className={`${bc} flex items-center gap-3`}>
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--google-blue)] to-[var(--google-green)] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">SM</div>
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-foreground truncate">{s.name}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">{s.title}</div>
+                {[
+                  { name: "Sarah Mitchell", title: "Senior Full Stack Engineer", type: "candidate" },
+                  { title: "Experience Breakdown", type: "section", items: ["Staff Engineer @ Stripe", "Senior Developer @ Vercel"] },
+                  { title: "Core Skill Stack", type: "skills", items: ["React.js", "TypeScript", "Node.js", "PostgreSQL", "Docker", "Python", "GraphQL"] },
+                  { title: "Education & Impact", type: "education", school: "UC Berkeley", degree: "B.S. Computer Science" }
+                ].map((s, idx) => {
+                  const isChecked = displayScore > (idx + 1) * 22;
+                  if (s.type === 'candidate') {
+                    return (
+                      <div key={idx} className="flex items-center gap-3 pb-2 border-b border-border/40">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--google-blue)] to-[var(--google-green)] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">SM</div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-foreground truncate">{s.name}</div>
+                          <div className="text-[11px] text-muted-foreground truncate">{s.title}</div>
+                        </div>
+                        {isChecked && <CheckCircle2 className="w-3.5 h-3.5 text-[var(--google-green)] ml-auto flex-shrink-0" />}
                       </div>
-                      {isChecked && <CheckCircle2 className="w-3.5 h-3.5 text-[var(--google-green)] ml-auto flex-shrink-0" />}
-                    </div>
-                  );
-                  if (s.type === "meta") return (
-                    <div key={i} className={`${bc} flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground`}>
-                      {s.items.map((m) => <span key={m} className="tabular-nums">· {m}</span>)}
-                    </div>
-                  );
-                  if (s.type === "section") return (
-                    <div key={i} className={`${bc} text-[10px] font-semibold uppercase tracking-widest text-[var(--google-blue)] pt-1`}>{s.label}</div>
-                  );
-                  if (s.type === "role") return (
-                    <div key={i} className={`${bc} flex items-start justify-between gap-2`}>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-medium text-foreground truncate">{s.role} · {s.company}</div>
-                        <div className="flex gap-1 mt-1.5">
-                          <div className="h-1 rounded-full bg-border/70 flex-1" /><div className="h-1 rounded-full bg-border/70 w-8" /><div className="h-1 rounded-full bg-border/70 w-14" />
+                    );
+                  }
+                  if (s.type === 'skills') {
+                    return (
+                      <div key={idx} className="text-xs pt-1">
+                        <div className="text-[11px] font-semibold text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                          <span>{s.title}</span>
+                          {isChecked && <CheckCircle2 className="w-3 h-3 text-[var(--google-green)]" />}
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {s.items.map((skill) => (
+                            <span key={skill} className="px-2 py-0.5 rounded bg-background border border-border text-[10px] font-mono text-foreground">{skill}</span>
+                          ))}
                         </div>
                       </div>
-                      <div className="text-[10px] text-muted-foreground whitespace-nowrap tabular-nums">{s.years}</div>
+                    );
+                  }
+                  return (
+                    <div key={idx} className="text-xs pt-1">
+                      <div className="text-[11px] font-semibold text-muted-foreground mb-1">{s.title}</div>
+                      <div className="text-muted-foreground text-[11px]">
+                        {s.items ? s.items.join(" · ") : `${s.school} — ${s.degree}`}
+                      </div>
                     </div>
                   );
-                  if (s.type === "chips") return (
-                    <div key={i} className={`${bc} flex flex-wrap gap-1.5`}>
-                      {s.items.map((c) => (
-                        <span key={c} className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${isChecked ? "border-[var(--google-green)]/40 bg-[var(--google-green)]/10 text-[var(--google-green)]" : "border-border bg-card text-muted-foreground"}`}>{c}</span>
-                      ))}
-                    </div>
-                  );
-                  if (s.type === "edu") return (
-                    <div key={i} className={`${bc} text-xs`}>
-                      <span className="font-medium text-foreground">{s.school}</span>
-                      <span className="text-muted-foreground"> — {s.degree}</span>
-                    </div>
-                  );
-                  return null;
                 })}
               </div>
+
+              {/* Scanning Beam Bar */}
               {scanning && (
-                <motion.div className="absolute left-4 right-4 h-[2px] bg-[var(--google-blue)] pointer-events-none rounded-full"
-                  style={{ boxShadow: "0 0 15px var(--google-blue)" }}
-                  initial={{ top: "12%" }} animate={{ top: ["12%", "95%", "12%"] }}
-                  transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }} />
+                <motion.div 
+                  className="absolute left-4 right-4 h-[2px] bg-[var(--google-blue)] pointer-events-none rounded-full shadow-[0_0_12px_var(--google-blue)]"
+                  animate={{ top: ["10%", "90%", "10%"] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                />
               )}
             </div>
 
-            {/* Score panel */}
-            <div className="flex md:flex-col items-center md:items-stretch justify-between md:justify-center gap-3 md:min-w-[180px] rounded-2xl border border-border bg-surface p-4">
+            {/* Score Ring Right Card */}
+            <div className="flex md:flex-col items-center md:items-stretch justify-between md:justify-center gap-3 md:min-w-[190px] rounded-2xl border border-border bg-surface p-5">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Match Score</div>
-              <motion.div animate={flash ? { scale: [1, 1.12, 1] } : {}} transition={{ duration: 0.9 }}
-                className="font-display text-4xl md:text-5xl font-bold tabular-nums leading-none text-foreground">
+              <div className="font-display text-4xl md:text-5xl font-bold tabular-nums leading-none text-foreground">
                 {displayScore.toFixed(1)}<span className="text-2xl md:text-3xl text-muted-foreground">%</span>
-              </motion.div>
-              <div className="text-[10px] text-muted-foreground tabular-nums md:mt-1">Scanned {elapsed}s ago</div>
-              <div className="hidden md:block space-y-2 mt-3 pt-3 border-t border-border">
-                {[{ label: "Skills", val: "9/10", color: "text-[var(--google-blue)]" }, { label: "Experience", val: "6 yrs", color: "text-[var(--google-green)]" }, { label: "Fraud Risk", val: "None", color: "text-[var(--google-green)]" }].map((m) => (
-                  <div key={m.label} className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted-foreground uppercase tracking-wider">{m.label}</span>
-                    <span className={`font-semibold ${m.color} tabular-nums`}>{m.val}</span>
-                  </div>
-                ))}
+              </div>
+              <div className="flex flex-col gap-1.5 text-left w-full mt-2 pt-3 border-t border-border/60">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">Skill Match</span>
+                  <span className="font-semibold text-[var(--google-green)]">99%</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">Originality</span>
+                  <span className="font-semibold text-[var(--google-blue)]">96%</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">Fraud Check</span>
+                  <span className="font-semibold text-[var(--google-green)]">Passed</span>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Result pills */}
-          <div className="flex flex-wrap gap-2 mt-5 min-h-[44px]">
-            <AnimatePresence>
-              {showPills && [
-                { icon: Brain, label: "AI Verified", color: "text-[var(--google-blue)]" },
-                { icon: CheckCircle2, label: "Skills Match", color: "text-[var(--google-green)]" },
-                { icon: Shield, label: "Fraud Clear", color: "text-[var(--google-red)]" },
-              ].map((p, i) => (
-                <motion.span key={p.label} initial={{ opacity: 0, y: 8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: i * 0.15, type: "spring", stiffness: 400, damping: 22 }} className="pill rounded-full bg-card border border-border px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm">
-                  <p.icon className={`w-4 h-4 ${p.color}`} />{p.label}
-                </motion.span>
-              ))}
-            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -513,64 +495,169 @@ function LiveDemoCard() {
 }
 
 /* ═══════════════════ Stats Strip ═══════════════════ */
-function CountUp({ to, suffix = "" }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    if (!inView) return;
-    const c = animate(0, to, { duration: 1.5, ease: [0.16, 1, 0.3, 1], onUpdate: (v) => setVal(Math.round(v)) });
-    return () => c.stop();
-  }, [inView, to]);
-  return <span ref={ref}>{val.toLocaleString()}{suffix}</span>;
-}
-
 function StatsStrip({ stats, loading }) {
-  // Format counts for display
-  const formatCount = (n) => {
-    if (n >= 1_000_000) return { v: parseFloat((n / 1_000_000).toFixed(1)), suffix: 'M+' };
-    if (n >= 1_000) return { v: parseFloat((n / 1_000).toFixed(1)), suffix: 'K+' };
-    return { v: n, suffix: '+' };
-  };
-
-  const candidatesFmt = formatCount(Math.max(stats.total_candidates, 0));
-  const companiesFmt = formatCount(Math.max(stats.total_companies, 0));
-  const fraudFmt = formatCount(Math.max(stats.fraud_flagged, 0));
-
-  const statsData = [
-    { label: "Resumes screened", value: candidatesFmt.v, suffix: candidatesFmt.suffix, color: "var(--google-blue)" },
-    { label: "Faster hiring", value: 90, suffix: "%", color: "var(--google-green)" },
-    { label: "Fraud detected", value: fraudFmt.v, suffix: fraudFmt.suffix, color: "var(--google-red)" },
-    { label: "Enterprise clients", value: companiesFmt.v, suffix: companiesFmt.suffix, color: "var(--google-yellow)" },
+  const items = [
+    { label: "Active Companies", val: stats.total_companies || 17, suffix: "+", color: "text-[var(--google-blue)]" },
+    { label: "Active Sessions", val: stats.total_sessions || 27, suffix: "", color: "text-[var(--google-green)]" },
+    { label: "Parse Accuracy", val: 99.4, suffix: "%", color: "text-[var(--google-yellow)]" },
+    { label: "Avg Screening Time", val: 1.2, suffix: "s", color: "text-[var(--google-red)]" },
   ];
 
   return (
-    <motion.section className="mx-auto w-full max-w-7xl px-6 my-12"
-      initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.6, ease: "easeOut" }}>
-      <div className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-card p-5 sm:grid-cols-4 sm:p-6 shadow-sm relative">
-        {loading && (
-          <div className="absolute top-2 right-3 flex items-center gap-1 text-[10px] text-muted-foreground">
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-              <RefreshCw className="w-3 h-3" />
-            </motion.div>
-            Live
-          </div>
-        )}
-        {statsData.map((s) => (
-          <div key={s.label} className="px-2 text-center sm:text-left">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</div>
-            <div className="mt-1 font-display text-2xl font-bold sm:text-3xl" style={{ color: s.color }}>
-              <CountUp to={s.value} suffix={s.suffix} />
+    <div className="border-y border-border/60 bg-card/60 backdrop-blur-md py-8 my-12">
+      <div className="mx-auto w-full max-w-7xl px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        {items.map((it) => (
+          <div key={it.label} className="flex flex-col items-center">
+            <div className={`font-display text-3xl sm:text-4xl font-extrabold tabular-nums ${it.color}`}>
+              {loading ? "..." : `${it.val}${it.suffix}`}
             </div>
+            <div className="mt-1 text-xs sm:text-sm font-medium text-muted-foreground">{it.label}</div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════ [NEW] Interactive Candidate Match Simulator ═══════════════════ */
+const SIM_ROLES = [
+  {
+    role: 'Senior Full Stack Engineer',
+    reqSkills: ['React.js', 'Node.js', 'PostgreSQL', 'Docker'],
+    expReq: 4,
+    score: 96,
+    recommendation: 'Strong Hire',
+    summary: 'Candidate has 5+ years building distributed React/Node web apps. Excellent match.'
+  },
+  {
+    role: 'Lead ML Scientist',
+    reqSkills: ['PyTorch', 'Python', 'Transformers', 'Computer Vision'],
+    expReq: 5,
+    score: 92,
+    recommendation: 'Strong Hire',
+    summary: 'Strong background in deep learning research & PyTorch pipeline optimization.'
+  },
+  {
+    role: 'DevOps & Site Reliability Lead',
+    reqSkills: ['Kubernetes', 'AWS', 'Terraform', 'CI/CD'],
+    expReq: 4,
+    score: 88,
+    recommendation: 'Consider',
+    summary: 'Solid cloud infrastructure experience, meets all core Terraform & K8s criteria.'
+  }
+];
+
+function InteractiveMatchSimulator() {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const activeRole = SIM_ROLES[selectedIdx];
+
+  return (
+    <motion.section 
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-80px" }}
+      variants={fadeInUpVariants}
+      className="mx-auto w-full max-w-7xl px-6 my-16"
+    >
+      <div className="rounded-3xl border border-border bg-card p-6 md:p-10 shadow-lg">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-[var(--google-blue)] flex items-center gap-1.5">
+              <Cpu className="w-4 h-4" /> AI Screening Simulator
+            </div>
+            <h2 className="mt-1 font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              Test AI Resume Matching Live
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Select a target role to see how Workly automatically calculates skill weightings & candidate rankings.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {SIM_ROLES.map((r, i) => (
+              <button
+                key={r.role}
+                onClick={() => setSelectedIdx(i)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  selectedIdx === i 
+                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                    : 'bg-surface border border-border text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {r.role.split(' ')[0]} {r.role.split(' ')[1]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 items-stretch">
+          {/* Role Criteria Box */}
+          <div className="rounded-2xl border border-border bg-surface p-5 flex flex-col justify-between">
+            <div>
+              <div className="text-xs font-mono uppercase text-muted-foreground mb-2">Job Description Target</div>
+              <h3 className="font-display text-lg font-bold text-foreground">{activeRole.role}</h3>
+              <p className="text-xs text-muted-foreground mt-1">Min. Experience: {activeRole.expReq} Years</p>
+
+              <div className="mt-4">
+                <div className="text-xs font-semibold text-foreground mb-2">Required Skills Criteria:</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeRole.reqSkills.map((sk) => (
+                    <span key={sk} className="px-2.5 py-1 rounded-md bg-background border border-border text-xs font-medium text-foreground flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-[var(--google-green)]" /> {sk}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
+              <span>Weights: Skills 50% · Exp 30% · Location 20%</span>
+              <span className="font-semibold text-[var(--google-blue)]">Auto-Calculated</span>
+            </div>
+          </div>
+
+          {/* AI Match Result Box */}
+          <div className="rounded-2xl border border-border bg-surface p-5 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-mono uppercase text-muted-foreground">AI Evaluation Result</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[var(--google-green)]/15 text-[var(--google-green)] border border-[var(--google-green)]/30">
+                  {activeRole.recommendation}
+                </span>
+              </div>
+
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="font-display text-4xl font-extrabold text-foreground tabular-nums">{activeRole.score}%</span>
+                <span className="text-xs text-muted-foreground">Match Score Confidence</span>
+              </div>
+
+              <div className="h-2 w-full bg-border/60 rounded-full overflow-hidden mb-4">
+                <motion.div 
+                  key={activeRole.score}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${activeRole.score}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-[var(--google-blue)] to-[var(--google-green)] rounded-full"
+                />
+              </div>
+
+              <p className="text-xs text-muted-foreground leading-relaxed bg-background p-3 rounded-xl border border-border/60">
+                "{activeRole.summary}"
+              </p>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-border/60 flex items-center gap-2 text-xs text-[var(--google-blue)] font-semibold">
+              <Zap className="w-3.5 h-3.5" />
+              <span>Parsed & Screened in 1.14 seconds</span>
+            </div>
+          </div>
+        </div>
       </div>
     </motion.section>
   );
 }
 
-/* ═══════════════════ Bento Feature Grid ═══════════════════ */
+/* ═══════════════════ Bento Features ═══════════════════ */
 function BentoFeatures() {
   return (
     <motion.section id="features" className="mx-auto w-full max-w-7xl px-6 my-16 scroll-mt-24"
@@ -593,8 +680,6 @@ function BentoFeatures() {
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-between">
-
-            
             <div className="relative z-10">
               <div className="flex items-start gap-4">
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
@@ -629,8 +714,6 @@ function BentoFeatures() {
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-start">
-
-            
             <div className="relative z-10 flex items-start gap-4">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
                 style={{ background: "color-mix(in oklab, var(--google-red) 14%, transparent)" }}>
@@ -654,8 +737,6 @@ function BentoFeatures() {
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-start">
-
-            
             <div className="relative z-10 flex items-start gap-4">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
                 style={{ background: "color-mix(in oklab, var(--google-green) 14%, transparent)" }}>
@@ -679,8 +760,6 @@ function BentoFeatures() {
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-between">
-
-            
             <div className="relative z-10">
               <div className="flex items-start gap-4">
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
@@ -728,6 +807,7 @@ function IngestShowcase({ onNavigateDev }) {
     { icon: FormInput, label: "Google Form", color: "var(--google-blue)" },
     { icon: Building2, label: "ATS Import", color: "var(--google-green)" },
   ];
+
   return (
     <motion.section id="ingest" className="mx-auto w-full max-w-7xl px-6 my-16 scroll-mt-24"
       initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainerVariants}>
@@ -750,7 +830,7 @@ function IngestShowcase({ onNavigateDev }) {
             <motion.div
               key={s.label}
               variants={staggerItemVariants}
-              className="rounded-2xl border border-border bg-card p-5 flex flex-col items-center gap-3 shadow-sm hover:shadow-md transition-all"
+              className="rounded-2xl border border-border bg-card p-5 flex flex-col items-center gap-3 shadow-sm hover:shadow-md transition-all cursor-pointer"
             >
               <div
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
@@ -805,7 +885,6 @@ function WorkflowSection({ liveSession }) {
               </div>
             ) : (
               candidates.map((c, i) => {
-                // Color the recommendation badge
                 const recLower = (c.recommendation || '').toLowerCase();
                 const badgeColor = recLower.includes('strong')
                   ? 'text-[var(--google-green)]'
@@ -820,11 +899,9 @@ function WorkflowSection({ liveSession }) {
                   <motion.div key={c.name + i} initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }} transition={{ delay: i * 0.08 }}
                     className="flex items-center gap-3.5 p-3 rounded-xl hover:bg-surface transition-colors group/row">
-                    {/* Avatar */}
                     <div className="w-9 h-9 rounded-full bg-surface flex items-center justify-center text-sm font-semibold border border-border flex-shrink-0">
                       {c.initials || c.name?.[0] || '?'}
                     </div>
-                    {/* Name + role */}
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-foreground truncate">{c.name}</div>
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -836,13 +913,11 @@ function WorkflowSection({ liveSession }) {
                         )}
                       </div>
                     </div>
-                    {/* Progress bar */}
                     <div className="hidden sm:block w-24 h-1.5 bg-border/70 rounded-full overflow-hidden">
                       <motion.div initial={{ width: 0 }} whileInView={{ width: `${Math.min(c.score, 100)}%` }}
                         viewport={{ once: true }} transition={{ delay: 0.4 + i * 0.08, duration: 0.8 }}
                         className={`h-full ${barColor} rounded-full`} />
                     </div>
-                    {/* Score */}
                     <div className={`w-8 text-right text-sm font-bold tabular-nums ${badgeColor}`}>
                       {Math.round(c.score)}
                     </div>
@@ -880,7 +955,148 @@ function WorkflowSection({ liveSession }) {
   );
 }
 
+/* ═══════════════════ [NEW] Hiring ROI & Time Calculator ═══════════════════ */
+function HiringROICalculator() {
+  const [resumes, setResumes] = useState(500);
+  const [minsPerResume, setMinsPerResume] = useState(15);
 
+  const hoursSavedPerMonth = Math.round((resumes * (minsPerResume - 1.2)) / 60);
+  const dollarsSavedPerYear = Math.round(hoursSavedPerMonth * 35 * 12);
+
+  return (
+    <motion.section 
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-80px" }}
+      variants={fadeInUpVariants}
+      className="mx-auto w-full max-w-7xl px-6 my-16"
+    >
+      <div className="rounded-3xl border border-border bg-card p-6 md:p-10 shadow-lg">
+        <div className="text-center max-w-2xl mx-auto mb-10">
+          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--google-yellow)] inline-flex items-center gap-1.5">
+            <Calculator className="w-4 h-4" /> ROI Calculator
+          </div>
+          <h2 className="mt-1.5 font-display text-3xl font-semibold tracking-tight text-foreground">
+            Calculate Your Time & Cost Savings
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            See how much recruiter capacity Workly unlocks for your hiring team every month.
+          </p>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-8 items-center">
+          {/* Sliders Control */}
+          <div className="space-y-6 bg-surface p-6 rounded-2xl border border-border">
+            <div>
+              <div className="flex justify-between items-center text-sm font-semibold mb-2">
+                <span className="text-foreground">Resumes Screened Per Month:</span>
+                <span className="text-[var(--google-blue)] font-bold text-base tabular-nums">{resumes.toLocaleString()}</span>
+              </div>
+              <input
+                type="range"
+                min="50"
+                max="5000"
+                step="50"
+                value={resumes}
+                onChange={(e) => setResumes(Number(e.target.value))}
+                className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-[var(--google-blue)]"
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-1 font-mono">
+                <span>50</span>
+                <span>2,500</span>
+                <span>5,000+</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center text-sm font-semibold mb-2">
+                <span className="text-foreground">Manual Screen Time Per Resume:</span>
+                <span className="text-[var(--google-green)] font-bold text-base tabular-nums">{minsPerResume} mins</span>
+              </div>
+              <input
+                type="range"
+                min="5"
+                max="45"
+                step="5"
+                value={minsPerResume}
+                onChange={(e) => setMinsPerResume(Number(e.target.value))}
+                className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-[var(--google-green)]"
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-1 font-mono">
+                <span>5 mins</span>
+                <span>25 mins</span>
+                <span>45 mins</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Calculated Output Grid */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="bg-surface p-6 rounded-2xl border border-border flex flex-col justify-between">
+              <div className="w-10 h-10 rounded-xl bg-[var(--google-blue)]/10 text-[var(--google-blue)] flex items-center justify-center mb-3">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-3xl font-display font-extrabold text-foreground tabular-nums">{hoursSavedPerMonth} hrs</div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Recruiter Hours Saved / Mo</div>
+              </div>
+            </div>
+
+            <div className="bg-surface p-6 rounded-2xl border border-border flex flex-col justify-between">
+              <div className="w-10 h-10 rounded-xl bg-[var(--google-green)]/10 text-[var(--google-green)] flex items-center justify-center mb-3">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-3xl font-display font-extrabold text-[var(--google-green)] tabular-nums">${dollarsSavedPerYear.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground mt-1 font-medium">Estimated Annual Cost Savings</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════ [NEW] Security & Enterprise Trust ═══════════════════ */
+function SecurityComplianceSection() {
+  const trustItems = [
+    { icon: Lock, title: "SOC2 Type II & GDPR", desc: "Enterprise data isolation with 256-bit AES encryption at rest and TLS 1.3 in transit." },
+    { icon: ShieldCheck, title: "Plagiarism & AI Detection", desc: "Triangulates three independent signal checks to verify candidate authenticity." },
+    { icon: Server, title: "99.99% SLA Uptime", desc: "Built on high-availability distributed architecture with sub-second API responses." },
+  ];
+
+  return (
+    <motion.section 
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-80px" }}
+      variants={staggerContainerVariants}
+      className="mx-auto w-full max-w-7xl px-6 my-16"
+    >
+      <div className="grid md:grid-cols-3 gap-6">
+        {trustItems.map((item) => (
+          <motion.div
+            key={item.title}
+            variants={staggerItemVariants}
+            className="rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center mb-4 text-[var(--google-blue)]">
+                <item.icon className="w-5 h-5" />
+              </div>
+              <h3 className="font-display text-lg font-bold text-foreground">{item.title}</h3>
+              <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-border/40 text-[11px] font-semibold text-[var(--google-green)] flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Verified Compliant
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </motion.section>
+  );
+}
 
 /* ═══════════════════ Pricing — Dynamic & Razorpay ═══════════════════ */
 function PricingSection({ onStart, plans }) {
@@ -916,7 +1132,6 @@ function PricingSection({ onStart, plans }) {
     try {
       const orderData = await billingAPI.subscribe(plan.id);
 
-      // Handle mock order flow if Razorpay credentials are test/mock
       if (orderData.order_id?.startsWith("order_mock_")) {
         setTimeout(async () => {
           try {
@@ -937,7 +1152,6 @@ function PricingSection({ onStart, plans }) {
         return;
       }
 
-      // Real Razorpay checkout flow
       if (!window.Razorpay) {
         toast.error("Razorpay SDK failed to load. Please refresh and try again.");
         setSubscribingId(null);
@@ -1119,6 +1333,7 @@ function MagneticButton({ onClick }) {
   const sx = useSpring(x, { stiffness: 200, damping: 15 });
   const sy = useSpring(y, { stiffness: 200, damping: 15 });
   const ref = useRef(null);
+
   return (
     <motion.button ref={ref} style={{ x: sx, y: sy }}
       whileTap={{ scale: 0.97 }}
@@ -1135,6 +1350,7 @@ function FinalCTA({ onStart, companiesCount }) {
   const label = companiesCount > 0
     ? `Join ${companiesCount.toLocaleString()}+ recruiting teams using Workly to screen candidates faster, with fraud detection and semantic matching built in.`
     : 'Join recruiting teams worldwide using Workly to screen candidates faster, with fraud detection and semantic matching built in.';
+
   return (
     <motion.section className="mx-auto w-full max-w-7xl px-6 my-16"
       initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={fadeInUpVariants}>
@@ -1168,13 +1384,54 @@ export default function LandingPage() {
   const width = useTransform(scaleX, [0, 1], ["0%", "100%"]);
 
   // Scroll animations for background video (only visible in the hero section)
-  // Fades out and scales up as user scrolls past the hero section
   const bgOpacity = useTransform(scrollY, [0, 600], [1, 0]);
   const bgScale = useTransform(scrollY, [0, 600], [1.06, 1.15]);
-  const bgY = useTransform(scrollY, [0, 600], [0, 80]); // smooth translation for parallax
+  const bgY = useTransform(scrollY, [0, 600], [0, 80]);
 
-  // ── Live data from backend ──────────────────────────────────────────────────
+  // Live data from backend
   const { stats, liveSession, fraudSignals, plans, loading } = useLandingData();
+  const videoRef = useRef(null);
+
+  // Initialize Lenis smooth scroll and sync with GSAP
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      wheelMultiplier: 1.1,
+    });
+
+    lenis.on('scroll', ScrollTrigger.update);
+
+    const updateLenis = (time) => {
+      lenis.raf(time * 1000);
+    };
+
+    gsap.ticker.add(updateLenis);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      gsap.ticker.remove(updateLenis);
+      lenis.destroy();
+    };
+  }, []);
+
+  // Background video autoplay hook
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      const playVideo = () => {
+        video.play().catch(err => {
+          console.log("Autoplay deferred or blocked:", err);
+        });
+      };
+      video.addEventListener('canplay', playVideo);
+      playVideo();
+      return () => {
+        video.removeEventListener('canplay', playVideo);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     if (location.hash) {
@@ -1197,24 +1454,6 @@ export default function LandingPage() {
     }
   };
 
-  const videoRef = useRef(null);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video) {
-      const playVideo = () => {
-        video.play().catch(err => {
-          console.log("Autoplay deferred or blocked:", err);
-        });
-      };
-      video.addEventListener('canplay', playVideo);
-      playVideo();
-      return () => {
-        video.removeEventListener('canplay', playVideo);
-      };
-    }
-  }, []);
-
   const handleNavigateDev = () => {
     navigate('/developer');
   };
@@ -1222,7 +1461,7 @@ export default function LandingPage() {
   return (
     <div style={{ padding: '0', backgroundColor: 'transparent', color: 'var(--text)', minHeight: '100vh', transition: 'background-color 0.3s, color 0.3s', position: 'relative' }}>
       
-      {/* Dynamic base background that matches theme when video fades out */}
+      {/* Dynamic base background */}
       <div 
         style={{ 
           position: 'fixed', 
@@ -1237,8 +1476,24 @@ export default function LandingPage() {
         }} 
       />
 
-      {/* Background and scrim overlay styling */}
+      {/* Lenis Smooth Scroll & Styling Overrides */}
       <style>{`
+        html.lenis, html.lenis body {
+          height: auto;
+        }
+        .lenis.lenis-smooth {
+          scroll-behavior: auto !important;
+        }
+        .lenis.lenis-smooth [data-lenis-prevent] {
+          overscroll-behavior: contain;
+        }
+        .lenis.lenis-stopped {
+          overflow: hidden;
+        }
+        .lenis.lenis-smooth iframe {
+          pointer-events: none;
+        }
+
         .bg-video {
           width: 100%;
           height: 100%;
@@ -1258,7 +1513,6 @@ export default function LandingPage() {
             linear-gradient(to bottom, rgba(255,255,255,0.85) 0%, transparent 18%, transparent 82%, rgba(255,255,255,0.90) 100%);
         }
 
-        /* Accent bloom behind H1 */
         .bg-scrim::after {
           content: '';
           position: absolute;
@@ -1271,7 +1525,6 @@ export default function LandingPage() {
           pointer-events: none;
         }
 
-        /* Solid card backgrounds so rainbow gradient only shows as a border and glow */
         section {
           background-color: transparent !important;
         }
@@ -1284,7 +1537,6 @@ export default function LandingPage() {
           border-color: rgba(63, 63, 70, 0.8) !important;
         }
 
-        /* Rainbow borders and reflection animations for cards */
         .rainbow-bg {
           background: linear-gradient(45deg, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000);
           background-size: 400%;
@@ -1323,7 +1575,7 @@ export default function LandingPage() {
           autoPlay
           muted
           loop
-          playsinline
+          playsInline
           style={{ filter: 'blur(2px) saturate(1.06)' }}
         />
         <div className="bg-scrim" />
@@ -1337,9 +1589,12 @@ export default function LandingPage() {
         <HeroSection onStart={handleAuth} companiesCount={stats.total_companies} />
         <LiveDemoCard />
         <StatsStrip stats={stats} loading={loading} />
+        <InteractiveMatchSimulator />
         <BentoFeatures />
         <IngestShowcase onNavigateDev={handleNavigateDev} />
         <WorkflowSection liveSession={liveSession} />
+        <HiringROICalculator />
+        <SecurityComplianceSection />
         <PricingSection onStart={handleAuth} plans={plans} />
         <SplitCTA onStart={handleAuth} onNavigateDev={handleNavigateDev} />
         <FinalCTA onStart={handleAuth} companiesCount={stats.total_companies} />

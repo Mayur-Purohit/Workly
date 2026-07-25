@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Search, MapPin, ArrowRight, Briefcase, Sparkles, FileUp, CheckCircle2, Star,
@@ -68,10 +68,6 @@ function Home() {
   );
 
   const navigate = useNavigate();
-  const { scrollY } = useScroll();
-  const bgOpacity = useTransform(scrollY, [0, 500], [1, 0]);
-  const bgScale = useTransform(scrollY, [0, 500], [1.02, 1.12]);
-  const bgY = useTransform(scrollY, [0, 500], [0, 60]);
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
@@ -164,44 +160,21 @@ function Home() {
 
       {/* Hero — two column with illustration */}
       <section className="relative overflow-hidden z-20">
-        <style>{`
-          .noise-overlay {
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-          }
-        `}</style>
-
-        {/* Dynamic scroll-activated background video & overlays */}
-        <motion.div
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-20"
           style={{
-            opacity: bgOpacity,
-            scale: bgScale,
-            y: bgY,
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: -10,
-            pointerEvents: 'none'
+            backgroundImage: `url(${heroBg})`,
           }}
-        >
-          {/* Background video */}
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute inset-0 h-full w-full object-cover opacity-90 dark:opacity-80"
-            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_170732_8a9ccda6-5cff-4628-b164-059c500a2b41.mp4"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-
-          {/* Noise overlay */}
-          <div className="noise-overlay pointer-events-none absolute inset-0 opacity-[0.25] mix-blend-overlay" />
-
-          {/* Gradient overlay */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-background" />
-        </motion.div>
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10"
+          style={{
+            background:
+              "radial-gradient(55% 50% at 15% 10%, color-mix(in oklab, var(--google-blue) 14%, transparent), transparent 70%), radial-gradient(45% 40% at 95% 0%, color-mix(in oklab, var(--google-red) 10%, transparent), transparent 70%), radial-gradient(45% 50% at 50% 100%, color-mix(in oklab, var(--google-green) 10%, transparent), transparent 70%)",
+          }}
+        />
         <div className="mx-auto flex max-w-4xl flex-col items-center text-center px-6 pt-10 pb-12 sm:pt-16 sm:pb-16">
           <div className="flex flex-col items-center w-full">
             <motion.div
