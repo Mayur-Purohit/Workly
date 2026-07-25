@@ -593,8 +593,7 @@ function BentoFeatures() {
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-between">
-            <div aria-hidden className="absolute inset-0 -z-10 opacity-100"
-              style={{ background: "radial-gradient(140px at 0% 100%, color-mix(in oklab, var(--google-blue) 8%, transparent), transparent)" }} />
+
             
             <div className="relative z-10">
               <div className="flex items-start gap-4">
@@ -630,8 +629,7 @@ function BentoFeatures() {
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-start">
-            <div aria-hidden className="absolute inset-0 -z-10 opacity-100"
-              style={{ background: "radial-gradient(140px at 100% 0%, color-mix(in oklab, var(--google-red) 8%, transparent), transparent)" }} />
+
             
             <div className="relative z-10 flex items-start gap-4">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
@@ -656,8 +654,7 @@ function BentoFeatures() {
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-start">
-            <div aria-hidden className="absolute inset-0 -z-10 opacity-100"
-              style={{ background: "radial-gradient(140px at 0% 0%, color-mix(in oklab, var(--google-green) 8%, transparent), transparent)" }} />
+
             
             <div className="relative z-10 flex items-start gap-4">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
@@ -682,8 +679,7 @@ function BentoFeatures() {
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-between">
-            <div aria-hidden className="absolute inset-0 -z-10 opacity-100"
-              style={{ background: "radial-gradient(140px at 100% 100%, color-mix(in oklab, var(--google-yellow) 8%, transparent), transparent)" }} />
+
             
             <div className="relative z-10">
               <div className="flex items-start gap-4">
