@@ -380,10 +380,10 @@ class AtsCompatibilityAgent:
         score = 100
         issues = []
         
-        # 1. Multi-column check
-        if "[left column]" in resume_text.lower() or "[right column]" in resume_text.lower():
-            score -= 20
-            issues.append("Multi-column layout detected. Legacy ATS scanners may parse columns out of order.")
+        # Strip our own column-aware extraction markers before evaluating
+        # (these are parser artifacts, NOT part of the original resume)
+        clean_text = re.sub(r'\[(?:LEFT|RIGHT)\s+COLUMN\]', '', resume_text, flags=re.IGNORECASE)
+        resume_text = clean_text
             
         # 2. Table dividers check
         pipe_count = resume_text.count("|")
@@ -1140,9 +1140,11 @@ class AtsCompatibilityAgent:
                             missing_keywords.append(kw)
                     else:
                         missing_keywords.append(kw)
-                keyword_match_score = int((len(matched_keywords) / len(target_keywords)) * 100) if target_keywords else 100
+                keyword_match_score = int((len(matched_keywords) / len(target_keywords)) * 100) if target_keywords else 80
             else:
-                keyword_match_score = 100
+                # No target keywords extracted from JD — score by resume keyword density
+                resume_tech_count = len([w for w in re.findall(r'\b[a-zA-Z]{2,18}\b', resume_text_lower) if w in TECH_DICT])
+                keyword_match_score = min(85, 50 + resume_tech_count * 3)
 
             # --- Skills Match (25%) ---
             jd_skills = list(set(s.lower().strip() for s in (jd_req.get("required_skills", []) + jd_req.get("preferred_skills", [])) if s))
@@ -1182,9 +1184,10 @@ class AtsCompatibilityAgent:
                             missing_skills.append(s)
                 else:
                     missing_skills = jd_skills[:]
-                skills_match_score = int((len(matched_skills) / len(jd_skills)) * 100) if jd_skills else 100
+                skills_match_score = int((len(matched_skills) / len(jd_skills)) * 100) if jd_skills else 80
             else:
-                skills_match_score = 100
+                # No JD skills parsed — score by resume skill count
+                skills_match_score = min(85, 40 + len(candidate_skills) * 4)
 
             # --- Experience Relevance (15%) ---
             # Part A: Experience Years check
@@ -1311,8 +1314,8 @@ class AtsCompatibilityAgent:
                     completeness_points += proj_points
                 completeness_score = min(100.0, (completeness_points / total_projects) * (100.0 / 35.0))
                 
-                # Fail-safe minimum
-                base_fail_safe = 30.0 + 0.10 * completeness_score
+                # Fail-safe minimum (reduced to prevent inflation)
+                base_fail_safe = 15.0 + 0.05 * completeness_score
                 project_relevance_score = max(base_fail_safe, calculated_score)
                 project_relevance_score = round(project_relevance_score)
                 
@@ -1326,7 +1329,9 @@ class AtsCompatibilityAgent:
             # --- Education Match (5%) ---
             req_degree = jd_req.get("preferred_degree", "")
             if not req_degree:
-                education_match_score = 100
+                # No degree requirement in JD — give credit for having education listed
+                edu_list = parsed_data.get("education", []) or []
+                education_match_score = 85 if edu_list else 60
                 edu_details = "No specific education requirements parsed from target job description."
             else:
                 edu_list = parsed_data.get("education", []) or []

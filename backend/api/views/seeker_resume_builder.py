@@ -157,6 +157,8 @@ def ats_check(request):
         content_str = json.dumps(parsed_data, sort_keys=True)
         job_desc_str = target_job_desc or ""
         hash_input = f"{content_str}||{resume_text}||{job_desc_str}".encode('utf-8')
+        # Bust cache when ATS scoring calibration changes
+        hash_input = hash_input + b"||ats_calibration=v3"
         content_hash = hashlib.md5(hash_input).hexdigest()
         
         cache_key = (user_id, content_hash)
