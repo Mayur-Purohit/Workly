@@ -1207,17 +1207,106 @@ export default function LandingPage() {
     }
   };
 
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      const playVideo = () => {
+        video.play().catch(err => {
+          console.log("Autoplay deferred or blocked:", err);
+        });
+      };
+      video.addEventListener('canplay', playVideo);
+      playVideo();
+      return () => {
+        video.removeEventListener('canplay', playVideo);
+      };
+    }
+  }, []);
+
   const handleNavigateDev = () => {
     navigate('/developer');
   };
 
   return (
-    <div style={{ padding: '0', backgroundColor: 'var(--bg)', color: 'var(--text)', minHeight: '100vh', transition: 'background-color 0.3s, color 0.3s' }}>
+    <div style={{ padding: '0', backgroundColor: 'transparent', color: 'var(--text)', minHeight: '100vh', transition: 'background-color 0.3s, color 0.3s', position: 'relative' }}>
+      
+      {/* Background and scrim overlay styling */}
+      <style>{`
+        .bg-video {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          z-index: -2;
+          filter: blur(2px) saturate(1.06);
+          transform: scale(1.06);
+          pointer-events: none;
+        }
+
+        .bg-scrim {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: -1;
+          pointer-events: none;
+          background: 
+            radial-gradient(circle at 50% 44%, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.80) 30%, rgba(255,255,255,0.46) 58%, rgba(255,255,255,0.20) 100%),
+            linear-gradient(to bottom, rgba(255,255,255,0.85) 0%, transparent 18%, transparent 82%, rgba(255,255,255,0.90) 100%);
+        }
+
+        /* Accent bloom behind H1 */
+        .bg-scrim::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: radial-gradient(circle at 50% 46%, rgba(124,108,255,0.10) 0%, transparent 62%);
+          filter: blur(40px);
+          pointer-events: none;
+        }
+
+        /* Semi-transparent section layers to allow background video visibility */
+        section {
+          background-color: transparent !important;
+        }
+        .bg-card, .bg-surface {
+          backdrop-filter: blur(12px);
+          background-color: rgba(255, 255, 255, 0.45) !important;
+          border-color: rgba(228, 228, 231, 0.5) !important;
+        }
+        .dark .bg-card, .dark .bg-surface {
+          background-color: rgba(23, 21, 31, 0.45) !important;
+          border-color: rgba(63, 63, 70, 0.4) !important;
+        }
+      `}</style>
+
+      {/* BACKGROUND VIDEO PLAYER */}
+      <video
+        ref={videoRef}
+        src="https://zxdefgavgwfxastwmmjm.supabase.co/storage/v1/object/public/assets/flux.mp4"
+        className="bg-video"
+        autoPlay
+        muted
+        loop
+        playsinline
+      />
+
+      {/* RADIUS WASH OVERLAY */}
+      <div className="bg-scrim" />
+
       <motion.div style={{ width }} className="fixed top-0 left-0 h-[3px] bg-[var(--google-blue)] z-[60]" />
       
       <Navbar onSignIn={handleAuth} isLoggedIn={isLoggedIn} />
       
-      <main className="flex flex-col w-full overflow-x-hidden pt-16">
+      <main className="flex flex-col w-full overflow-x-hidden pt-16" style={{ background: 'transparent' }}>
         <HeroSection onStart={handleAuth} companiesCount={stats.total_companies} />
         <LiveDemoCard />
         <StatsStrip stats={stats} loading={loading} />
