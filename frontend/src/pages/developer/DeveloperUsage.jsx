@@ -43,12 +43,7 @@ export default function DeveloperUsage() {
     queryKey: ["usage-endpoints"],
     queryFn: async () => {
        if (portalUsage.endpoints) return portalUsage.endpoints("30d");
-       return [
-         { path: "/api/v1/parse", calls: 12450, latency: 450, error_rate: 0.5 },
-         { path: "/api/v1/match", calls: 8200, latency: 120, error_rate: 1.2 },
-         { path: "/api/v1/chat", calls: 4100, latency: 850, error_rate: 2.1 },
-         { path: "/api/v1/export", calls: 340, latency: 1200, error_rate: 5.4 }
-       ];
+       return [];
     }
   });
 

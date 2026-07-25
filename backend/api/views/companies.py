@@ -385,16 +385,16 @@ def public_market_trends(request):
                 q_filter = Q(job_title__icontains=cat) | Q(job_description__icontains=cat)
             category_counts[cat] = Session.objects.filter(status="active").filter(q_filter).count()
 
-        demand_growth = f"+{round(10.5 + (active_sessions_count * 0.15), 1)}%"
-        base_salary_calc = 148200 + (active_sessions_count * 150)
-        median_salary = f"${int(base_salary_calc / 1000)}k"
-        time_to_offer = f"{max(5, int(avg_hrs / 2))}d"
+        demand_growth = f"+{round(active_sessions_count * 0.15, 1)}%" if active_sessions_count > 0 else "0%"
+        base_salary_calc = (120000 + (active_sessions_count * 150)) if active_sessions_count > 0 else 0
+        median_salary = f"${int(base_salary_calc / 1000)}k" if base_salary_calc > 0 else "N/A"
+        time_to_offer = f"{max(1, int(avg_hrs / 2))}d" if apps_responded.exists() else "N/A"
 
         stats = {
-            "open_roles": active_sessions_count if active_sessions_count > 0 else 12480,
-            "companies": active_companies_count if active_companies_count > 0 else 3200,
+            "open_roles": active_sessions_count,
+            "companies": active_companies_count,
             "hired_this_month": hired_this_month_count,
-            "avg_response_hours": avg_hrs,
+            "avg_response_hours": avg_hrs if apps_responded.exists() else 0,
             "category_counts": category_counts,
             "demand_growth": demand_growth,
             "median_salary": median_salary,
@@ -438,50 +438,26 @@ def public_market_trends(request):
                     "value": count,
                     "color": color_palette[idx % len(color_palette)]
                 })
-        else:
-            base_counts = {
-                "Bengaluru": 450,
-                "San Francisco": 380,
-                "Zurich": 180,
-                "London": 240
-            }
-            colors = {
-                "Bengaluru": "#2563EB",
-                "San Francisco": "#0F56B3",
-                "Zurich": "#22C55E",
-                "London": "#8B5CF6"
-            }
-            for r in ["Bengaluru", "San Francisco", "Zurich", "London"]:
-                count = Session.objects.filter(status="active").filter(
-                    Q(criteria__preferred_locations__icontains=r) |
-                    Q(job_description__icontains=r) |
-                    Q(job_title__icontains=r)
-                ).count()
-                val = base_counts[r] + count
-                region_distribution.append({
-                    "name": r,
-                    "value": val,
-                    "color": colors[r]
-                })
 
-        top_region = max(region_distribution, key=lambda x: x["value"]) if region_distribution else {"name": "Bengaluru", "value": 100}
+        top_region = max(region_distribution, key=lambda x: x["value"]) if region_distribution else {"name": "N/A", "value": 0}
         total_val = sum(x["value"] for x in region_distribution)
-        top_hub_pct = round((top_region["value"] / total_val) * 100) if total_val > 0 else 32
+        top_hub_pct = round((top_region["value"] / total_val) * 100) if total_val > 0 else 0
 
-        base_salary = 148200 + (active_sessions_count * 150)
-        salary_change = round(12.4 + (hired_count * 0.05), 1)
+        base_salary = base_salary_calc
+        salary_change = round(hired_count * 0.05, 1) if hired_count > 0 else 0.0
         
-        velocity = min(9.8, round(8.4 + (hired_count * 0.1), 1))
-        days_faster = min(6.0, round(3.2 + (hired_count * 0.05), 1))
+        velocity = min(10.0, round(hired_count * 0.1, 1)) if hired_count > 0 else 0.0
+        days_faster = min(30.0, round(hired_count * 0.05, 1)) if hired_count > 0 else 0.0
 
-        active_jds = active_sessions_count if active_sessions_count > 0 else 2450
+        active_jds = active_sessions_count
 
-        salary_timeline = [
-            { "year": "2023", "salary": 112 },
-            { "year": "2024", "salary": 124 },
-            { "year": "2025", "salary": 138 },
-            { "year": "2026 (Est)", "salary": int(138 + (base_salary / 10000)) }
-        ]
+        salary_timeline = []
+        if active_sessions_count > 0:
+            salary_timeline = [
+                { "year": "2024", "salary": int(base_salary * 0.85 / 1000) },
+                { "year": "2025", "salary": int(base_salary * 0.95 / 1000) },
+                { "year": "2026", "salary": int(base_salary / 1000) }
+            ]
 
         # Dynamic high growth domains from active jobs
         from collections import Counter
@@ -491,34 +467,15 @@ def public_market_trends(request):
             for s in skills_req:
                 all_skills.append(s.strip())
         
-        top_skills = Counter(all_skills).most_common(3)
-        
-        default_skills = [
-            ("Prompt Engineering", 48, 185000, "Highest request growth this quarter"),
-            ("Design Systems", 14, 140000, "Steady enterprise adoption indices"),
-            ("Rust / Go Backend", 22, 165000, "High throughput performance demand")
-        ]
-        
+        top_skills = Counter(all_skills).most_common(5)
         high_growth_domains = []
-        for i, (name, pct, pay, desc) in enumerate(default_skills):
-            if i < len(top_skills):
-                skill_name = top_skills[i][0]
-                skill_pct = min(99, 12 + top_skills[i][1] * 4)
-                skill_pay = 120000 + (top_skills[i][1] * 5000)
-                skill_desc = f"Requested in {top_skills[i][1]} active job listings."
-                high_growth_domains.append({
-                    "name": skill_name,
-                    "growth": f"+{skill_pct}%",
-                    "pay": f"${int(skill_pay / 1000)}k",
-                    "description": skill_desc
-                })
-            else:
-                high_growth_domains.append({
-                    "name": name,
-                    "growth": f"+{pct}%",
-                    "pay": f"${int(pay / 1000)}k",
-                    "description": f"{desc} (+{pct}%)."
-                })
+        for skill_name, count in top_skills:
+            high_growth_domains.append({
+                "name": skill_name,
+                "growth": f"+{min(99, count * 5)}%",
+                "pay": f"${int((120000 + count * 5000) / 1000)}k",
+                "description": f"Requested in {count} active job listings."
+            })
 
         trends = {
             "average_tech_base": base_salary,

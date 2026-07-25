@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { portalBilling, portalUsage } from "../../lib/portalApi";
-import { usePortalAuthStore } from "../../stores/portalAuthStore";
+import { DEVELOPER_PLANS } from "../../lib/constants";
 import { CreditCard, CheckCircle2, AlertTriangle, Star, RefreshCw, Activity, Zap, Layers } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,11 +44,7 @@ export default function DeveloperBilling() {
   const { data: plans } = useQuery({
     queryKey: ["billing-plans"],
     queryFn: portalBilling.plans,
-    initialData: [
-      { id: "free", name: "Free", price: 0, features: ["100 free parses/month", "Community support", "Basic formatting", "No SLA"] },
-      { id: "starter", name: "Starter", price: 2999, popular: true, features: ["1,000 parses/month", "Email support", "All output formats", "99% uptime SLA", "Webhooks"] },
-      { id: "business", name: "Business", price: 9999, features: ["10,000 parses/month", "Priority VIP support", "Custom prompts", "99.9% uptime SLA", "Embed UI Component"] }
-    ]
+    initialData: DEVELOPER_PLANS
   });
 
   const { data: current } = useQuery({

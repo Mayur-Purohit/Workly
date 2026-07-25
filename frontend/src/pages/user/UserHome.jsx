@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { Header, Footer } from "../../components/user/site-chrome";
 import { CompanyLogo } from "../../components/user/company-logo";
-import { jobs, companies } from "../../lib/data";
 import { publicAPI } from "../../lib/api";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import spotResume from "../../assets/spot-resume.png";
@@ -16,17 +15,6 @@ import spotDashboard from "../../assets/spot-dashboard.png";
 import { ScrollingAnimation } from "../../components/user/ui/scrolling-animation";
 import heroBg from "../../assets/hero-bg.png";
 import useDocumentTitle from "../../hooks/useDocumentTitle";
-
-const categories = [
-  { i: Code2, t: "Engineering", n: "2,840", c: "var(--google-blue)" },
-  { i: Palette, t: "Design", n: "1,120", c: "var(--google-red)" },
-  { i: LineChart, t: "Data & AI", n: "960", c: "var(--google-green)" },
-  { i: Megaphone, t: "Marketing", n: "740", c: "var(--google-yellow)" },
-  { i: HeartPulse, t: "Healthcare", n: "510", c: "var(--google-red)" },
-  { i: Wrench, t: "Operations", n: "430", c: "var(--google-blue)" },
-  { i: GraduationCap, t: "Education", n: "280", c: "var(--google-green)" },
-  { i: Building2, t: "Finance", n: "640", c: "var(--google-yellow)" },
-];
 
 const fadeInUpVariants = {
   hidden: { opacity: 0, y: 30 },
@@ -115,8 +103,8 @@ function Home() {
           id: c.id,
           name: c.name,
           logo_path: c.logo_path,
-          industry: c.industry || "Technology",
-          location: c.hq_location || c.location || "San Francisco",
+          industry: c.industry || "General",
+          location: c.hq_location || c.location || "—",
           openings: c.openings || 0,
           rating: c.rating || "4.5",
           size: c.company_size || c.size || "50-100"
@@ -126,8 +114,8 @@ function Home() {
     });
   }, []);
 
-  const featured = realJobs.length ? realJobs : jobs.slice(0, 4);
-  const topCompanies = realCompanies.length ? realCompanies : companies.slice(0, 6);
+  const featured = realJobs;
+  const topCompanies = realCompanies;
 
   const [isMounted, setIsMounted] = useState(false);
   const [wordIndex, setWordIndex] = useState(0);
@@ -200,7 +188,7 @@ function Home() {
               ) : (
                 <>
                   <span className="h-1.5 w-1.5 rounded-full bg-[var(--google-green)]" />
-                  {Number(stats?.open_roles || 12480).toLocaleString()} new roles this week · updated hourly
+                  {Number(stats?.open_roles ?? 0).toLocaleString()} active roles · updated hourly
                 </>
               )}
             </motion.div>
@@ -409,10 +397,10 @@ function Home() {
       >
         <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-4 sm:grid-cols-4 sm:p-5">
           {[
-            { k: "Open roles", v: statsLoading ? null : Number(stats?.open_roles ?? 12480).toLocaleString(), c: "var(--google-blue)" },
-            { k: "Companies", v: statsLoading ? null : `${Number(stats?.companies ?? 3200).toLocaleString()}+`, c: "var(--google-green)" },
-            { k: "Hired this month", v: statsLoading ? null : Number(stats?.hired_this_month ?? 1940).toLocaleString(), c: "var(--google-yellow)" },
-            { k: "Avg. response", v: statsLoading ? null : `${stats?.avg_response_hours ?? 48} hrs`, c: "var(--google-red)" },
+            { k: "Open roles", v: statsLoading ? null : Number(stats?.open_roles ?? 0).toLocaleString(), c: "var(--google-blue)" },
+            { k: "Companies", v: statsLoading ? null : `${Number(stats?.companies ?? 0).toLocaleString()}`, c: "var(--google-green)" },
+            { k: "Hired this month", v: statsLoading ? null : Number(stats?.hired_this_month ?? 0).toLocaleString(), c: "var(--google-yellow)" },
+            { k: "Avg. response", v: statsLoading ? null : (stats?.avg_response_hours ? `${stats.avg_response_hours} hrs` : "—"), c: "var(--google-red)" },
           ].map((s) => (
             <div key={s.k} className="px-2">
               <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{s.k}</div>
@@ -424,49 +412,6 @@ function Home() {
                 )}
               </div>
             </div>
-          ))}
-        </div>
-      </motion.section>
-
-      {/* Categories */}
-      <motion.section
-        className="mx-auto max-w-7xl px-6 py-14"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-80px" }}
-        variants={staggerContainerVariants}
-      >
-        <motion.div variants={fadeInUpVariants} className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-          <div>
-            <div className="text-[11px] font-medium uppercase tracking-wider text-[var(--google-blue)]">Browse</div>
-            <h2 className="mt-1.5 font-display text-2xl font-semibold tracking-tight sm:text-3xl">Explore by category</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Pick a path. We'll surface roles, salaries and companies in your field.</p>
-          </div>
-          <Link to="/jobs/search" className="pill shrink-0 border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted">
-            All categories
-          </Link>
-        </motion.div>
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {categories.map((c) => (
-            <motion.div key={c.t} variants={staggerItemVariants} className="w-full flex">
-              <Link
-                to={`/jobs/search?q=${encodeURIComponent(c.t)}`}
-                className="group flex flex-1 items-center gap-3 rounded-2xl border border-border bg-card p-4 transition hover:google-shadow"
-              >
-                <span
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
-                  style={{ background: `color-mix(in oklab, ${c.c} 14%, transparent)` }}
-                >
-                  <c.i className="h-5 w-5" style={{ color: c.c }} />
-                </span>
-                <div className="min-w-0">
-                  <div className="truncate font-display text-sm font-semibold tracking-tight group-hover:text-primary">{c.t}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {(stats?.category_counts?.[c.t] !== undefined) ? stats.category_counts[c.t] : c.n} open
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
           ))}
         </div>
       </motion.section>
@@ -630,13 +575,13 @@ function Home() {
             <div className="text-[11px] font-medium uppercase tracking-wider text-[var(--google-green)]">Market insights</div>
             <h2 className="mt-1.5 font-display text-2xl font-semibold tracking-tight sm:text-3xl">Know your worth before you apply</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Live salary benchmarks, demand growth and emerging tooling — pulled from 50,000+ verified offers across the network.
+              Live salary benchmarks, demand growth and emerging tooling — processed in real-time across active platform job requisitions.
             </p>
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {[
-                { k: "Demand growth", v: stats?.demand_growth ?? "+18%", sub: "YoY tech roles", c: "var(--google-green)" },
-                { k: "Median salary", v: stats?.median_salary ?? "$142k", sub: "Senior engineer", c: "var(--google-blue)" },
-                { k: "Time to offer", v: stats?.time_to_offer ?? "21d", sub: "Across platform", c: "var(--google-yellow)" },
+                { k: "Demand growth", v: stats?.demand_growth ?? "—", sub: "YoY tech roles", c: "var(--google-green)" },
+                { k: "Median salary", v: stats?.median_salary ?? "—", sub: "Senior engineer", c: "var(--google-blue)" },
+                { k: "Time to offer", v: stats?.time_to_offer ?? "—", sub: "Across platform", c: "var(--google-yellow)" },
               ].map((s) => (
                 <div key={s.k} className="rounded-2xl border border-border bg-card p-4">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{s.k}</div>

@@ -33,8 +33,7 @@ import { portalBilling, portalAuth } from "../../lib/portalApi";
 import { usePortalAuthStore } from "../../stores/portalAuthStore";
 import { SocialTooltip } from "../../components/ui/social-media";
 import useDocumentTitle from "../../hooks/useDocumentTitle";
-import ThemeToggle from "../../components/ThemeToggle";
-import { toast } from "react-hot-toast";
+import { DEVELOPER_PLANS } from "../../lib/constants";
 
 /* ═══════════════════ Framer Motion Animation System ═══════════════════ */
 const fadeInUpVariants = {
@@ -516,11 +515,7 @@ export default function DeveloperLandingPage() {
   const [activeCodeTab, setActiveCodeTab] = useState("Python");
   const [openFaq, setOpenFaq] = useState(null);
 
-  const [plans, setPlans] = useState([
-    { id: "free", name: "Free", price: 0, features: ["100 free parses/month", "Community support", "Basic formatting", "No SLA"] },
-    { id: "starter", name: "Starter", price: 2999, popular: true, features: ["1,000 parses/month", "Email support", "All output formats", "99% uptime SLA", "Webhooks"] },
-    { id: "business", name: "Business", price: 9999, features: ["10,000 parses/month", "Priority VIP support", "Custom prompts", "99.9% uptime SLA", "Embed UI Component"] }
-  ]);
+  const [plans, setPlans] = useState(DEVELOPER_PLANS);
 
   const { tier, jwt, initFromStorage, setAuth } = usePortalAuthStore();
   const [isDevLoggedIn, setIsDevLoggedIn] = useState(false);

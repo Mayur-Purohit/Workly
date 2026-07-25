@@ -5,15 +5,8 @@ import { Search, MapPin, Sparkles, CheckCircle2, TrendingUp, Compass, Cpu, FileT
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import JobsNavbar from '../components/JobsNavbar';
 import ResumeUploadModal from '../components/ResumeUploadModal';
-import { publicJobsAPI } from '../lib/api';
+import { publicJobsAPI, publicAPI } from '../lib/api';
 import { Footer } from '../components/user/site-chrome';
-
-const salaryData = [
-  { name: 'Q1', growth: 4.2 },
-  { name: 'Q2', growth: 6.8 },
-  { name: 'Q3', growth: 9.1 },
-  { name: 'Q4', growth: 12.4 }
-];
 
 const LOCATION_STATE_MAP = {
   'bangalore': 'Bangalore, Karnataka',
@@ -85,6 +78,8 @@ export default function JobsLandingPage() {
   const [locationSuggestions, setLocationSuggestions] = useState([]);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
 
+  const [trends, setTrends] = useState(null);
+
   useEffect(() => {
     const fetchJobs = async () => {
       try {
@@ -95,6 +90,10 @@ export default function JobsLandingPage() {
       }
     };
     fetchJobs();
+
+    publicAPI.getMarketTrends()
+      .then(d => setTrends(d?.trends || null))
+      .catch(e => console.error("Failed to load market trends", e));
 
     const checkProfile = () => {
       const saved = localStorage.getItem('vish_seeker_profile');
@@ -458,19 +457,25 @@ export default function JobsLandingPage() {
                 </div>
                 <h3 className="font-extrabold text-base text-charcoal">Salary Growth</h3>
                 <p className="text-gray-500 text-xs font-medium">
-                  Tech sector saw an average of +12.4% increase in specialized roles this quarter.
+                  Tech sector wage growth is tracked at +{trends?.average_tech_base_change ?? 0}% based on verified platform postings.
                 </p>
               </div>
               
               {/* Bar chart container */}
               <div className="w-full h-24">
-                <ResponsiveContainer width="100%" height="100%" minHeight={96} minWidth={100}>
-                  <BarChart data={salaryData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                    <XAxis dataKey="name" stroke="#9CA3AF" fontSize={9} axisLine={false} tickLine={false} />
-                    <Tooltip cursor={{ fill: 'rgba(37, 99, 235, 0.03)' }} contentStyle={{ fontSize: 9, borderRadius: 8, border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }} />
-                    <Bar dataKey="growth" fill="#111111" radius={[4, 4, 0, 0]} barSize={24} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {(!trends?.salary_timeline || trends.salary_timeline.length === 0) ? (
+                  <div className="w-full h-full flex items-center justify-center text-[11px] text-gray-400 font-medium border border-dashed border-gray-300 rounded-xl">
+                    No trajectory data yet
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%" minHeight={96} minWidth={100}>
+                    <BarChart data={trends.salary_timeline} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                      <XAxis dataKey="year" stroke="#9CA3AF" fontSize={9} axisLine={false} tickLine={false} />
+                      <Tooltip cursor={{ fill: 'rgba(37, 99, 235, 0.03)' }} contentStyle={{ fontSize: 9, borderRadius: 8, border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }} />
+                      <Bar dataKey="salary" fill="#111111" radius={[4, 4, 0, 0]} barSize={24} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
 
@@ -482,11 +487,11 @@ export default function JobsLandingPage() {
                 </div>
                 <h3 className="font-extrabold text-base text-charcoal">Hiring Velocity</h3>
                 <p className="text-gray-500 text-xs font-medium">
-                  Remote roles are closing 3 days faster than traditional on-site positions.
+                  {trends?.hiring_velocity_days ? `Remote roles are closing ${trends.hiring_velocity_days} days faster across active requisitions.` : 'Hiring velocity tracked in real-time across active requisitions.'}
                 </p>
               </div>
               <div className="text-5xl font-black text-[#059669] tracking-tight">
-                32% <span className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">faster</span>
+                {trends?.hiring_velocity ?? 0} <span className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Index score</span>
               </div>
             </div>
 

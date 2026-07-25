@@ -663,7 +663,7 @@ export default function JobsSearchPage() {
                         </p>
                         <p className="text-xs text-[#6B7280] font-medium flex items-center">
                           <DollarSign size={12} className="text-[#5c5c5c] mr-0.5 relative -top-[0.5px]" />
-                          <span>${job.min_experience ? (job.min_experience * 30 + 90) : 120}k - ${job.min_experience ? (job.min_experience * 35 + 120) : 180}k • 2 hours ago • <span className="text-[#22C55E] font-semibold">Hiring Rapidly</span></span>
+                          <span>{job.salary_range || (job.salary_min ? `$${job.salary_min} - $${job.salary_max}` : "Salary Not Disclosed")} • {job.created_at ? new Date(job.created_at).toLocaleDateString() : "Recently posted"}</span>
                         </p>
                         <p className="text-xs text-[#5c5c5c] max-w-xl line-clamp-2 pt-1.5 font-sans">
                           {renderTextWithIcons(getCleanDescriptionPreview(job.job_description))}

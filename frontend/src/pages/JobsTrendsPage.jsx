@@ -7,19 +7,7 @@ import ResumeUploadModal from '../components/ResumeUploadModal';
 import { publicAPI } from '../lib/api';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 
-const defaultSalaryTimeline = [
-  { year: '2023', salary: 112 },
-  { year: '2024', salary: 124 },
-  { year: '2025', salary: 138 },
-  { year: '2026 (Est)', salary: 154 }
-];
 
-const defaultRegionDistribution = [
-  { name: 'Bengaluru', value: 450, color: '#2563EB' },
-  { name: 'San Francisco', value: 380, color: '#0F56B3' },
-  { name: 'Zurich', value: 180, color: '#22C55E' },
-  { name: 'London', value: 240, color: '#8b5cf6' }
-];
 
 export default function JobsTrendsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -144,9 +132,14 @@ export default function JobsTrendsPage() {
                     <LoadingSkeleton width="60px" height="12px" />
                   </div>
                 </div>
+              ) : (!trends?.salary_timeline || trends.salary_timeline.length === 0) ? (
+                <div className="w-full h-full flex flex-col items-center justify-center text-xs text-muted-foreground bg-muted/20 rounded-2xl border border-dashed border-border p-6 text-center">
+                  <TrendingUp className="w-6 h-6 text-muted-foreground/60 mb-2" />
+                  <span>No wage trajectory data recorded yet</span>
+                </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%" minHeight={256} minWidth={100}>
-                  <AreaChart data={trends?.salary_timeline || defaultSalaryTimeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <AreaChart data={trends.salary_timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="salaryGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2}/>
@@ -186,20 +179,25 @@ export default function JobsTrendsPage() {
                     ))}
                   </div>
                 </>
+              ) : (!trends?.region_distribution || trends.region_distribution.length === 0) ? (
+                <div className="col-span-12 h-56 flex flex-col items-center justify-center text-xs text-muted-foreground bg-muted/20 rounded-2xl border border-dashed border-border p-6 text-center">
+                  <Globe className="w-6 h-6 text-muted-foreground/60 mb-2" />
+                  <span>No regional posting data available yet</span>
+                </div>
               ) : (
                 <>
                   <div className="md:col-span-6 h-56">
                     <ResponsiveContainer width="100%" height="100%" minHeight={224} minWidth={100}>
                       <PieChart>
                         <Pie
-                          data={trends?.region_distribution || defaultRegionDistribution}
+                          data={trends.region_distribution}
                           cx="50%" cy="50%"
                           innerRadius={50}
                           outerRadius={80}
                           paddingAngle={3}
                           dataKey="value"
                         >
-                          {(trends?.region_distribution || defaultRegionDistribution).map((entry, index) => (
+                          {trends.region_distribution.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
@@ -208,7 +206,7 @@ export default function JobsTrendsPage() {
                     </ResponsiveContainer>
                   </div>
                   <div className="md:col-span-6 space-y-3">
-                    {(trends?.region_distribution || defaultRegionDistribution).map((region, idx) => (
+                    {trends.region_distribution.map((region, idx) => (
                       <div key={idx} className="flex items-center justify-between text-xs font-semibold">
                         <div className="flex items-center space-x-2">
                           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: region.color }} />

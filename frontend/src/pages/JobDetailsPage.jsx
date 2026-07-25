@@ -681,7 +681,7 @@ export default function JobDetailsPage() {
                   <DollarSign size={16} className="text-[#2563EB] shrink-0" />
                   <div>
                     <p className="font-bold text-[#2A2A2A]">Salary</p>
-                    <p>${job.min_experience ? (job.min_experience * 30 + 90) : 120}k - ${job.min_experience ? (job.min_experience * 35 + 120) : 180}k</p>
+                    <p>{job.salary_range || (job.salary_min ? `$${job.salary_min} - $${job.salary_max}` : "Salary Not Disclosed")}</p>
                   </div>
                 </div>
 
@@ -689,7 +689,7 @@ export default function JobDetailsPage() {
                   <Users size={16} className="text-[#2563EB] shrink-0" />
                   <div>
                     <p className="font-bold text-[#2A2A2A]">Applicants</p>
-                    <p>{job.min_experience ? (job.min_experience * 18 + 14) : 48}</p>
+                    <p>{job.total_candidates ?? 0}</p>
                   </div>
                 </div>
               </div>
