@@ -89,7 +89,7 @@ function Home() {
           company: j.company_name,
           company_logo_path: j.company_logo_path,
           location: j.location || "Remote",
-          posted: j.created_at ? new Date(j.created_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : "Recently",
+          posted: j.created_at ? new Date(j.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "Recently",
           description: j.job_description ? (j.job_description.substring(0, 100) + "...") : "",
           salary: j.salary_range || "Competitive",
           remote: j.location || "Remote",
@@ -374,7 +374,7 @@ function Home() {
             >
               <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-[var(--google-green)]" /> Verified employers</span>
               <span className="flex items-center gap-1.5">
-                <Zap className="h-3.5 w-3.5 text-[var(--google-yellow)]" /> 
+                <Zap className="h-3.5 w-3.5 text-[var(--google-yellow)]" />
                 {statsLoading ? (
                   <LoadingSkeleton width="70px" height="12px" />
                 ) : (

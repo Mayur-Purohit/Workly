@@ -18,7 +18,7 @@ const BASE = getApiBase();
 
 export const API_HOST = BASE.replace("/api/v1", "");
 
-function getHeaders(isFile=false) {
+function getHeaders(isFile = false) {
   const h = {};
   const apiKey = localStorage.getItem("vish_api_key");
   if (apiKey) h["X-API-Key"] = String(apiKey).replace(/[^\x20-\x7E]/g, "");
@@ -50,18 +50,18 @@ async function safeParseJson(res) {
   }
 }
 
-async function req(method, path, body=null, isFile=false) {
+async function req(method, path, body = null, isFile = false) {
   const opts = {
     method,
     headers: getHeaders(isFile),
-    body: body 
+    body: body
       ? (isFile ? body : JSON.stringify(body))
       : undefined
   }
-  
+
   const res = await fetch(BASE + path, opts)
   const data = await safeParseJson(res)
-  
+
   if (res.status === 401) {
     if (path.includes("login") || path.includes("register") || path.includes("auth")) {
       throw new Error(data?.error || "Invalid credentials");
@@ -90,24 +90,24 @@ async function req(method, path, body=null, isFile=false) {
 
 // AUTH
 export const authAPI = {
-  register: (b) => req("POST","/auth/register",b),
-  login: async (email,password) => {
-    const d = await req("POST","/auth/login",
-                         {email,password})
-    localStorage.setItem("vish_jwt",d.jwt_token)
-    localStorage.setItem("vish_api_key",d.api_key||"")
-    localStorage.setItem("vish_company",JSON.stringify(d))
+  register: (b) => req("POST", "/auth/register", b),
+  login: async (email, password) => {
+    const d = await req("POST", "/auth/login",
+      { email, password })
+    localStorage.setItem("vish_jwt", d.jwt_token)
+    localStorage.setItem("vish_api_key", d.api_key || "")
+    localStorage.setItem("vish_company", JSON.stringify(d))
     return d
   },
   logout: () => {
     localStorage.removeItem("vish_jwt")
     localStorage.removeItem("vish_api_key")
     localStorage.removeItem("vish_company")
-    window.location.href="/login"
+    window.location.href = "/login"
   },
-  generateKey: (b) => req("POST","/auth/api-keys/generate",b),
-  getKeys: () => req("GET","/auth/api-keys"),
-  deleteKey: (id) => req("DELETE",`/auth/api-keys/${id}`),
+  generateKey: (b) => req("POST", "/auth/api-keys/generate", b),
+  getKeys: () => req("GET", "/auth/api-keys"),
+  deleteKey: (id) => req("DELETE", `/auth/api-keys/${id}`),
   googleLogin: async (credential) => {
     const d = await req("POST", "/auth/login-google", { credential })
     localStorage.setItem("vish_jwt", d.jwt_token)
@@ -122,8 +122,8 @@ export const authAPI = {
     localStorage.setItem("vish_company", JSON.stringify(d))
     return d
   },
-  getMe: () => req("GET","/auth/me"),
-  updateProfile: (b) => req("POST","/auth/update-profile",b),
+  getMe: () => req("GET", "/auth/me"),
+  updateProfile: (b) => req("POST", "/auth/update-profile", b),
   uploadLogo: (file) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -139,61 +139,61 @@ export const authAPI = {
 
 // SESSIONS
 export const sessionsAPI = {
-  create: (b) => req("POST","/sessions",b),
-  list: (qs="") => req("GET",`/sessions${qs}`),
-  get: (id) => req("GET",`/sessions/${id}`),
-  update: (id,b) => req("PATCH",`/sessions/${id}`,b),
-  delete: (id,b) => req("DELETE",`/sessions/${id}`,b),
-  setCriteria: (id,b) => 
-    req("POST",`/sessions/${id}/criteria`,b),
-  inferSkills: (id,b) => 
-    req("POST",`/sessions/${id}/infer-skills`,b),
-  matchAll: (id) => 
-    req("POST",`/sessions/${id}/match-all`),
+  create: (b) => req("POST", "/sessions", b),
+  list: (qs = "") => req("GET", `/sessions${qs}`),
+  get: (id) => req("GET", `/sessions/${id}`),
+  update: (id, b) => req("PATCH", `/sessions/${id}`, b),
+  delete: (id, b) => req("DELETE", `/sessions/${id}`, b),
+  setCriteria: (id, b) =>
+    req("POST", `/sessions/${id}/criteria`, b),
+  inferSkills: (id, b) =>
+    req("POST", `/sessions/${id}/infer-skills`, b),
+  matchAll: (id) =>
+    req("POST", `/sessions/${id}/match-all`),
   generateJD: (b) => req("POST", "/sessions/generate-jd", b),
   getClusters: (id) => req("GET", `/sessions/${id}/candidate-clusters`)
 }
 
 // INGEST
 export const ingestAPI = {
-  uploadFiles: (sessionId,files) => {
+  uploadFiles: (sessionId, files) => {
     const fd = new FormData()
-    fd.append("session_id",sessionId)
-    files.forEach(f => fd.append("files",f))
-    return req("POST","/ingest/upload",fd,true)
+    fd.append("session_id", sessionId)
+    files.forEach(f => fd.append("files", f))
+    return req("POST", "/ingest/upload", fd, true)
   },
-  uploadZip: (sessionId,file) => {
+  uploadZip: (sessionId, file) => {
     const fd = new FormData()
-    fd.append("session_id",sessionId)
-    fd.append("file",file)
-    return req("POST","/ingest/zip",fd,true)
+    fd.append("session_id", sessionId)
+    fd.append("file", file)
+    return req("POST", "/ingest/zip", fd, true)
   },
-  getOAuthUrl: (type,sessionId) =>
+  getOAuthUrl: (type, sessionId) =>
     req("GET",
       `/ingest/oauth/google/url?type=${type}&session_id=${sessionId}`
     ),
-  connectGmail: (b) => req("POST","/ingest/gmail/connect",b),
-  syncGmail: (b) => req("POST","/ingest/gmail/sync",b),
-  connectGDrive: (b) => req("POST","/ingest/gdrive/connect",b),
-  syncGDrive: (b) => req("POST","/ingest/gdrive/sync",b),
-  connectForm: (b) => req("POST","/ingest/google-form",b),
-  importATS: (sessionId,format,file) => {
+  connectGmail: (b) => req("POST", "/ingest/gmail/connect", b),
+  syncGmail: (b) => req("POST", "/ingest/gmail/sync", b),
+  connectGDrive: (b) => req("POST", "/ingest/gdrive/connect", b),
+  syncGDrive: (b) => req("POST", "/ingest/gdrive/sync", b),
+  connectForm: (b) => req("POST", "/ingest/google-form", b),
+  importATS: (sessionId, format, file) => {
     const fd = new FormData()
-    fd.append("session_id",sessionId)
-    fd.append("format",format)
-    fd.append("file",file)
-    return req("POST","/ingest/ats-import",fd,true)
+    fd.append("session_id", sessionId)
+    fd.append("format", format)
+    fd.append("file", file)
+    return req("POST", "/ingest/ats-import", fd, true)
   },
-  getStatus: (jobId) => req("GET",`/ingest/status/${jobId}`)
+  getStatus: (jobId) => req("GET", `/ingest/status/${jobId}`)
 }
 
 // CANDIDATES
 export const candidatesAPI = {
-  list: (sessionId,qs="") =>
-    req("GET",`/sessions/${sessionId}/candidates${qs}`),
-  listAll: (qs="") =>
-    req("GET",`/candidates${qs}`),
-  get: (sessionId,candId) =>
+  list: (sessionId, qs = "") =>
+    req("GET", `/sessions/${sessionId}/candidates${qs}`),
+  listAll: (qs = "") =>
+    req("GET", `/candidates${qs}`),
+  get: (sessionId, candId) =>
     req("GET",
       `/sessions/${sessionId}/candidates/${candId}`),
   action: (sessionId, candId, action, file = null) => {
@@ -205,36 +205,33 @@ export const candidatesAPI = {
     }
     return req("PATCH", `/sessions/${sessionId}/candidates/${candId}/action`, { action });
   },
-  delete: (sessionId,candId) =>
+  delete: (sessionId, candId) =>
     req("DELETE",
       `/sessions/${sessionId}/candidates/${candId}`),
-  bulkReject: (sessionId,ids) =>
+  bulkReject: (sessionId, ids) =>
     req("DELETE",
       `/sessions/${sessionId}/candidates/bulk-reject`,
-      {candidate_ids:ids})
+      { candidate_ids: ids })
 }
 
 // CHAT
 export const chatAPI = {
-  send: (sessionId,b) =>
-    req("POST",`/sessions/${sessionId}/chat`,b),
+  send: (sessionId, b) =>
+    req("POST", `/sessions/${sessionId}/chat`, b),
   getHistory: (sessionId) =>
-    req("GET",`/sessions/${sessionId}/chat/history`),
+    req("GET", `/sessions/${sessionId}/chat/history`),
   clear: (sessionId) =>
-    req("DELETE",`/sessions/${sessionId}/chat/history`)
+    req("DELETE", `/sessions/${sessionId}/chat/history`)
 }
 
 // EXPORT (returns URL string, not fetch)
 export const exportAPI = {
-  candidatesUrl: (sessionId,status="hired") =>
+  candidatesUrl: (sessionId, status = "hired") =>
     `${BASE}/sessions/${sessionId}/export/candidates` +
-    `?status=${status}&x_api_key=${
-      localStorage.getItem("vish_api_key")||""}&token=${
-      localStorage.getItem("vish_jwt")||""}`,
+    `?status=${status}&x_api_key=${localStorage.getItem("vish_api_key") || ""}&token=${localStorage.getItem("vish_jwt") || ""}`,
   reportUrl: (sessionId) =>
     `${BASE}/sessions/${sessionId}/export/report` +
-    `?x_api_key=${localStorage.getItem("vish_api_key")||""}&token=${
-      localStorage.getItem("vish_jwt")||""}`
+    `?x_api_key=${localStorage.getItem("vish_api_key") || ""}&token=${localStorage.getItem("vish_jwt") || ""}`
 }
 
 // BILLING
@@ -400,7 +397,7 @@ export const seekerAPI = {
   applyJob: (id, coverNote = '') =>
     seekerReq('POST', `/api/v1/seeker/jobs/${id}/apply`, { cover_note: coverNote }),
   generateCoverLetter: (b) => seekerReq('POST', '/api/v1/seeker/jobs/generate-cover-letter', b),
-  
+
   // Saved Jobs / Bookmarks
   saveJob: (id, save = true) => seekerReq(save ? 'POST' : 'DELETE', `/api/v1/seeker/jobs/${id}/save`),
   getSavedJobs: () => seekerReq('GET', '/api/v1/seeker/jobs/saved'),
