@@ -1163,9 +1163,15 @@ export default function LandingPage() {
   const location = useLocation();
   const isLoggedIn = !!localStorage.getItem("vish_jwt");
 
-  const { scrollYProgress } = useScroll();
+  const { scrollY, scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 150, damping: 30 });
   const width = useTransform(scaleX, [0, 1], ["0%", "100%"]);
+
+  // Scroll animations for background video (only visible in the hero section)
+  // Fades out and scales up as user scrolls past the hero section
+  const bgOpacity = useTransform(scrollY, [0, 600], [1, 0]);
+  const bgScale = useTransform(scrollY, [0, 600], [1.06, 1.15]);
+  const bgY = useTransform(scrollY, [0, 600], [0, 80]); // smooth translation for parallax
 
   // ── Live data from backend ──────────────────────────────────────────────────
   const { stats, liveSession, fraudSignals, plans, loading } = useLandingData();
@@ -1216,28 +1222,36 @@ export default function LandingPage() {
   return (
     <div style={{ padding: '0', backgroundColor: 'transparent', color: 'var(--text)', minHeight: '100vh', transition: 'background-color 0.3s, color 0.3s', position: 'relative' }}>
       
+      {/* Dynamic base background that matches theme when video fades out */}
+      <div 
+        style={{ 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          width: '100%', 
+          height: '100%', 
+          backgroundColor: 'var(--bg)', 
+          zIndex: -3, 
+          pointerEvents: 'none',
+          transition: 'background-color 0.3s'
+        }} 
+      />
+
       {/* Background and scrim overlay styling */}
       <style>{`
         .bg-video {
-          position: fixed;
-          top: 0;
-          left: 0;
           width: 100%;
           height: 100%;
           object-fit: cover;
-          z-index: -2;
-          filter: blur(2px) saturate(1.06);
-          transform: scale(1.06);
           pointer-events: none;
         }
 
         .bg-scrim {
-          position: fixed;
+          position: absolute;
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
-          z-index: -1;
           pointer-events: none;
           background: 
             radial-gradient(circle at 50% 44%, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.80) 30%, rgba(255,255,255,0.46) 58%, rgba(255,255,255,0.20) 100%),
@@ -1287,19 +1301,33 @@ export default function LandingPage() {
         }
       `}</style>
 
-      {/* BACKGROUND VIDEO PLAYER */}
-      <video
-        ref={videoRef}
-        src="https://zxdefgavgwfxastwmmjm.supabase.co/storage/v1/object/public/assets/flux.mp4"
-        className="bg-video"
-        autoPlay
-        muted
-        loop
-        playsinline
-      />
-
-      {/* RADIUS WASH OVERLAY */}
-      <div className="bg-scrim" />
+      {/* SCROLL-ACTIVATED HERO VIDEO BACKGROUND CONTAINER */}
+      <motion.div
+        style={{
+          opacity: bgOpacity,
+          scale: bgScale,
+          y: bgY,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: -2,
+          pointerEvents: 'none'
+        }}
+      >
+        <video
+          ref={videoRef}
+          src="https://zxdefgavgwfxastwmmjm.supabase.co/storage/v1/object/public/assets/flux.mp4"
+          className="bg-video"
+          autoPlay
+          muted
+          loop
+          playsinline
+          style={{ filter: 'blur(2px) saturate(1.06)' }}
+        />
+        <div className="bg-scrim" />
+      </motion.div>
 
       <motion.div style={{ width }} className="fixed top-0 left-0 h-[3px] bg-[var(--google-blue)] z-[60]" />
       
