@@ -1928,14 +1928,24 @@ export default function ResumeEditor() {
 
                   {/* Score Breakdown Slider Indicators */}
                   <div className="space-y-3.5">
-                    <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Checks Breakdown</h5>
+                    <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      {atsReport.mode === "general_ats" ? "General ATS Checklist (10 Categories)" : "Checks Breakdown"}
+                    </h5>
                     
-                    <BreakdownBar label="Keyword Match (35%)" score={atsReport.detailed_breakdown?.keyword_match?.score ?? atsReport.breakdown?.keywords?.score} />
-                    <BreakdownBar label="Skills Match (25%)" score={atsReport.detailed_breakdown?.skills_match?.score ?? atsReport.breakdown?.integrity?.score} />
-                    <BreakdownBar label="Experience Relevance (15%)" score={atsReport.detailed_breakdown?.experience_relevance?.score ?? 70} />
-                    <BreakdownBar label="Project Relevance (10%)" score={atsReport.detailed_breakdown?.project_relevance?.score ?? 70} />
-                    <BreakdownBar label="Education Match (5%)" score={atsReport.detailed_breakdown?.education_match?.score ?? atsReport.breakdown?.structure?.score} />
-                    <BreakdownBar label="ATS Formatting (10%)" score={atsReport.detailed_breakdown?.ats_formatting?.score ?? atsReport.breakdown?.formatting?.score} />
+                    {atsReport.mode === "general_ats" && atsReport.detailed_breakdown ? (
+                      Object.entries(atsReport.detailed_breakdown).map(([key, item]) => (
+                        <BreakdownBar key={key} label={`${item.label} (${item.weight_pct}%)`} score={item.score} />
+                      ))
+                    ) : (
+                      <>
+                        <BreakdownBar label="Keyword Match (35%)" score={atsReport.detailed_breakdown?.keyword_match?.score ?? atsReport.breakdown?.keywords?.score} />
+                        <BreakdownBar label="Skills Match (25%)" score={atsReport.detailed_breakdown?.skills_match?.score ?? atsReport.breakdown?.integrity?.score} />
+                        <BreakdownBar label="Experience Relevance (15%)" score={atsReport.detailed_breakdown?.experience_relevance?.score ?? 70} />
+                        <BreakdownBar label="Project Relevance (10%)" score={atsReport.detailed_breakdown?.project_relevance?.score ?? 70} />
+                        <BreakdownBar label="Education Match (5%)" score={atsReport.detailed_breakdown?.education_match?.score ?? atsReport.breakdown?.structure?.score} />
+                        <BreakdownBar label="ATS Formatting (10%)" score={atsReport.detailed_breakdown?.ats_formatting?.score ?? atsReport.breakdown?.formatting?.score} />
+                      </>
+                    )}
                   </div>
 
                   {/* Strengths & Weaknesses */}

@@ -88,32 +88,6 @@ DOMAIN_SKILLS_DICT = {
     "caching", "message queue", "rabbitmq", "celery", "websocket"
 }
 
-# --- Constants used only for the General (No-JD) ATS checklist ---
-
-WEAK_PHRASES = [
-    "responsible for", "duties included", "worked on", "helped with",
-    "in charge of", "tasked with", "assisted in", "was involved in",
-    "familiar with", "exposure to", "participated in", "involved in",
-    "worked with", "helped to", "duties consisted"
-]
-
-STRONG_ACTION_VERBS = {
-    "led", "built", "developed", "designed", "implemented", "engineered", "architected",
-    "created", "launched", "optimized", "improved", "reduced", "increased", "automated",
-    "streamlined", "spearheaded", "drove", "delivered", "managed", "coordinated",
-    "established", "initiated", "resolved", "researched", "analyzed", "deployed",
-    "integrated", "migrated", "refactored", "orchestrated", "mentored", "trained",
-    "presented", "negotiated", "generated", "achieved", "executed", "scaled",
-    "authored", "pioneered", "transformed", "accelerated", "boosted", "cut",
-    "enhanced", "configured", "provisioned", "monitored", "containerized",
-    "devised", "formulated", "restructured", "consolidated", "modernized"
-}
-
-WEAK_START_VERBS = {
-    "responsible", "worked", "helped", "assisted", "participated", "involved",
-    "tasked", "handled", "did", "was", "familiar", "exposure", "duties"
-}
-
 # Module-level cache for JD parse results to ensure deterministic scoring
 _jd_parse_cache = {}
 
@@ -522,336 +496,6 @@ class AtsCompatibilityAgent:
             
         return max(0, score), issues
 
-    # ==========================================================================
-    # GENERAL (NO-JD) ATS CHECKLIST — 10 categories, weights sum to 100
-    #   ATS Parseability        25%   (reuses _check_formatting)
-    #   Grammar & Spelling      10%   (reuses _check_spelling_and_grammar)
-    #   Resume Structure        15%   (reuses _check_structure)
-    #   Contact Information      5%
-    #   Content Quality         15%
-    #   Quantified Achievements 10%
-    #   Action Verbs             5%
-    #   Bullet Consistency       5%
-    #   General Tech Keywords    5%
-    #   Readability & Formatting 5%
-    # ==========================================================================
-
-    def _get_all_bullets(self, parsed_data: dict) -> list:
-        """Collects every experience + project bullet/description for content-level checks."""
-        bullets = []
-        for exp in parsed_data.get("experience", []) or []:
-            b = exp.get("bullets") or exp.get("responsibilities") or []
-            if isinstance(b, list):
-                bullets.extend([str(x).strip() for x in b if str(x).strip()])
-            elif isinstance(b, str) and b.strip():
-                bullets.append(b.strip())
-        for proj in parsed_data.get("projects", []) or []:
-            b = proj.get("bullets") or proj.get("responsibilities") or []
-            if isinstance(b, list):
-                bullets.extend([str(x).strip() for x in b if str(x).strip()])
-            elif isinstance(b, str) and b.strip():
-                bullets.append(b.strip())
-            desc = proj.get("description") or ""
-            if desc and desc.strip():
-                bullets.append(desc.strip())
-        return bullets
-
-    def _check_contact_info(self, parsed_data: dict, resume_text: str) -> tuple:
-        """5%: Name, valid email, valid phone, LinkedIn/GitHub presence."""
-        score = 100
-        issues = []
-        personal = parsed_data.get("personalInfo", {}) or {}
-        name = personal.get("fullName") or parsed_data.get("fullName") or ""
-        email = personal.get("email") or parsed_data.get("email") or ""
-        phone = personal.get("phone") or parsed_data.get("phone") or ""
-        linkedin = personal.get("linkedin") or parsed_data.get("linkedin") or ""
-        github = personal.get("github") or parsed_data.get("github") or ""
-        text_lower = (resume_text or "").lower()
-
-        if not str(name).strip():
-            score -= 35
-            issues.append("Full name not detected. Make sure your name is clearly visible at the top of the resume.")
-
-        email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-        if not email or not email_pattern.match(str(email).strip()):
-            score -= 30
-            issues.append("Valid email address not found. Add a professional email address.")
-
-        phone_digits = re.sub(r'[^0-9]', '', str(phone) or "")
-        if not phone or len(phone_digits) < 10:
-            score -= 20
-            issues.append("Valid phone number not found. Include a reachable 10+ digit contact number.")
-
-        if not linkedin and not github and "linkedin.com" not in text_lower and "github.com" not in text_lower:
-            score -= 15
-            issues.append("No LinkedIn or GitHub link found. Adding one is recommended for stronger credibility.")
-
-        return max(0, score), issues
-
-    def _check_content_quality(self, parsed_data: dict) -> tuple:
-        """15%: Vague phrasing, bullet depth, and presence of a professional summary."""
-        bullets = self._get_all_bullets(parsed_data)
-        if not bullets:
-            return 30, ["No experience/project bullet points detected to evaluate content quality."]
-
-        score = 100
-        issues = []
-        weak_count = sum(1 for b in bullets if any(p in b.lower() for p in WEAK_PHRASES))
-        short_count = sum(1 for b in bullets if len(b.split()) < 6)
-
-        weak_ratio = weak_count / len(bullets)
-        short_ratio = short_count / len(bullets)
-
-        if weak_count > 0:
-            score -= min(40, round(weak_ratio * 100))
-            issues.append(f"{weak_count} bullet(s) use vague phrasing like 'responsible for' or 'worked on'. Rewrite as action + result.")
-
-        if short_ratio > 0.3:
-            score -= 20
-            issues.append("Several bullet points are too short to show real impact. Expand with what you did, how, and the outcome.")
-
-        summary = parsed_data.get("summary") or parsed_data.get("professional_summary") or ""
-        if not str(summary).strip():
-            score -= 10
-            issues.append("No professional summary found. A 2-3 line summary helps both ATS parsers and recruiters quickly grasp your profile.")
-
-        return max(0, score), issues
-
-    def _check_quantified_achievements(self, parsed_data: dict) -> tuple:
-        """10%: Share of bullets carrying a measurable metric (%, $, counts, time)."""
-        bullets = self._get_all_bullets(parsed_data)
-        if not bullets:
-            return 30, ["No bullet points found to check for quantified impact."]
-
-        metric_pattern = re.compile(
-            r'(\d+(\.\d+)?\s?(%|percent|x|k\+|k\b|m\+|hours?|days?|months?|years?|users?|customers?))|(\$\s?\d)',
-            re.IGNORECASE
-        )
-        quantified = 0
-        for b in bullets:
-            if metric_pattern.search(b):
-                quantified += 1
-            elif re.search(r'\d', b):
-                quantified += 0.5
-
-        ratio = quantified / len(bullets)
-        score = round(min(100, ratio * 100))
-        issues = []
-        if ratio < 0.3:
-            issues.append("Very few bullets include measurable results. Quantify impact wherever possible, e.g. 'reduced load time by 40%'.")
-        elif ratio < 0.6:
-            issues.append("Some bullets are quantified — adding metrics to more of them will strengthen impact further.")
-        return score, issues
-
-    def _check_action_verbs(self, parsed_data: dict) -> tuple:
-        """5%: Bullets should start with a strong, varied action verb."""
-        bullets = self._get_all_bullets(parsed_data)
-        if not bullets:
-            return 30, ["No bullet points found to evaluate action verb usage."]
-
-        strong_start = 0
-        weak_start = 0
-        used_verbs = []
-        for b in bullets:
-            words = re.findall(r"[A-Za-z']+", b)
-            if not words:
-                continue
-            first = words[0].lower()
-            if first in STRONG_ACTION_VERBS:
-                strong_start += 1
-                used_verbs.append(first)
-            elif first in WEAK_START_VERBS:
-                weak_start += 1
-
-        ratio = strong_start / len(bullets)
-        score = round(min(100, ratio * 100))
-        issues = []
-        if weak_start > 0:
-            issues.append(f"{weak_start} bullet(s) start with weak phrasing (e.g. 'Responsible for', 'Helped', 'Worked on'). Lead with a strong verb like 'Led', 'Built', or 'Optimized'.")
-        repeated = [v for v, c in Counter(used_verbs).items() if c > 2]
-        if repeated:
-            score -= 10
-            issues.append(f"Verb repetition detected ({', '.join(repeated[:3])} used too often). Vary action verbs across bullets.")
-        if ratio < 0.5 and not issues:
-            issues.append("Most bullets don't open with a strong action verb. Start each one with an active, specific verb.")
-        return max(0, score), issues
-
-    def _check_bullet_consistency(self, parsed_data: dict) -> tuple:
-        """5%: Punctuation, tense, and length consistency across bullets."""
-        bullets = self._get_all_bullets(parsed_data)
-        if len(bullets) < 2:
-            return 100, []
-
-        score = 100
-        issues = []
-
-        ends_period = sum(1 for b in bullets if b.strip().endswith("."))
-        if 0 < ends_period < len(bullets):
-            score -= 15
-            issues.append("Inconsistent bullet punctuation — some end with a period, others don't. Pick one style and use it everywhere.")
-
-        past_tense = present_tense = 0
-        for b in bullets:
-            words = re.findall(r"[A-Za-z']+", b)
-            if not words:
-                continue
-            first = words[0].lower()
-            if first.endswith("ed"):
-                past_tense += 1
-            elif first.endswith("ing") or (first.endswith("s") and first not in STRONG_ACTION_VERBS):
-                present_tense += 1
-        if past_tense > 0 and present_tense > 0 and min(past_tense, present_tense) / len(bullets) > 0.25:
-            score -= 15
-            issues.append("Mixed verb tense across bullets. Use past tense for previous roles; present tense only for your current, ongoing role.")
-
-        lengths = [len(b) for b in bullets]
-        avg_len = sum(lengths) / len(lengths)
-        very_short = sum(1 for l in lengths if l < avg_len * 0.35)
-        if very_short > len(bullets) * 0.3:
-            score -= 10
-            issues.append("Bullet lengths vary a lot — some are much shorter than others. Aim for a consistent 1-2 line length.")
-
-        return max(0, score), issues
-
-    def _check_general_keywords(self, resume_text: str, parsed_data: dict) -> tuple:
-        """5%: Variety/density of recognizable technical keywords (no JD to compare against)."""
-        found = self._extract_keywords_deterministic(resume_text)
-        tech_found = [k for k in found if k in TECH_DICT or k in DOMAIN_SKILLS_DICT]
-        skills_declared = len(parsed_data.get("skills", []) or [])
-
-        variety_score = min(100, (len(tech_found) / 10) * 100)
-        declared_score = min(100, (skills_declared / 8) * 100)
-        score = round(variety_score * 0.6 + declared_score * 0.4)
-
-        issues = []
-        if len(tech_found) < 5:
-            issues.append("Low variety of recognizable technical keywords in the resume text. Name specific tools/languages/frameworks, not just categories.")
-        if skills_declared < 5:
-            issues.append("Skills section looks sparse. List more relevant technical keywords for broader ATS keyword matching.")
-
-        return max(0, score), issues, sorted(set(tech_found))
-
-    def _check_readability_formatting(self, resume_text: str) -> tuple:
-        """5%: Bullet symbol consistency, spacing, and overall length."""
-        score = 100
-        issues = []
-        lines = resume_text.split("\n")
-
-        bullet_symbols = set()
-        for line in lines:
-            s = line.strip()
-            if s[:1] in ("-", "•", "▸", "*", "●", "◦"):
-                bullet_symbols.add(s[0])
-        if len(bullet_symbols) > 1:
-            score -= 20
-            issues.append(f"Multiple bullet symbols used ({', '.join(bullet_symbols)}). Stick to one bullet style throughout.")
-
-        blank_run = max_blank_run = 0
-        for line in lines:
-            if not line.strip():
-                blank_run += 1
-                max_blank_run = max(max_blank_run, blank_run)
-            else:
-                blank_run = 0
-        if max_blank_run > 2:
-            score -= 10
-            issues.append("Large gaps of blank space detected. Keep spacing between sections compact and consistent.")
-
-        word_count = len(resume_text.split())
-        if word_count > 1100:
-            score -= 15
-            issues.append("Content looks lengthy (likely 2+ pages). Aim for 1 page as a fresher, up to 2 pages max with more experience.")
-        elif word_count < 150:
-            score -= 15
-            issues.append("Content looks very sparse. Add more detail to experience, projects, and skills sections.")
-
-        return max(0, score), issues
-
-    def _build_general_ats_report(self, resume_text: str, parsed_data: dict, fmt_score: int, fmt_issues: list,
-                                   cand_years: float, parsed_projects: list, proj_titles: list, candidate_skills: list) -> dict:
-        """Builds the full report for the General (No-JD) ATS checklist using the 10 weighted categories above."""
-
-        structure_score, structure_issues = self._check_structure(resume_text, parsed_data)
-        grammar_score, grammar_issues = self._check_spelling_and_grammar(resume_text, parsed_data)
-        contact_score, contact_issues = self._check_contact_info(parsed_data, resume_text)
-        content_score, content_issues = self._check_content_quality(parsed_data)
-        quant_score, quant_issues = self._check_quantified_achievements(parsed_data)
-        verbs_score, verbs_issues = self._check_action_verbs(parsed_data)
-        bullet_score, bullet_issues = self._check_bullet_consistency(parsed_data)
-        keyword_score, keyword_issues, tech_found = self._check_general_keywords(resume_text, parsed_data)
-        readability_score, readability_issues = self._check_readability_formatting(resume_text)
-
-        categories = {
-            "ats_parseability":        {"label": "ATS Parseability",        "weight": 0.25, "score": fmt_score,        "issues": fmt_issues},
-            "grammar_spelling":        {"label": "Grammar & Spelling",      "weight": 0.10, "score": grammar_score,    "issues": grammar_issues},
-            "resume_structure":       {"label": "Resume Structure",         "weight": 0.15, "score": structure_score,  "issues": structure_issues},
-            "contact_information":     {"label": "Contact Information",     "weight": 0.05, "score": contact_score,    "issues": contact_issues},
-            "content_quality":         {"label": "Content Quality",         "weight": 0.15, "score": content_score,    "issues": content_issues},
-            "quantified_achievements": {"label": "Quantified Achievements", "weight": 0.10, "score": quant_score,      "issues": quant_issues},
-            "action_verbs":            {"label": "Action Verbs",            "weight": 0.05, "score": verbs_score,      "issues": verbs_issues},
-            "bullet_consistency":      {"label": "Bullet Consistency",      "weight": 0.05, "score": bullet_score,     "issues": bullet_issues},
-            "general_keywords":        {"label": "General Technical Keywords", "weight": 0.05, "score": keyword_score, "issues": keyword_issues},
-            "readability_formatting":  {"label": "Readability & Formatting", "weight": 0.05, "score": readability_score, "issues": readability_issues},
-        }
-
-        overall_score = round(sum(c["score"] * c["weight"] for c in categories.values()))
-        overall_score = max(5, min(overall_score, 100))
-
-        strengths = []
-        weaknesses = []
-        for key, c in categories.items():
-            if c["score"] >= 85:
-                strengths.append(f"{c['label']}: strong ({c['score']}%).")
-            elif c["score"] < 65:
-                weaknesses.append(f"{c['label']}: needs work ({c['score']}%) — {c['issues'][0] if c['issues'] else 'review this section.'}")
-
-        # Rank weakest categories (by points lost = weight * (100-score)) for top suggestions
-        ranked = sorted(categories.items(), key=lambda kv: kv[1]["weight"] * (100 - kv[1]["score"]), reverse=True)
-        top_suggestions = []
-        for key, c in ranked:
-            if c["issues"]:
-                top_suggestions.append(c["issues"][0])
-            if len(top_suggestions) >= 4:
-                break
-        if not top_suggestions:
-            top_suggestions.append("Your resume is well optimized for general ATS parsing! Paste a target Job Description to get JD-specific tailoring scores too.")
-
-        explanations = [
-            f"{c['label']} ({round(c['weight']*100)}.0 pts max): Awarded {round(c['score'] * c['weight'], 2)} pts ({c['score']}% score)."
-            + (f" Issues: {'; '.join(c['issues'][:2])}" if c["issues"] else " No issues detected.")
-            for c in categories.values()
-        ]
-
-        report = {
-            "overallScore": overall_score,
-            "strengths": strengths[:4] or ["Resume parses cleanly with no major structural issues."],
-            "weaknesses": weaknesses[:4],
-            "topSuggestions": top_suggestions[:4],
-            "computedAt": datetime.now(timezone.utc).isoformat() + "Z",
-            "_jd_requirements": None,
-            "mode": "general_ats",
-            "explanations": explanations,
-
-            "detailed_breakdown": {
-                key: {
-                    "label": c["label"],
-                    "weight_pct": round(c["weight"] * 100),
-                    "score": c["score"],
-                    "issues": c["issues"]
-                } for key, c in categories.items()
-            },
-
-            # Legacy keys kept for frontend backward-compatibility
-            "breakdown": {
-                "formatting": {"score": fmt_score, "issues": fmt_issues},
-                "structure": {"score": structure_score, "issues": structure_issues},
-                "keywords": {"score": keyword_score, "missingKeywords": [], "matchedKeywords": tech_found[:15]},
-                "content": {"score": round((content_score + quant_score + verbs_score) / 3), "weakBullets": grammar_issues},
-                "integrity": {"score": contact_score, "flags": contact_issues}
-            }
-        }
-        return report
-
     def analyze(self, resume_text: str, parsed_data: dict, target_job_description: str = None, jd_requirements: dict = None) -> dict:
         # Build text description if not provided
         if not resume_text:
@@ -1204,14 +848,36 @@ class AtsCompatibilityAgent:
                         edu_details = f"Candidate degree ({cand_degree_name}) is lower than preferred degree ({req_degree})."
 
         else:
-            # No target Job Description provided — run the full General ATS checklist
-            # (10 weighted categories: Parseability, Grammar, Structure, Contact,
-            # Content Quality, Quantified Achievements, Action Verbs, Bullet Consistency,
-            # General Keywords, Readability). This returns immediately with a complete report.
-            return self._build_general_ats_report(
-                resume_text, parsed_data, fmt_score, fmt_issues, cand_years,
-                parsed_projects, proj_titles, candidate_skills
-            )
+            # Fallback general metrics when no job description is provided
+            keyword_match_score = 80
+            matched_keywords = list(parsed_data.get("skills", []))[:8]
+            missing_keywords = []
+            
+            skills_count = len(parsed_data.get("skills", []))
+            skills_match_score = min(100, skills_count * 8)
+            matched_skills = list(parsed_data.get("skills", []))
+            missing_skills = []
+            
+            if cand_years >= 5: experience_relevance_score = 100
+            elif cand_years >= 2: experience_relevance_score = 85
+            else: experience_relevance_score = 70
+            semantic_exp_score = experience_relevance_score
+            exp_details = f"General evaluation based on {cand_years} years of experience."
+            req_years = 0
+            
+            proj_count = len(parsed_data.get("projects", []))
+            if proj_count >= 2: project_relevance_score = 95
+            elif proj_count == 1: project_relevance_score = 80
+            else: project_relevance_score = 40
+            proj_details = f"General evaluation based on {proj_count} listed projects."
+            
+            if parsed_data.get("education"):
+                education_match_score = 100
+                edu_details = "Education details present."
+            else:
+                education_match_score = 40
+                edu_details = "No education details listed."
+            req_degree = ""
 
         # Compile strengths & weaknesses based on sub-scores
         strengths = []

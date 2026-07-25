@@ -102,7 +102,7 @@ export default function UserDashboard() {
   const topSuggestions = atsReport.topSuggestions || [];
   const getDetailedBreakdown = (report) => {
     if (!report) return null;
-    if (report.detailed_breakdown) return report.detailed_breakdown;
+    if (report.detailed_breakdown?.keyword_match) return report.detailed_breakdown;
     
     const legacy = report.breakdown || {};
     return {
@@ -145,6 +145,20 @@ export default function UserDashboard() {
     education_match: { score: 0, details: "Not analyzed" },
     ats_formatting: { score: 0, issues: [] }
   };
+
+  const breakdownItems = atsReport.mode === "general_ats" && atsReport.detailed_breakdown
+    ? Object.entries(atsReport.detailed_breakdown).map(([k, item]) => ({
+        label: `${item.label} (${item.weight_pct}%)`,
+        val: item.score
+      }))
+    : [
+        { label: "Keywords (35%)", val: bd.keyword_match?.score || 0 },
+        { label: "Skills (25%)", val: bd.skills_match?.score || 0 },
+        { label: "Experience (15%)", val: bd.experience_relevance?.score || 0 },
+        { label: "Projects (10%)", val: bd.project_relevance?.score || 0 },
+        { label: "Education (5%)", val: bd.education_match?.score || 0 },
+        { label: "Formatting (10%)", val: bd.ats_formatting?.score || 0 },
+      ];
 
   if (loading) {
     return (
@@ -341,14 +355,7 @@ export default function UserDashboard() {
 
                 {/* Mini Horizontal sub-scores list */}
                 <div className="w-full space-y-3 pt-2">
-                  {[
-                    { label: "Keywords (35%)", val: bd.keyword_match?.score || 0 },
-                    { label: "Skills (25%)", val: bd.skills_match?.score || 0 },
-                    { label: "Experience (15%)", val: bd.experience_relevance?.score || 0 },
-                    { label: "Projects (10%)", val: bd.project_relevance?.score || 0 },
-                    { label: "Education (5%)", val: bd.education_match?.score || 0 },
-                    { label: "Formatting (10%)", val: bd.ats_formatting?.score || 0 },
-                  ].map((item) => (
+                  {breakdownItems.map((item) => (
                     <div key={item.label} className="space-y-1">
                       <div className="flex justify-between text-xs font-semibold">
                         <span className="text-muted-foreground">{item.label}</span>
