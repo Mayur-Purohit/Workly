@@ -1152,6 +1152,190 @@ function FinalCTA({ onStart, companiesCount }) {
   );
 }
 
+/* ═══════════════════ Hanzo-Inspired Scroll Reveal Wrapper ═══════════════════ */
+function ScrollReveal({ children, delay = 0 }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 35, filter: "blur(8px)" }}
+      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      viewport={{ once: true, margin: "-120px" }}
+      transition={{ duration: 0.8, ease: [0.21, 0.45, 0.32, 0.9], delay }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ═══════════════════ Hanzo-Inspired Case Studies Section ═══════════════════ */
+function HanzoFeaturedShortlists() {
+  const caseStudies = [
+    {
+      company: "BuildFast Technologies",
+      role: "Full Stack Developer",
+      candidate: "Nandini Kapoor",
+      score: "92%",
+      matchingSkills: ["React.js", "Node.js", "PostgreSQL", "Redis"],
+      verdict: "Strong Hire",
+      time: "48h hire time",
+      color: "var(--google-blue)"
+    },
+    {
+      company: "QuantumSync Technologies",
+      role: "Associate Full-Stack Engineer",
+      candidate: "Aarav Mehta",
+      score: "89%",
+      matchingSkills: ["Python", "Flask", "React", "MySQL"],
+      verdict: "Strong Hire",
+      time: "24h hire time",
+      color: "var(--google-green)"
+    },
+    {
+      company: "Yuvraj Co.",
+      role: "Backend Software Engineer",
+      candidate: "Harish Kumar",
+      score: "78%",
+      matchingSkills: ["Python", "Django", "FastAPI", "Docker"],
+      verdict: "Consider",
+      time: "36h hire time",
+      color: "var(--google-yellow)"
+    }
+  ];
+
+  return (
+    <section className="mx-auto w-full max-w-7xl px-6 my-20">
+      <div className="text-center mb-12">
+        <div className="text-xs font-semibold uppercase tracking-wider text-[var(--google-blue)]">Success Stories</div>
+        <h2 className="mt-1.5 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+          Shortlists that land the perfect fit
+        </h2>
+        <p className="mt-2 text-base text-muted-foreground max-w-lg mx-auto">
+          See how companies use Workly AI to identify and fast-track top engineering talent.
+        </p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        {caseStudies.map((cs, idx) => (
+          <motion.div
+            key={cs.company + idx}
+            whileHover={{ y: -6, scale: 1.01 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between"
+          >
+            <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] opacity-0 hover:opacity-10 transition-opacity duration-500 blur-xl pointer-events-none -z-10 rainbow-bg" />
+            
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{cs.company}</span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{cs.time}</span>
+              </div>
+              
+              <h3 className="font-display text-lg font-bold text-foreground mb-1">{cs.role}</h3>
+              <p className="text-xs text-muted-foreground mb-4">Shortlisted Candidate: <span className="font-semibold text-foreground">{cs.candidate}</span></p>
+              
+              <div className="flex items-center gap-4 mb-6">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Match Score</span>
+                  <span className="text-2xl font-bold text-foreground tabular-nums">{cs.score}</span>
+                </div>
+                <div className="h-8 w-[1px] bg-border" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Decision</span>
+                  <span className={`text-xs font-bold ${cs.verdict === 'Strong Hire' ? 'text-[var(--google-green)]' : 'text-[var(--google-blue)]'}`}>{cs.verdict}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold block">Matched Skills</span>
+                <div className="flex flex-wrap gap-1">
+                  {cs.matchingSkills.map((sk) => (
+                    <span key={sk} className="text-[10px] font-medium px-2 py-0.5 rounded bg-surface border border-border text-foreground transition-all hover:bg-muted">
+                      {sk}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 pt-4 border-t border-border/80 flex items-center justify-between text-xs text-muted-foreground">
+              <span>Automated Matching</span>
+              <span className="h-2 w-2 rounded-full bg-[var(--google-green)] animate-pulse" />
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════ Hanzo-Inspired FAQ Accordion ═══════════════════ */
+function HanzoFAQSection() {
+  const [openIndex, setOpenIndex] = useState(null);
+
+  const faqs = [
+    {
+      q: "How accurate is the AI resume parsing and matching?",
+      a: "Workly AI is calibrated on thousands of real-world resumes and job descriptions. It achieves a 95% accuracy score in extracting structured entities (skills, experience years, seniority) and matching candidates against specific screening rubrics."
+    },
+    {
+      q: "Does Workly integrate with our existing applicant tracking systems?",
+      a: "Yes! Workly offers robust developer APIs and native webhooks that easily connect with Greenhouse, Lever, Workday, and custom ATS pipelines. Integration takes less than an hour."
+    },
+    {
+      q: "How does the fraud detection engine work?",
+      a: "We analyze three major signals: code originalities (plagiarism), semantic pattern consistency (AI-generated content detection), and developer verification checks to highlight high-risk profiles before scheduling interviews."
+    },
+    {
+      q: "Is my candidate data secure and private?",
+      a: "Absolutely. Candidate data is encrypted in transit and at rest. We adhere to strict GDPR and SOC2 compliance guidelines. We do not use your candidate data to train public models."
+    }
+  ];
+
+  return (
+    <section id="faq" className="mx-auto w-full max-w-3xl px-6 my-20">
+      <div className="text-center mb-12">
+        <div className="text-xs font-semibold uppercase tracking-wider text-[var(--google-blue)]">Common Queries</div>
+        <h2 className="mt-1.5 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+          Frequently Asked Questions
+        </h2>
+      </div>
+
+      <div className="space-y-4">
+        {faqs.map((faq, idx) => {
+          const isOpen = openIndex === idx;
+          return (
+            <div key={idx} className="border border-border/80 rounded-2xl bg-card overflow-hidden shadow-sm transition-all">
+              <button
+                onClick={() => setOpenIndex(isOpen ? null : idx)}
+                className="w-full flex items-center justify-between p-5 text-left font-display font-semibold text-foreground text-sm sm:text-base cursor-pointer hover:bg-muted/10 transition-colors"
+              >
+                <span>{faq.q}</span>
+                <span className={`text-muted-foreground text-[10px] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
+              
+              <AnimatePresence initial={false}>
+                {isOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: [0.21, 0.45, 0.32, 0.9] }}
+                  >
+                    <div className="p-5 pt-0 text-sm text-muted-foreground border-t border-border/40 leading-relaxed bg-muted/5">
+                      {faq.a}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 /* ═══════════════════ Main Landing Page Component ═══════════════════ */
 export default function LandingPage() {
   useDocumentTitle(
@@ -1334,15 +1518,17 @@ export default function LandingPage() {
       <Navbar onSignIn={handleAuth} isLoggedIn={isLoggedIn} />
       
       <main className="flex flex-col w-full overflow-x-hidden pt-16" style={{ background: 'transparent' }}>
-        <HeroSection onStart={handleAuth} companiesCount={stats.total_companies} />
-        <LiveDemoCard />
-        <StatsStrip stats={stats} loading={loading} />
-        <BentoFeatures />
-        <IngestShowcase onNavigateDev={handleNavigateDev} />
-        <WorkflowSection liveSession={liveSession} />
-        <PricingSection onStart={handleAuth} plans={plans} />
-        <SplitCTA onStart={handleAuth} onNavigateDev={handleNavigateDev} />
-        <FinalCTA onStart={handleAuth} companiesCount={stats.total_companies} />
+        <ScrollReveal><HeroSection onStart={handleAuth} companiesCount={stats.total_companies} /></ScrollReveal>
+        <ScrollReveal><LiveDemoCard /></ScrollReveal>
+        <ScrollReveal><StatsStrip stats={stats} loading={loading} /></ScrollReveal>
+        <ScrollReveal><BentoFeatures /></ScrollReveal>
+        <ScrollReveal><HanzoFeaturedShortlists /></ScrollReveal>
+        <ScrollReveal><IngestShowcase onNavigateDev={handleNavigateDev} /></ScrollReveal>
+        <ScrollReveal><WorkflowSection liveSession={liveSession} /></ScrollReveal>
+        <ScrollReveal><PricingSection onStart={handleAuth} plans={plans} /></ScrollReveal>
+        <ScrollReveal><SplitCTA onStart={handleAuth} onNavigateDev={handleNavigateDev} /></ScrollReveal>
+        <ScrollReveal><HanzoFAQSection /></ScrollReveal>
+        <ScrollReveal><FinalCTA onStart={handleAuth} companiesCount={stats.total_companies} /></ScrollReveal>
       </main>
 
       <Footer />
