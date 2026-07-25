@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Header } from "../../components/user/site-chrome";
 import { seekerAPI, API_HOST } from "../../lib/api";
 import { ResumePreview, TEMPLATE_META } from "../../components/user/templates/ResumePreview";
@@ -25,7 +25,9 @@ import {
   Sun,
   Moon,
   History,
-  Clock
+  Clock,
+  XCircle,
+  Lock
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -51,11 +53,228 @@ const emptyResume = {
   columns: 1
 };
 
+function parseMaybeJson(value) {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed) return {};
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return {};
+  }
+}
+
+function pickString(...vals) {
+  for (const v of vals) {
+    if (v === undefined || v === null) continue;
+    const s = String(v).trim();
+    if (s) return s;
+  }
+  return "";
+}
+
+function isEffectivelyEmptyContent(content) {
+  if (!content || typeof content !== "object") return true;
+  const personal = content.personalInfo || content.personal_info || {};
+  const hasPersonal = Object.values(personal).some((v) => String(v || "").trim());
+  const hasSummary = Boolean(String(content.summary || content.professional_summary || "").trim());
+  const hasSkills = Array.isArray(content.skills) && content.skills.length > 0;
+  const hasExperience = Array.isArray(content.experience) && content.experience.length > 0;
+  const hasEducation = Array.isArray(content.education) && content.education.length > 0;
+  const hasProjects = Array.isArray(content.projects) && content.projects.length > 0;
+  return !(hasPersonal || hasSummary || hasSkills || hasExperience || hasEducation || hasProjects);
+}
+
+/** Normalize API/import payloads into the editor schema (camelCase). */
+function normalizeResumeContent(raw, fallbackColumns = 1) {
+  let data = parseMaybeJson(raw);
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return { ...emptyResume, personalInfo: { ...emptyResume.personalInfo }, columns: fallbackColumns };
+  }
+
+  // Unwrap common nested envelopes without losing the inner resume object
+  for (let i = 0; i < 3; i++) {
+    const hasEditorShape =
+      data.personalInfo ||
+      data.personal_info ||
+      data.summary ||
+      data.professional_summary ||
+      data.experience ||
+      data.skills;
+    if (hasEditorShape) break;
+    const nested =
+      data.resume ||
+      data.content ||
+      data.data ||
+      data.parsed ||
+      data.result ||
+      data.draft;
+    if (!nested) break;
+    data = parseMaybeJson(nested);
+    if (!data || typeof data !== "object" || Array.isArray(data)) break;
+  }
+
+  const srcPersonal = parseMaybeJson(data.personalInfo || data.personal_info || {}) || {};
+  const personalInfo = {
+    fullName: pickString(srcPersonal.fullName, srcPersonal.full_name, srcPersonal.name, data.fullName, data.full_name, data.name),
+    title: pickString(srcPersonal.title, srcPersonal.headline, srcPersonal.current_role, data.title, data.headline, data.current_role),
+    email: pickString(srcPersonal.email, data.email),
+    phone: pickString(srcPersonal.phone, data.phone),
+    location: pickString(srcPersonal.location, data.location),
+    website: pickString(srcPersonal.website, srcPersonal.website_url, data.website, data.website_url),
+    linkedin: pickString(srcPersonal.linkedin, srcPersonal.linkedin_url, data.linkedin, data.linkedin_url),
+    github: pickString(srcPersonal.github, srcPersonal.github_url, data.github, data.github_url)
+  };
+
+  const skillsRaw = Array.isArray(data.skills) ? data.skills : [];
+  const skills = skillsRaw
+    .map((s) => {
+      if (typeof s === "object" && s !== null) {
+        return pickString(s.canonical_skill, s.raw_skill, s.name, s.skill);
+      }
+      return String(s || "").trim();
+    })
+    .filter(Boolean);
+
+  const experience = (Array.isArray(data.experience) ? data.experience : [])
+    .map((exp, idx) => {
+      if (typeof exp === "string") {
+        return {
+          id: String(idx + 1),
+          company: "",
+          title: "",
+          location: "",
+          startDate: "",
+          endDate: "",
+          bullets: exp.trim() ? [exp.trim()] : []
+        };
+      }
+      if (!exp || typeof exp !== "object") return null;
+      let bullets = exp.bullets;
+      if (!Array.isArray(bullets)) {
+        bullets = exp.description ? [String(exp.description)] : [];
+      }
+      return {
+        id: exp.id || String(idx + 1),
+        company: pickString(exp.company),
+        title: pickString(exp.title, exp.role),
+        location: pickString(exp.location),
+        startDate: pickString(exp.startDate, exp.start_date),
+        endDate: pickString(exp.endDate, exp.end_date),
+        bullets: bullets.map((b) => String(b || "").trim()).filter(Boolean)
+      };
+    })
+    .filter(Boolean);
+
+  const education = (Array.isArray(data.education) ? data.education : [])
+    .map((edu, idx) => {
+      if (typeof edu === "string") {
+        return {
+          id: String(idx + 1),
+          school: edu,
+          degree: "",
+          location: "",
+          startDate: "",
+          endDate: ""
+        };
+      }
+      if (!edu || typeof edu !== "object") return null;
+      return {
+        id: edu.id || String(idx + 1),
+        school: pickString(edu.school, edu.institution),
+        degree: pickString(edu.degree),
+        location: pickString(edu.location),
+        startDate: pickString(edu.startDate, edu.start_date),
+        endDate: pickString(edu.endDate, edu.end_date, edu.year, edu.year_end)
+      };
+    })
+    .filter(Boolean);
+
+  const projects = (Array.isArray(data.projects) ? data.projects : [])
+    .map((proj, idx) => {
+      if (typeof proj === "string") {
+        return {
+          id: String(idx + 1),
+          name: proj,
+          link: "",
+          description: "",
+          bullets: [],
+          techStack: []
+        };
+      }
+      if (!proj || typeof proj !== "object") return null;
+      const techRaw = proj.techStack || proj.tech_stack || proj.technologies || [];
+      const techStack = Array.isArray(techRaw)
+        ? techRaw.map((t) => String(t || "").trim()).filter(Boolean)
+        : String(techRaw || "")
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean);
+      let bullets = Array.isArray(proj.bullets) ? proj.bullets : [];
+      bullets = bullets.map((b) => String(b || "").trim()).filter(Boolean);
+      const description = pickString(proj.description) || bullets.map((b) => `• ${b}`).join("\n");
+      return {
+        id: proj.id || String(idx + 1),
+        name: pickString(proj.name),
+        link: pickString(proj.link, proj.url),
+        description,
+        bullets,
+        techStack
+      };
+    })
+    .filter(Boolean);
+
+  const certifications = (Array.isArray(data.certifications) ? data.certifications : [])
+    .map((cert, idx) => {
+      if (typeof cert === "string") {
+        return { id: String(idx + 1), name: cert, issuer: "", date: "" };
+      }
+      if (!cert || typeof cert !== "object") return null;
+      return {
+        id: cert.id || String(idx + 1),
+        name: pickString(cert.name),
+        issuer: pickString(cert.issuer),
+        date: pickString(cert.date)
+      };
+    })
+    .filter(Boolean);
+
+  const languages = (Array.isArray(data.languages) ? data.languages : [])
+    .map((lang, idx) => {
+      if (typeof lang === "string") {
+        return { id: String(idx + 1), name: lang, proficiency: "" };
+      }
+      if (!lang || typeof lang !== "object") return null;
+      return {
+        id: lang.id || String(idx + 1),
+        name: pickString(lang.name),
+        proficiency: pickString(lang.proficiency)
+      };
+    })
+    .filter(Boolean);
+
+  const columns = Number(data.columns) === 2 ? 2 : (Number(data.columns) === 1 ? 1 : fallbackColumns);
+
+  return {
+    personalInfo,
+    summary: pickString(data.summary, data.professional_summary),
+    skills,
+    experience,
+    education,
+    projects,
+    certifications,
+    languages,
+    columns
+  };
+}
+
 export default function ResumeEditor() {
   const { resumeId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const targetJobId = searchParams.get("targetJob");
+  const seedFromNav = location.state || {};
 
   // State
   const [seeker, setSeeker] = useState(null);
@@ -80,7 +299,7 @@ export default function ResumeEditor() {
 
   // Auto-save Status
   const [autoSaveStatus, setAutoSaveStatus] = useState("Saved");
-  const isFirstMount = useRef(true);
+  const hasHydrated = useRef(false);
 
   useEffect(() => {
     if (darkMode) {
@@ -125,7 +344,7 @@ export default function ResumeEditor() {
     
     try {
       const res = await seekerAPI.restoreVersion(resumeId, versionId);
-      setContent(res.content);
+      setContent(normalizeResumeContent(res.content, content.columns || 1));
       setDraftTitle(res.title);
       setTemplateId(res.templateId || "modern");
       setAtsReport(res.atsReport);
@@ -142,20 +361,12 @@ export default function ResumeEditor() {
     }
   }, [showVersionsPanel]);
 
-  // Set first mount ref
+  // Debounced Auto-save (only after draft content has been hydrated)
   useEffect(() => {
-    if (!loading) {
-      const timer = setTimeout(() => {
-        isFirstMount.current = false;
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [loading]);
+    if (loading || !resumeId || !hasHydrated.current) return;
+    // Never persist a blank shell over an imported draft
+    if (isEffectivelyEmptyContent(content) && String(draftTitle || "").startsWith("Imported")) return;
 
-  // Debounced Auto-save
-  useEffect(() => {
-    if (loading || !resumeId || isFirstMount.current) return;
-    
     setAutoSaveStatus("Saving...");
     const timer = setTimeout(async () => {
       try {
@@ -180,7 +391,7 @@ export default function ResumeEditor() {
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [content, draftTitle, templateId]);
+  }, [content, draftTitle, templateId, loading, resumeId]);
 
   
   // Job tailoring state
@@ -225,6 +436,7 @@ export default function ResumeEditor() {
   // 1. Fetch Draft and Optional Job Description on Mount
   useEffect(() => {
     const fetchInitData = async () => {
+      hasHydrated.current = false;
       try {
         setLoading(true);
         // Load Draft and Profile
@@ -233,48 +445,57 @@ export default function ResumeEditor() {
           seekerAPI.getMe().catch(() => null)
         ]);
         setSeeker(profile);
-        setDraftTitle(draft.title || "My Resume");
-        setTemplateId(draft.templateId || "modern");
-        
-        // Ensure content structure matches expected schema
-        const loadedContent = { ...emptyResume, ...(draft.content || {}) };
-        if (!loadedContent.personalInfo) loadedContent.personalInfo = { ...emptyResume.personalInfo };
-        if (!loadedContent.skills) {
-          loadedContent.skills = [];
-        } else {
-          loadedContent.skills = loadedContent.skills.map((s) => {
-            if (typeof s === "object" && s !== null) {
-              return s.canonical_skill || s.raw_skill || "";
-            }
-            return String(s);
-          }).filter(Boolean);
+        setDraftTitle(draft.title || seedFromNav.seedTitle || "My Resume");
+        setTemplateId(draft.templateId || seedFromNav.seedTemplateId || "modern");
+
+        // Prefer server content; if empty (or malformed), fall back to import navigation seed
+        let rawContent = draft.content;
+        if (isEffectivelyEmptyContent(parseMaybeJson(rawContent)) && seedFromNav.seedContent) {
+          rawContent = seedFromNav.seedContent;
         }
-        if (!loadedContent.experience) loadedContent.experience = [];
-        if (!loadedContent.education) loadedContent.education = [];
-        if (!loadedContent.projects) loadedContent.projects = [];
-        if (!loadedContent.certifications) loadedContent.certifications = [];
-        if (!loadedContent.languages) loadedContent.languages = [];
+
+        const loadedContent = normalizeResumeContent(rawContent, emptyResume.columns);
+        setContent(loadedContent);
+
+        // If server draft was empty/malformed but we recovered seed content, persist it once
+        if (
+          seedFromNav.seedContent &&
+          isEffectivelyEmptyContent(parseMaybeJson(draft.content)) &&
+          !isEffectivelyEmptyContent(loadedContent)
+        ) {
+          seekerAPI.updateDraft(resumeId, {
+            title: draft.title || seedFromNav.seedTitle,
+            templateId: draft.templateId || seedFromNav.seedTemplateId || "modern",
+            content: loadedContent
+          }).catch((err) => console.error("Failed to persist seeded import content:", err));
+        }
         
-        // Ensure each project has a techStack array
-        loadedContent.projects = loadedContent.projects.map((p) => ({
-          ...p,
-          techStack: Array.isArray(p.techStack) ? p.techStack : []
+        // Auto-open sections that have imported data so they are visible immediately
+        setOpen((prev) => ({
+          ...prev,
+          personal: true,
+          summary: true,
+          experience: true,
+          education: true,
+          skills: true,
+          projects: (loadedContent.projects || []).length > 0 ? true : prev.projects,
+          certifications: (loadedContent.certifications || []).length > 0 ? true : prev.certifications,
+          languages: (loadedContent.languages || []).length > 0 ? true : prev.languages
         }));
         
-        setContent(loadedContent);
-        
-        // Auto-open projects accordion if there are projects
-        if (loadedContent.projects.length > 0) {
-          setOpen((prev) => ({ ...prev, projects: true }));
-        }
-        // Auto-open certifications if present
-        if (loadedContent.certifications.length > 0) {
-          setOpen((prev) => ({ ...prev, certifications: true }));
-        }
-        
-        if (draft.atsReport) {
-          setAtsReport(draft.atsReport);
+        // Only keep cached ATS reports from the current scorer version
+        const savedReport = draft.atsReport;
+        const reportIsCurrent =
+          savedReport &&
+          savedReport.mode === "general_ats" &&
+          savedReport.reportVersion === "teal_v3" &&
+          Array.isArray(savedReport.checklist);
+        if (reportIsCurrent) {
+          setAtsReport(savedReport);
           lastCheckedHash.current = JSON.stringify(loadedContent);
+        } else {
+          setAtsReport(null);
+          lastCheckedHash.current = "";
         }
 
         // Load Job if query param is set
@@ -287,6 +508,8 @@ export default function ResumeEditor() {
             console.error("Failed to load job details for tailoring:", jobErr);
           }
         }
+
+        hasHydrated.current = true;
       } catch (err) {
         console.error(err);
         toast.error("Failed to load resume draft");
@@ -297,6 +520,7 @@ export default function ResumeEditor() {
     };
 
     fetchInitData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hydrate once per draft id
   }, [resumeId, targetJobId]);
 
   // 2. Debounced ATS Analyzer Call (triggers 2s after typing stops or job description changes)
@@ -325,7 +549,7 @@ export default function ResumeEditor() {
     };
   }, [content, jobInfo, loading, autoScan, targetJobDescription]);
 
-  const runAtsCheck = async (contentToCheck) => {
+  const runAtsCheck = async (contentToCheck, { forceRefresh = false } = {}) => {
     if (seeker?.tier !== 'premium') {
       setAtsReport(null);
       setAtsError("ATS Score Checker is a Premium feature. Please upgrade to unlock ATS scoring and recommendations.");
@@ -337,7 +561,8 @@ export default function ResumeEditor() {
       const payload = {
         resumeDraftId: resumeId, // Link check to active draft
         content: contentToCheck,
-        targetJobDescription: targetJobDescription || undefined
+        targetJobDescription: targetJobDescription || undefined,
+        forceRefresh: !!forceRefresh
       };
       
       const report = await seekerAPI.atsCheck(payload);
@@ -353,8 +578,23 @@ export default function ResumeEditor() {
   };
 
   const handleManualAtsCheck = () => {
-    runAtsCheck(content);
+    // Always bypass server cache on manual refresh so score updates immediately
+    lastCheckedHash.current = "";
+    runAtsCheck(content, { forceRefresh: true });
   };
+
+  // After draft hydrates, if we discarded a stale ATS report, run a fresh scan once
+  useEffect(() => {
+    if (loading || !hasHydrated.current) return;
+    if (atsReport) return;
+    if (seeker?.tier !== "premium") return;
+    if (isEffectivelyEmptyContent(content)) return;
+    const timer = setTimeout(() => {
+      runAtsCheck(content, { forceRefresh: true });
+    }, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, seeker?.tier, resumeId]);
 
   const handleAITailor = async () => {
     if (seeker?.tier !== 'premium') {
@@ -1891,147 +2131,108 @@ export default function ResumeEditor() {
 
               {/* Full report dashboard */}
               {atsReport && (
-                <div className="space-y-6">
-                  {/* Score Indicator */}
-                  <div className="text-center bg-muted/40 border border-border/60 p-5 rounded-3xl flex flex-col items-center">
-                    <div className="relative w-24 h-24 flex items-center justify-center">
-                      <svg className="absolute w-full h-full transform -rotate-90">
-                        <circle
-                          cx="48"
-                          cy="48"
-                          r="40"
-                          stroke="rgba(37, 99, 235, 0.1)"
-                          strokeWidth="8"
-                          fill="transparent"
-                        />
-                        <circle
-                          cx="48"
-                          cy="48"
-                          r="40"
-                          stroke="rgb(37, 99, 235)"
-                          strokeWidth="8"
-                          fill="transparent"
-                          strokeDasharray="251.2"
-                          strokeDashoffset={251.2 - (251.2 * (atsReport.overallScore || 0)) / 100}
-                          className="transition-all duration-500 ease-out"
-                        />
-                      </svg>
-                      <span className="text-2xl font-bold text-primary relative z-10">{atsReport.overallScore}%</span>
-                    </div>
-                    <h4 className="text-sm font-semibold mt-3">
-                      {jobInfo ? "Job Match Score" : "ATS Score"}
-                    </h4>
-                    <p className="text-[11px] text-muted-foreground mt-1 max-w-[200px]">
-                      {atsReport.overallScore >= 80 ? "Your resume has high structural and compatibility scores." : "Resolve flagged warnings below to boost compatibility."}
-                    </p>
-                  </div>
+                <div className="space-y-4">
+                  {atsReport.mode === "general_ats" && Array.isArray(atsReport.checklist) ? (
+                    <AtsTealReport report={atsReport} />
+                  ) : (
+                    <>
+                      {/* JD / legacy score indicator */}
+                      <div className="text-center bg-muted/40 border border-border/60 p-5 rounded-3xl flex flex-col items-center">
+                        <div className="relative w-24 h-24 flex items-center justify-center">
+                          <svg className="absolute w-full h-full transform -rotate-90">
+                            <circle cx="48" cy="48" r="40" stroke="rgba(37, 99, 235, 0.1)" strokeWidth="8" fill="transparent" />
+                            <circle
+                              cx="48"
+                              cy="48"
+                              r="40"
+                              stroke="rgb(37, 99, 235)"
+                              strokeWidth="8"
+                              fill="transparent"
+                              strokeDasharray="251.2"
+                              strokeDashoffset={251.2 - (251.2 * (atsReport.overallScore || 0)) / 100}
+                              className="transition-all duration-500 ease-out"
+                            />
+                          </svg>
+                          <span className="text-2xl font-bold text-primary relative z-10">{atsReport.overallScore}%</span>
+                        </div>
+                        <h4 className="text-sm font-semibold mt-3">
+                          {jobInfo || targetJobDescription ? "Job Match Score" : "ATS Score"}
+                        </h4>
+                      </div>
 
-                  {/* Score Breakdown Slider Indicators */}
-                  <div className="space-y-3.5">
-                    <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      {atsReport.mode === "general_ats" ? "General ATS Checklist (10 Categories)" : "Checks Breakdown"}
-                    </h5>
-                    
-                    {atsReport.mode === "general_ats" && atsReport.detailed_breakdown ? (
-                      Object.entries(atsReport.detailed_breakdown).map(([key, item]) => (
-                        <BreakdownBar key={key} label={`${item.label} (${item.weight_pct}%)`} score={item.score} />
-                      ))
-                    ) : (
-                      <>
+                      <div className="space-y-3.5">
+                        <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Checks Breakdown</h5>
                         <BreakdownBar label="Keyword Match (35%)" score={atsReport.detailed_breakdown?.keyword_match?.score ?? atsReport.breakdown?.keywords?.score} />
                         <BreakdownBar label="Skills Match (25%)" score={atsReport.detailed_breakdown?.skills_match?.score ?? atsReport.breakdown?.integrity?.score} />
                         <BreakdownBar label="Experience Relevance (15%)" score={atsReport.detailed_breakdown?.experience_relevance?.score ?? 70} />
                         <BreakdownBar label="Project Relevance (10%)" score={atsReport.detailed_breakdown?.project_relevance?.score ?? 70} />
                         <BreakdownBar label="Education Match (5%)" score={atsReport.detailed_breakdown?.education_match?.score ?? atsReport.breakdown?.structure?.score} />
                         <BreakdownBar label="ATS Formatting (10%)" score={atsReport.detailed_breakdown?.ats_formatting?.score ?? atsReport.breakdown?.formatting?.score} />
-                      </>
-                    )}
-                  </div>
+                      </div>
 
-                  {/* Strengths & Weaknesses */}
-                  {(atsReport.strengths?.length > 0 || atsReport.weaknesses?.length > 0) && (
-                    <div className="space-y-3 border-t border-border/60 pt-4">
-                      {atsReport.strengths?.length > 0 && (
-                        <div>
-                          <div className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-wider mb-1.5">Key Strengths</div>
-                          <ul className="space-y-1">
-                            {atsReport.strengths.map((str, idx) => (
-                              <li key={idx} className="flex gap-1.5 text-xs text-foreground items-start">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
-                                <span>{str}</span>
+                      {(atsReport.strengths?.length > 0 || atsReport.weaknesses?.length > 0) && (
+                        <div className="space-y-3 border-t border-border/60 pt-4">
+                          {atsReport.strengths?.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-wider mb-1.5">Key Strengths</div>
+                              <ul className="space-y-1">
+                                {atsReport.strengths.map((str, idx) => (
+                                  <li key={idx} className="flex gap-1.5 text-xs text-foreground items-start">
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                                    <span>{str}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {atsReport.weaknesses?.length > 0 && (
+                            <div className="mt-3.5">
+                              <div className="text-[10px] font-bold text-destructive/80 uppercase tracking-wider mb-1.5">Weaknesses / Gaps</div>
+                              <ul className="space-y-1">
+                                {atsReport.weaknesses.map((weak, idx) => (
+                                  <li key={idx} className="flex gap-1.5 text-xs text-foreground items-start">
+                                    <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
+                                    <span>{weak}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {(jobInfo || targetJobDescription) && atsReport.breakdown?.keywords && (
+                        <div className="space-y-3 border-t border-border/60 pt-4">
+                          <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Job Keyword Density</h5>
+                          <div>
+                            <div className="text-[10px] font-bold text-destructive/80 uppercase tracking-wide mb-1">Missing Keywords</div>
+                            {atsReport.breakdown.keywords.missingKeywords?.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {atsReport.breakdown.keywords.missingKeywords.map((kw, i) => (
+                                  <span key={i} className="text-[10px] bg-destructive/10 text-destructive border border-destructive/20 px-2 py-0.5 rounded-lg font-medium">{kw}</span>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-muted-foreground">All critical keywords matched!</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {atsReport.topSuggestions?.length > 0 && (
+                        <div className="space-y-3 border-t border-border/60 pt-4">
+                          <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Coach Recommendations</h5>
+                          <ul className="space-y-2">
+                            {atsReport.topSuggestions.map((s, idx) => (
+                              <li key={idx} className="flex gap-2 text-xs text-foreground items-start leading-relaxed bg-surface border border-border/50 p-2.5 rounded-xl">
+                                <span className="text-primary font-bold text-base shrink-0 mt-[-2px]">•</span>
+                                <span>{s}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
                       )}
-                      {atsReport.weaknesses?.length > 0 && (
-                        <div className="mt-3.5">
-                          <div className="text-[10px] font-bold text-destructive/80 uppercase tracking-wider mb-1.5">Weaknesses / Gaps</div>
-                          <ul className="space-y-1">
-                            {atsReport.weaknesses.map((weak, idx) => (
-                              <li key={idx} className="flex gap-1.5 text-xs text-foreground items-start">
-                                <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
-                                <span>{weak}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Target Keywords matching (Job-Targeted specific) */}
-                  {jobInfo && atsReport.breakdown?.keywords && (
-                    <div className="space-y-3 border-t border-border/60 pt-4">
-                      <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Job Keyword Density</h5>
-                      
-                      {/* Missing */}
-                      <div>
-                        <div className="text-[10px] font-bold text-destructive/80 uppercase tracking-wide mb-1">Missing Keywords</div>
-                        {atsReport.breakdown.keywords.missingKeywords?.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {atsReport.breakdown.keywords.missingKeywords.map((kw, i) => (
-                              <span key={i} className="text-[10px] bg-destructive/10 text-destructive border border-destructive/20 px-2 py-0.5 rounded-lg font-medium">
-                                {kw}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-muted-foreground">All critical keywords matched!</div>
-                        )}
-                      </div>
-
-                      {/* Matched */}
-                      <div className="mt-2.5">
-                        <div className="text-[10px] font-bold text-[var(--google-green)] uppercase tracking-wide mb-1">Matched Keywords</div>
-                        {atsReport.breakdown.keywords.matchedKeywords?.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {atsReport.breakdown.keywords.matchedKeywords.map((kw, i) => (
-                              <span key={i} className="text-[10px] bg-green-500/10 text-[var(--google-green)] border border-green-500/20 px-2 py-0.5 rounded-lg font-medium">
-                                {kw}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-muted-foreground">No matches found yet. Add keywords.</div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Top Coach suggestions */}
-                  {atsReport.topSuggestions && atsReport.topSuggestions.length > 0 && (
-                    <div className="space-y-3 border-t border-border/60 pt-4">
-                      <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Coach Recommendations</h5>
-                      <ul className="space-y-2">
-                        {atsReport.topSuggestions.map((s, idx) => (
-                          <li key={idx} className="flex gap-2 text-xs text-foreground items-start leading-relaxed bg-surface border border-border/50 p-2.5 rounded-xl">
-                            <span className="text-primary font-bold text-base shrink-0 mt-[-2px]">•</span>
-                            <span>{s}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    </>
                   )}
                 </div>
               )}
@@ -2649,6 +2850,144 @@ function BreakdownBar({ label, score = 100 }) {
       <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
         <div style={{ width: `${score}%` }} className={`h-full ${color} rounded-full`} />
       </div>
+    </div>
+  );
+}
+
+function scorePillClass(score) {
+  if (score >= 85) return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400";
+  if (score >= 65) return "bg-orange-500/15 text-orange-700 dark:text-orange-400";
+  return "bg-destructive/15 text-destructive";
+}
+
+function AtsCheckStatusIcon({ status }) {
+  if (status === "pass") return <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />;
+  if (status === "locked") return <Lock className="h-4 w-4 text-amber-500 shrink-0" />;
+  if (status === "fail") return <XCircle className="h-4 w-4 text-destructive shrink-0" />;
+  return <AlertTriangle className="h-4 w-4 text-orange-500 shrink-0" />;
+}
+
+function AtsCheckRow({ item, nested = false }) {
+  const [open, setOpen] = React.useState(false);
+  const hasDetails = (item.issues || []).length > 0;
+  const badge =
+    item.status === "locked"
+      ? "Locked"
+      : item.issueCount > 0
+        ? `${item.issueCount} issue${item.issueCount === 1 ? "" : "s"}`
+        : "No issues";
+  const badgeClass =
+    item.status === "locked"
+      ? "border border-border text-muted-foreground bg-muted/40"
+      : item.status === "pass"
+        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+        : item.status === "fail"
+          ? "bg-destructive/10 text-destructive"
+          : "bg-muted text-muted-foreground";
+
+  return (
+    <div className={nested ? "pl-1" : ""}>
+      <button
+        type="button"
+        onClick={() => hasDetails && setOpen((v) => !v)}
+        className={`w-full flex items-center justify-between gap-2 py-2.5 ${hasDetails ? "cursor-pointer" : "cursor-default"}`}
+      >
+        <span className="flex items-center gap-2 text-xs font-medium text-foreground min-w-0">
+          <AtsCheckStatusIcon status={item.status} />
+          <span className="truncate">{item.label}</span>
+        </span>
+        <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeClass}`}>
+          {badge}
+        </span>
+      </button>
+      {open && hasDetails && (
+        <ul className="pb-2 pl-6 space-y-1">
+          {item.issues.map((iss, idx) => (
+            <li key={idx} className="text-[11px] text-muted-foreground leading-relaxed list-disc">
+              {iss}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function AtsGroupAccordion({ group, defaultOpen = false }) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <div className="border-t border-border/50">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-2 py-3"
+      >
+        <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
+          {group.label}
+        </span>
+        <span className="flex items-center gap-2">
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${scorePillClass(group.score || 0)}`}>
+            {group.score ?? 0}%
+          </span>
+          {open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+        </span>
+      </button>
+      {open && (
+        <div className="pb-2 divide-y divide-border/40">
+          {(group.items || []).map((item) => (
+            <AtsCheckRow key={item.key} item={item} nested />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AtsTealReport({ report }) {
+  const score = report.overallScore || 0;
+  const scoreColor =
+    score >= 85 ? "text-emerald-600" : score >= 65 ? "text-orange-500" : "text-destructive";
+  const issueCount = report.issueCount ?? (report.checklist || []).reduce((n, i) => n + (i.issueCount || 0), 0);
+
+  return (
+    <div className="bg-card border border-border/70 rounded-2xl overflow-hidden">
+      <div className="px-4 pt-5 pb-4">
+        <div className="text-sm font-bold text-foreground">Your Score</div>
+        <div className={`text-4xl font-black tracking-tight mt-1 ${scoreColor}`}>
+          {score}<span className="text-lg font-bold text-muted-foreground">/100</span>
+        </div>
+        <div className="text-xs text-muted-foreground mt-1 font-medium">
+          {issueCount} Issue{issueCount === 1 ? "" : "s"}
+        </div>
+      </div>
+
+      <div className="px-4 divide-y divide-border/50 border-t border-border/50">
+        {(report.checklist || []).map((item) => (
+          <AtsCheckRow key={item.key} item={item} />
+        ))}
+      </div>
+
+      <div className="px-4 pb-2">
+        {(report.groups || []).map((group, idx) => (
+          <AtsGroupAccordion key={group.key} group={group} defaultOpen={idx === 0} />
+        ))}
+      </div>
+
+      {report.topSuggestions?.length > 0 && (
+        <div className="px-4 pb-4 pt-2 border-t border-border/50 space-y-2">
+          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            Top Fixes
+          </div>
+          <ul className="space-y-1.5">
+            {report.topSuggestions.slice(0, 4).map((s, idx) => (
+              <li key={idx} className="text-[11px] text-foreground leading-relaxed flex gap-1.5">
+                <span className="text-orange-500 font-bold shrink-0">{idx + 1}.</span>
+                <span>{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

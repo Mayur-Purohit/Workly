@@ -380,10 +380,10 @@ class AtsCompatibilityAgent:
         score = 100
         issues = []
         
-        # 1. Multi-column check
-        if "[left column]" in resume_text.lower() or "[right column]" in resume_text.lower():
-            score -= 20
-            issues.append("Multi-column layout detected. Legacy ATS scanners may parse columns out of order.")
+        # Strip our own column-aware extraction markers before evaluating
+        # (these are parser artifacts, NOT part of the original resume)
+        clean_text = re.sub(r'\[(?:LEFT|RIGHT)\s+COLUMN\]', '', resume_text, flags=re.IGNORECASE)
+        resume_text = clean_text
             
         # 2. Table dividers check
         pipe_count = resume_text.count("|")
@@ -632,13 +632,22 @@ class AtsCompatibilityAgent:
         return max(0, score), issues
 
     def _check_content_quality(self, parsed_data: dict) -> tuple:
-        """12%: Vague phrasing, bullet depth, and presence of a professional summary."""
+        """15%: Vague phrasing, bullet depth, and presence of a professional summary."""
         bullets = self._get_all_bullets(parsed_data)
         if not bullets:
-            return 30, ["No experience/project bullet points detected to evaluate content quality."]
+            return 25, ["No experience/project bullet points detected to evaluate content quality."]
 
         score = 100
         issues = []
+
+        # Content Depth check
+        if len(bullets) < 4:
+            score -= 35
+            issues.append(f"Only {len(bullets)} bullet point(s) total across all entries. Strong resumes have 8-15 achievement-focused bullets.")
+        elif len(bullets) < 7:
+            score -= 15
+            issues.append(f"Only {len(bullets)} bullet points total — add more detail to your work experience and projects.")
+
         weak_count = sum(1 for b in bullets if any(p in b.lower() for p in WEAK_PHRASES))
         short_count = sum(1 for b in bullets if len(b.split()) < 6)
 
@@ -661,29 +670,35 @@ class AtsCompatibilityAgent:
         return max(0, score), issues
 
     def _check_quantified_achievements(self, parsed_data: dict) -> tuple:
-        """8%: Share of bullets carrying a measurable metric (%, $, counts, time)."""
+        """10%: Share of bullets carrying a measurable metric (%, $, counts, time)."""
         bullets = self._get_all_bullets(parsed_data)
-        if not bullets:
-            return 30, ["No bullet points found to check for quantified impact."]
+        if not bullets or len(bullets) < 2:
+            return 20, ["Too few bullet points to evaluate quantified impact."]
 
         metric_pattern = re.compile(
-            r'(\d+(\.\d+)?\s?(%|percent|x|k\+|k\b|m\+|hours?|days?|months?|years?|users?|customers?))|(\$\s?\d)',
+            r'(\d+(\.\d+)?\s?(%|percent|x|k\+|k\b|m\+|hours?|days?|months?|years?|users?|customers?|ms|s|sec))|(\$\s?\d)',
             re.IGNORECASE
         )
         quantified = 0
         for b in bullets:
             if metric_pattern.search(b):
                 quantified += 1
-            elif re.search(r'\d', b):
-                quantified += 0.5
+            elif re.search(r'\b\d+\b', b):
+                quantified += 0.4
 
         ratio = quantified / len(bullets)
-        score = round(min(100, ratio * 100))
-        issues = []
-        if ratio < 0.3:
-            issues.append("Very few bullets include measurable results. Quantify impact wherever possible, e.g. 'reduced load time by 40%'.")
-        elif ratio < 0.6:
-            issues.append("Some bullets are quantified — adding metrics to more of them will strengthen impact further.")
+        if quantified == 0:
+            score = 30
+            issues = ["No metrics or quantified numbers found in bullet points. Add percentages, user scale, speedups, or dollar figures."]
+        elif quantified == 1:
+            score = 55
+            issues = ["Only 1 bullet contains measurable metrics. Aim to quantify at least 40-50% of your achievements."]
+        else:
+            score = round(min(100, max(50, ratio * 110)))
+            issues = []
+            if ratio < 0.35:
+                issues.append("Very few bullets include measurable results. Quantify impact wherever possible, e.g. 'reduced load time by 40%'.")
+
         return score, issues
 
     def _check_action_verbs(self, parsed_data: dict) -> tuple:
@@ -843,7 +858,7 @@ class AtsCompatibilityAgent:
             return 20, ["Certifications section only links out to LinkedIn instead of naming actual certificates. ATS parsers cannot follow links, so this reads as zero certifications to automated screening — list 3-4 certificate names directly on the resume."]
 
         if not named_certs:
-            return 55, ["No certifications section found. Optional, but 2-3 relevant certifications (with issuer + year) add keyword density and credibility."]
+            return 40, ["No certifications section found. Optional, but 2-3 relevant certifications add keyword density and credibility."]
 
         score = min(100, 60 + len(named_certs) * 15)
         issues = []
@@ -860,6 +875,11 @@ class AtsCompatibilityAgent:
         score = 100
         issues = []
 
+        bullets = self._get_all_bullets(parsed_data)
+        if len(bullets) < 3:
+            score -= 30
+            issues.append("Resume narrative is too brief to demonstrate professional tone or depth.")
+
         claim_hits = []
         for pattern in UNREALISTIC_CLAIM_PATTERNS:
             m = re.search(pattern, text_lower)
@@ -867,13 +887,13 @@ class AtsCompatibilityAgent:
                 claim_hits.append(m.group(0))
         if claim_hits:
             score -= 35
-            issues.append("Resume states specific salary/CTC targets or exam-rank goals (e.g. a CTC figure, 'AIR 1'). Recruiters read this as premature or off-topic for a job application — keep career goals qualitative and role-focused, not numeric self-projections.")
+            issues.append("Resume states specific salary/CTC targets or exam-rank goals (e.g. a CTC figure, 'AIR 1'). Keep career goals qualitative and role-focused.")
 
         buzzword_hits = [b for b in SENIORITY_BUZZWORDS if b in text_lower]
         is_junior = cand_years < 2
         if buzzword_hits and is_junior:
             score -= 25
-            issues.append(f"Language like \"{buzzword_hits[0]}\" reads as a seniority mismatch against an early-career/fresher profile — let the projects demonstrate the level instead of asserting it directly.")
+            issues.append(f"Language like \"{buzzword_hits[0]}\" reads as a seniority mismatch against an early-career profile.")
         elif buzzword_hits:
             score -= 10
             issues.append("Self-promotional superlatives detected — prefer concrete, quantified achievements over subjective claims.")
@@ -883,10 +903,9 @@ class AtsCompatibilityAgent:
                 hit_company = next((c for c in ELITE_COMPANIES if c in text_lower), None)
                 if hit_company:
                     score -= 10
-                    issues.append(f"Naming a specific target company (\"{hit_company.title()}\") in career objectives reads as presumptuous and doesn't strengthen this particular application — keep the objective about the role/domain instead.")
+                    issues.append(f"Naming a specific target company (\"{hit_company.title()}\") in career objectives reads as presumptuous.")
                 break
 
-        bullets = self._get_all_bullets(parsed_data)
         if bullets:
             label_prefixes = Counter()
             for b in bullets:
@@ -897,7 +916,7 @@ class AtsCompatibilityAgent:
             if repeated_labels:
                 lbl, c = repeated_labels[0]
                 score -= 15
-                issues.append(f"The label \"{lbl.title()}:\" is reused as a bullet opener {c} times across projects — reads as a filled-in template rather than a distinct narrative per project.")
+                issues.append(f"The label \"{lbl.title()}:\" is reused as a bullet opener {c} times across projects.")
 
             dupe_bullets = [b for b, c in Counter(b.strip().lower() for b in bullets).items() if c > 1]
             if dupe_bullets:
@@ -908,11 +927,7 @@ class AtsCompatibilityAgent:
 
     def _build_general_ats_report(self, resume_text: str, parsed_data: dict, fmt_score: int, fmt_issues: list,
                                    cand_years: float, parsed_projects: list, proj_titles: list, candidate_skills: list) -> dict:
-        """Builds the full report for the General (No-JD) ATS checklist using the 12 weighted
-        categories below. Certifications and Professional Tone / Red Flags were added on top
-        of the original 10 because pure parseability/keyword checks miss exactly what a human
-        recruiter (and a real JD-based tool run) weighs heavily: link-only certifications, and
-        unrealistic or seniority-mismatched self-framing."""
+        """Builds the full report for the General (No-JD) ATS checklist using calibrated weights."""
 
         structure_score, structure_issues = self._check_structure(resume_text, parsed_data)
         grammar_score, grammar_issues = self._check_spelling_and_grammar(resume_text, parsed_data)
@@ -927,21 +942,29 @@ class AtsCompatibilityAgent:
         tone_score, tone_issues = self._check_professional_tone(resume_text, parsed_data, cand_years)
 
         categories = {
-            "ats_parseability":        {"label": "ATS Parseability",              "weight": 0.20, "score": fmt_score,             "issues": fmt_issues},
+            "ats_parseability":        {"label": "ATS Parseability",              "weight": 0.18, "score": fmt_score,             "issues": fmt_issues},
             "grammar_spelling":        {"label": "Grammar & Spelling",            "weight": 0.08, "score": grammar_score,         "issues": grammar_issues},
-            "resume_structure":        {"label": "Resume Structure",              "weight": 0.12, "score": structure_score,       "issues": structure_issues},
+            "resume_structure":        {"label": "Resume Structure",              "weight": 0.14, "score": structure_score,       "issues": structure_issues},
             "contact_information":     {"label": "Contact Information",           "weight": 0.05, "score": contact_score,         "issues": contact_issues},
-            "content_quality":         {"label": "Content Quality",               "weight": 0.12, "score": content_score,         "issues": content_issues},
-            "quantified_achievements": {"label": "Quantified Achievements",       "weight": 0.08, "score": quant_score,           "issues": quant_issues},
-            "action_verbs":            {"label": "Action Verbs",                  "weight": 0.04, "score": verbs_score,           "issues": verbs_issues},
+            "content_quality":         {"label": "Content Quality & Depth",       "weight": 0.15, "score": content_score,         "issues": content_issues},
+            "quantified_achievements": {"label": "Quantified Achievements",       "weight": 0.10, "score": quant_score,           "issues": quant_issues},
+            "action_verbs":            {"label": "Action Verbs",                  "weight": 0.05, "score": verbs_score,           "issues": verbs_issues},
             "bullet_consistency":      {"label": "Bullet Consistency",            "weight": 0.03, "score": bullet_score,          "issues": bullet_issues},
-            "general_keywords":        {"label": "General Technical Keywords",    "weight": 0.04, "score": keyword_score,         "issues": keyword_issues},
+            "general_keywords":        {"label": "General Technical Keywords",    "weight": 0.10, "score": keyword_score,         "issues": keyword_issues},
             "readability_formatting":  {"label": "Readability & Formatting",      "weight": 0.04, "score": readability_score,     "issues": readability_issues},
-            "certifications":          {"label": "Certifications",                "weight": 0.05, "score": certifications_score, "issues": certifications_issues},
-            "professional_tone":       {"label": "Professional Tone / Red Flags", "weight": 0.15, "score": tone_score,            "issues": tone_issues},
+            "certifications":          {"label": "Certifications",                "weight": 0.03, "score": certifications_score, "issues": certifications_issues},
+            "professional_tone":       {"label": "Professional Tone & Depth",     "weight": 0.05, "score": tone_score,            "issues": tone_issues},
         }
 
         overall_score = round(sum(c["score"] * c["weight"] for c in categories.values()))
+
+        # Content Completeness & Word Count Depth Scaling
+        word_count = len((resume_text or "").split())
+        if word_count < 180:
+            overall_score = round(overall_score * 0.70)
+        elif word_count < 320:
+            overall_score = round(overall_score * 0.85)
+
         overall_score = max(5, min(overall_score, 100))
 
         strengths = []
@@ -1140,9 +1163,11 @@ class AtsCompatibilityAgent:
                             missing_keywords.append(kw)
                     else:
                         missing_keywords.append(kw)
-                keyword_match_score = int((len(matched_keywords) / len(target_keywords)) * 100) if target_keywords else 100
+                keyword_match_score = int((len(matched_keywords) / len(target_keywords)) * 100) if target_keywords else 80
             else:
-                keyword_match_score = 100
+                # No target keywords extracted from JD — score by resume keyword density
+                resume_tech_count = len([w for w in re.findall(r'\b[a-zA-Z]{2,18}\b', resume_text_lower) if w in TECH_DICT])
+                keyword_match_score = min(85, 50 + resume_tech_count * 3)
 
             # --- Skills Match (25%) ---
             jd_skills = list(set(s.lower().strip() for s in (jd_req.get("required_skills", []) + jd_req.get("preferred_skills", [])) if s))
@@ -1182,9 +1207,10 @@ class AtsCompatibilityAgent:
                             missing_skills.append(s)
                 else:
                     missing_skills = jd_skills[:]
-                skills_match_score = int((len(matched_skills) / len(jd_skills)) * 100) if jd_skills else 100
+                skills_match_score = int((len(matched_skills) / len(jd_skills)) * 100) if jd_skills else 80
             else:
-                skills_match_score = 100
+                # No JD skills parsed — score by resume skill count
+                skills_match_score = min(85, 40 + len(candidate_skills) * 4)
 
             # --- Experience Relevance (15%) ---
             # Part A: Experience Years check
@@ -1311,8 +1337,8 @@ class AtsCompatibilityAgent:
                     completeness_points += proj_points
                 completeness_score = min(100.0, (completeness_points / total_projects) * (100.0 / 35.0))
                 
-                # Fail-safe minimum
-                base_fail_safe = 30.0 + 0.10 * completeness_score
+                # Fail-safe minimum (reduced to prevent inflation)
+                base_fail_safe = 15.0 + 0.05 * completeness_score
                 project_relevance_score = max(base_fail_safe, calculated_score)
                 project_relevance_score = round(project_relevance_score)
                 
@@ -1326,7 +1352,9 @@ class AtsCompatibilityAgent:
             # --- Education Match (5%) ---
             req_degree = jd_req.get("preferred_degree", "")
             if not req_degree:
-                education_match_score = 100
+                # No degree requirement in JD — give credit for having education listed
+                edu_list = parsed_data.get("education", []) or []
+                education_match_score = 85 if edu_list else 60
                 edu_details = "No specific education requirements parsed from target job description."
             else:
                 edu_list = parsed_data.get("education", []) or []
