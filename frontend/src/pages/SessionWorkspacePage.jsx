@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Upload, Archive, Mail, Link as LinkIcon, Download, Zap, Settings, RefreshCw, X, ChevronDown, Check, Trash2, Building, Users, BarChart3, Search, Loader2, ArrowLeft, Network } from 'lucide-react';
+import { Upload, Archive, Mail, Link as LinkIcon, Download, Zap, Settings, RefreshCw, X, ChevronDown, Check, Trash2, Building, Users, BarChart3, Search, Loader2, ArrowLeft, Network, Briefcase, CheckCircle2, Layers } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 
@@ -26,7 +26,7 @@ import {
 
 const TagInput = ({ tags, onChange, placeholder, tagColor }) => {
   const [input, setInput] = useState("");
-  
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
@@ -45,7 +45,7 @@ const TagInput = ({ tags, onChange, placeholder, tagColor }) => {
   };
 
   const getPillColor = () => {
-    switch(tagColor) {
+    switch (tagColor) {
       case 'amber': return 'bg-amber-50 text-amber-800 border-amber-200';
       case 'blue': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'gray': default: return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -90,12 +90,12 @@ export default function SessionWorkspacePage() {
   const [filters, setFilters] = useState({ search: "", location: "", min_score: 0, skill: "", sort: "Match Score ↓" });
   const [candidatesPage, setCandidatesPage] = useState(1);
   const [activeDetailCandidate, setActiveDetailCandidate] = useState(null);
-  
+
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [driveUrl, setDriveUrl] = useState("");
   const [atsFile, setAtsFile] = useState(null);
-  const [googleType, setGoogleType] = useState("drive"); 
-  const [atsFormat, setAtsFormat] = useState("csv"); 
+  const [googleType, setGoogleType] = useState("drive");
+  const [atsFormat, setAtsFormat] = useState("csv");
 
   const { data: session, isLoading } = useQuery({
     queryKey: ["session", id],
@@ -310,8 +310,8 @@ export default function SessionWorkspacePage() {
   };
   const { getRootProps: getDirectProps, getInputProps: getDirectInput } = useDropzone({
     onDrop: onDropDirect,
-    accept: { 
-      'application/pdf': ['.pdf'], 
+    accept: {
+      'application/pdf': ['.pdf'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'application/msword': ['.doc'],
       'text/plain': ['.txt']
@@ -324,7 +324,7 @@ export default function SessionWorkspacePage() {
       const { job_id } = await ingestAPI.uploadZip(id, acceptedFiles[0]);
       addJob(job_id, "zip");
       toast.success("ZIP upload started!");
-    } catch(e) {
+    } catch (e) {
       toast.error(e.message);
     }
   };
@@ -349,7 +349,7 @@ export default function SessionWorkspacePage() {
           await ingestAPI.connectGmail({ session_id: id, auth_code: e.data.code });
           queryClient.invalidateQueries({ queryKey: ["session", id] });
           toast.success("Gmail connected!");
-        } catch(err) {
+        } catch (err) {
           toast.error("Failed to connect Gmail");
         }
       } else if (e.data.type === "GDRIVE_AUTH_CODE") {
@@ -359,7 +359,7 @@ export default function SessionWorkspacePage() {
           const { job_id } = await ingestAPI.syncGDrive({ session_id: id });
           addJob(job_id, "gdrive");
           toast.success("Google Drive sync started!");
-        } catch(err) {
+        } catch (err) {
           toast.error("Failed to connect or sync Google Drive. Provide a valid Drive folder URL.");
         }
       } else if (e.data.type === "GFORM_AUTH_CODE") {
@@ -368,7 +368,7 @@ export default function SessionWorkspacePage() {
           toast.success("Google Form connected!");
           addJob(res.job_id, "form");
           toast.success("Google Form sync started!");
-        } catch(err) {
+        } catch (err) {
           toast.error("Failed to connect or sync Google Form. Provide a valid Google Sheet URL.");
         }
       }
@@ -408,7 +408,7 @@ export default function SessionWorkspacePage() {
       toast("Matching all candidates...", { icon: "ℹ️" });
       const { job_id } = await sessionsAPI.matchAll(id);
       addJob(job_id, "match_all");
-    } catch(e) { toast.error(e.message); }
+    } catch (e) { toast.error(e.message); }
   };
 
   const handleEndSession = async () => {
@@ -417,7 +417,7 @@ export default function SessionWorkspacePage() {
         await sessionsAPI.update(id, { status: "completed" });
         queryClient.invalidateQueries({ queryKey: ["session", id] });
         toast.success("Session completed.");
-      } catch(e) { toast.error(e.message); }
+      } catch (e) { toast.error(e.message); }
     }
   };
 
@@ -445,145 +445,106 @@ export default function SessionWorkspacePage() {
   return (
     <div className="flex h-[calc(100vh-60px)] overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 bg-cream flex flex-col hide-scrollbar">
-        
-        {/* EXECUTIVE HEADER */}
-        <div className="mb-6 rounded-3xl border border-border bg-card p-6 shadow-sm relative overflow-hidden">
-          {/* Subtle Accent Glow Background */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-          {/* Top Breadcrumb & Status Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <Link 
-              to="/dashboard/sessions" 
-              className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors group"
+        {/* HEADER */}
+        <div className="mb-8 font-sans text-foreground">
+          <div className="text-left mb-6">
+            <Link
+              to="/dashboard/sessions"
+              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--google-blue)] hover:text-blue-700 transition-colors mb-2"
             >
-              <div className="grid h-6 w-6 place-items-center rounded-lg border border-border bg-background group-hover:border-foreground/20 transition-colors">
-                <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
-              </div>
-              <span>Back to Sessions</span>
+              <ArrowLeft size={14} /> Back to Sessions
             </Link>
-
-            <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-2xs ${
-                session.status === "completed" ? "bg-blue-50 text-blue-700 border-blue-200/80 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800" :
-                session.status === "archived" ? "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700" :
-                "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
-              }`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${
-                  session.status === "completed" ? "bg-blue-500 animate-pulse" :
-                  session.status === "archived" ? "bg-zinc-400" :
-                  "bg-emerald-500 animate-pulse"
-                }`} />
-                {session.status || "Active"}
-              </span>
-
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-border bg-background text-foreground shadow-2xs">
-                <span className="text-muted-foreground">Round</span>
-                <span className="font-bold text-primary">{currentRoundIndex + 1}</span>
-                <span className="text-muted-foreground">of {session.rounds?.length || 1}</span>
-              </span>
-            </div>
+            <h1 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight">
+              {session.name}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+              <Briefcase size={16} /> {session.job_title}
+            </p>
           </div>
 
-          {/* Title & Actions Row */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-3 border-t border-border/60">
-            {/* Title & Job Information */}
-            <div className="space-y-1 max-w-2xl">
-              <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                {session.name}
-              </h1>
-              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span className="inline-flex items-center gap-1 text-foreground font-semibold">
-                  <Building size={13} className="text-muted-foreground" /> {session.job_title}
-                </span>
-                <span>•</span>
-                <span>Created {session.created_at ? new Date(session.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}</span>
-              </div>
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-b border-border pb-6">
+            {/* Status & Round Badges */}
+            <div className="flex items-center gap-3">
+              <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${session.status === "completed" ? "bg-[color-mix(in_oklab,var(--google-blue)_10%,transparent)] text-[var(--google-blue)]" :
+                  session.status === "archived" ? "bg-muted text-muted-foreground" :
+                    "bg-[color-mix(in_oklab,var(--google-green)_10%,transparent)] text-[var(--google-green)]"
+                }`}>
+                {session.status === "completed" ? <CheckCircle2 size={14} /> : session.status === "archived" ? <Archive size={14} /> : <div className="w-2 h-2 rounded-full bg-[var(--google-green)] animate-pulse"></div>}
+                {session.status || "Active"}
+              </span>
+              <span className="bg-card text-foreground px-3 py-1.5 rounded-full border border-border text-xs font-bold shadow-sm flex items-center gap-1.5">
+                <Layers size={14} className="text-muted-foreground" />
+                Round {currentRoundIndex + 1} of {session.rounds?.length || 1}
+              </span>
             </div>
-
-            {/* Action Toolbar */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-              {/* Primary High-Priority Actions */}
-              <button 
-                onClick={handleMatchAll} 
-                className="inline-flex items-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm hover:shadow transition-all active:scale-[0.98] cursor-pointer"
-              >
-                <Zap size={14} className="fill-current text-white" />
-                <span>Match All</span>
+            
+            {/* Action Buttons Sequence */}
+            <div className="flex items-center gap-2.5 overflow-x-auto hide-scrollbar pb-2 -mx-2 px-2 xl:mx-0 xl:px-0 xl:pb-0">
+              <button onClick={handleMatchAll} className="whitespace-nowrap bg-[var(--google-blue)] hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 shadow-sm shrink-0 cursor-pointer">
+                <Zap size={16} fill="currentColor" /> Match All
               </button>
               
               <Link
                 to={`/dashboard/sessions/${id}/results`}
-                className="inline-flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 text-xs font-semibold px-4 py-2.5 rounded-xl shadow-xs transition-all active:scale-[0.98]"
+                className="whitespace-nowrap border border-[var(--google-green)] text-[var(--google-green)] hover:bg-[color-mix(in_oklab,var(--google-green)_5%,transparent)] px-4 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 bg-card shadow-sm shrink-0 cursor-pointer"
               >
-                <BarChart3 size={14} />
-                <span>View Assessment Results</span>
+                <BarChart3 size={16} /> View Assessment Results
               </Link>
+              
+              <div className="h-6 w-px bg-border mx-1 shrink-0 hidden sm:block"></div>
 
-              {/* Secondary Utility Actions */}
-              <button 
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="whitespace-nowrap border border-border text-foreground hover:border-[var(--google-blue)] hover:text-[var(--google-blue)] px-4 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 shrink-0 bg-card shadow-sm cursor-pointer"
+              >
+                <Settings size={16} /> Edit Session
+              </button>
+              
+              <button
+                onClick={() => {
+                  const url = exportAPI.candidatesUrl(id);
+                  if (url) window.open(url);
+                }}
+                className="whitespace-nowrap border border-border text-foreground hover:border-[var(--google-blue)] hover:text-[var(--google-blue)] px-4 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 shrink-0 bg-card shadow-sm cursor-pointer"
+              >
+                <Download size={16} /> Export Hired
+              </button>
+              
+              <button
                 onClick={() => {
                   const url = `${window.location.origin}/jobs/${id}`;
                   navigator.clipboard.writeText(url);
                   toast.success("Public Apply Link copied to clipboard!");
                 }}
-                className="inline-flex items-center gap-1.5 border border-border bg-background hover:bg-muted text-foreground text-xs font-medium px-3.5 py-2.5 rounded-xl shadow-2xs transition-all"
-                title="Copy Candidate Application Link"
+                className="whitespace-nowrap border border-border text-foreground hover:border-[var(--google-blue)] hover:text-[var(--google-blue)] px-4 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 shrink-0 bg-card shadow-sm cursor-pointer"
               >
-                <LinkIcon size={14} className="text-muted-foreground" />
-                <span>Copy Apply Link</span>
+                <LinkIcon size={16} /> Copy Apply Link
               </button>
-
-              <button 
-                onClick={() => {
-                  const url = exportAPI.candidatesUrl(id);
-                  if (url) window.open(url);
-                }} 
-                className="inline-flex items-center gap-1.5 border border-border bg-background hover:bg-muted text-foreground text-xs font-medium px-3.5 py-2.5 rounded-xl shadow-2xs transition-all"
-                title="Export Hired Candidates CSV"
-              >
-                <Download size={14} className="text-muted-foreground" />
-                <span>Export Hired</span>
-              </button>
-
-              <button 
-                onClick={() => setIsEditModalOpen(true)}
-                className="inline-flex items-center gap-1.5 border border-border bg-background hover:bg-muted text-foreground text-xs font-medium px-3.5 py-2.5 rounded-xl shadow-2xs transition-all"
-                title="Edit Session Settings"
-              >
-                <Settings size={14} className="text-muted-foreground" />
-                <span>Edit Session</span>
-              </button>
-
-              {/* Management & Danger Actions */}
-              <div className="h-6 w-[1px] bg-border mx-1 hidden sm:block" />
+              
+              <div className="h-6 w-px bg-border mx-1 shrink-0 hidden sm:block"></div>
 
               {session.status !== "completed" && (
-                <button 
-                  onClick={handleEndSession} 
-                  className="inline-flex items-center gap-1.5 border border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 text-xs font-medium px-3.5 py-2.5 rounded-xl transition-all"
-                  title="End Active Session"
-                >
-                  <X size={14} />
-                  <span>End Session</span>
+                <button onClick={handleEndSession} className="whitespace-nowrap text-muted-foreground hover:text-[var(--google-red)] px-3 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 shrink-0 cursor-pointer">
+                  <X size={16} /> End Session
                 </button>
               )}
-
-              <button 
+              
+              <button
                 onClick={async () => {
                   if (window.confirm(`Permanently delete session "${session.name}"? This will delete all candidates and cannot be undone.`)) {
                     try {
                       await sessionsAPI.delete(id, { delete_candidates: true, hard_delete: true });
                       toast.success('Session deleted');
                       navigate('/dashboard/sessions');
-                    } catch(e) { toast.error(e.message); }
+                    } catch (e) {
+                      toast.error(e.message || 'Failed to delete session');
+                    }
                   }
-                }} 
-                className="inline-flex items-center gap-1.5 border border-red-200 dark:border-red-900/40 bg-red-50/60 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:bg-red-100 text-xs font-medium px-3 py-2.5 rounded-xl transition-all"
-                title="Delete Session Permanently"
+                }}
+                className="whitespace-nowrap text-[var(--google-red)] hover:text-white hover:bg-[var(--google-red)] px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 shrink-0 border border-transparent hover:shadow-sm cursor-pointer"
               >
-                <Trash2 size={14} />
-                <span>Delete</span>
+                <Trash2 size={16} /> Delete Session
               </button>
             </div>
           </div>
@@ -606,7 +567,7 @@ export default function SessionWorkspacePage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-3 md:self-center">
               {Object.values(jobs).map((job) => {
                 if (job.status !== 'pending' && job.status !== 'processing') return null;
@@ -643,9 +604,8 @@ export default function SessionWorkspacePage() {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`pb-3 pt-2 text-[15px] font-bold transition-colors border-b-[3px] relative top-[2px] flex items-center ${
-                activeTab === t.id ? "border-accent text-accent" : "border-transparent text-gray-500 hover:text-charcoal"
-              }`}
+              className={`pb-3 pt-2 text-[15px] font-bold transition-colors border-b-[3px] relative top-[2px] flex items-center ${activeTab === t.id ? "border-accent text-accent" : "border-transparent text-gray-500 hover:text-charcoal"
+                }`}
             >
               {t.icon}
               {t.label}
@@ -656,300 +616,295 @@ export default function SessionWorkspacePage() {
 
         {/* TAB CONTENTS */}
         <div className="flex-1 flex flex-col pb-12">
-          
+
           {/* UPLOAD TAB */}
           {activeTab === "upload" && (
-             <div className="max-w-4xl space-y-6">
-                <h3 className="text-xl font-black text-charcoal tracking-tight">How would you like to add candidates?</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  
-                  {/* Direct Upload */}
-                  <div className="bg-white rounded-2xl p-6 border-2 border-transparent hover:border-accent transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                    <Upload size={32} className="text-accent mb-3" />
-                    <h4 className="font-bold text-charcoal text-lg mb-1">Direct Upload</h4>
-                    <p className="text-xs text-charcoal mb-4 font-medium">Upload PDF, DOCX, or TXT files or drag an entire folder</p>
-                    <div {...getDirectProps()} className="border-2 border-dashed border-[#2563EB] rounded-xl h-[120px] flex items-center justify-center bg-blue-50/40 hover:bg-blue-50 cursor-pointer transition-colors relative overflow-hidden">
-                      <input {...getDirectInput()} webkitdirectory="true" directory="" />
-                      <p className="text-sm font-bold text-accent">Drop files here or click to browse</p>
-                    </div>
-                    {selectedFiles.length > 0 && (
-                      <div className="mt-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="text-xs font-black text-charcoal">{selectedFiles.length} files selected</span>
-                          <button onClick={() => setSelectedFiles([])} className="text-[10px] uppercase font-bold tracking-wider text-red-500 hover:underline">Clear all</button>
-                        </div>
-                        <ul className="max-h-32 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
-                          {selectedFiles.slice(0,5).map((f, i) => (
-                            <li key={i} className="text-xs text-charcoal font-medium flex justify-between bg-white border border-gray-100 p-2 rounded-lg py-1.5">
-                              <span className="truncate pr-2">{f.name}</span>
-                              <span className="text-gray-400 font-mono">{(f.size / 1024).toFixed(0)}KB</span>
-                            </li>
-                          ))}
-                          {selectedFiles.length > 5 && <li className="text-[10px] text-gray-400 pt-1 font-bold text-center italic">+ {selectedFiles.length - 5} more files</li>}
-                        </ul>
-                        <button onClick={async () => {
-                          try {
-                            const { job_id } = await ingestAPI.uploadFiles(id, selectedFiles);
-                            addJob(job_id, "upload");
-                            setSelectedFiles([]);
-                            toast.success("Upload started!");
-                          } catch (e) { toast.error(e.message); }
-                        }} className="w-full mt-4 bg-accent text-white py-2.5 rounded-lg text-sm font-bold hover:bg-[#1D4ED8] shadow-sm transition-colors">
-                          Upload {selectedFiles.length} Files
-                        </button>
-                      </div>
-                    )}
-                  </div>
+            <div className="max-w-4xl space-y-6">
+              <h3 className="text-xl font-black text-charcoal tracking-tight">How would you like to add candidates?</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                  {/* ZIP Archive — Premium Feature */}
-                  <div className="relative">
-                    {!isEnterprise ? (
-                      <PremiumBadge tooltip="Bulk ZIP upload is available on the Enterprise plan">
-                        <div className="bg-white rounded-2xl p-6 border-2 border-transparent shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                          <Archive size={32} className="text-accent mb-3" />
-                          <h4 className="font-bold text-charcoal text-lg mb-1">ZIP Upload</h4>
-                          <p className="text-xs text-charcoal mb-4 font-medium">Upload a ZIP containing all resume files</p>
-                          <div className="border-2 border-dashed border-gray-300 rounded-xl h-[120px] flex items-center justify-center bg-gray-50">
-                            <p className="text-sm font-bold text-gray-500">Drop ZIP file here</p>
-                          </div>
-                        </div>
-                      </PremiumBadge>
-                    ) : (
-                      <div className="bg-white rounded-2xl p-6 border-2 border-transparent hover:border-accent transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                {/* Direct Upload */}
+                <div className="bg-white rounded-2xl p-6 border-2 border-transparent hover:border-accent transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                  <Upload size={32} className="text-accent mb-3" />
+                  <h4 className="font-bold text-charcoal text-lg mb-1">Direct Upload</h4>
+                  <p className="text-xs text-charcoal mb-4 font-medium">Upload PDF, DOCX, or TXT files or drag an entire folder</p>
+                  <div {...getDirectProps()} className="border-2 border-dashed border-[#2563EB] rounded-xl h-[120px] flex items-center justify-center bg-blue-50/40 hover:bg-blue-50 cursor-pointer transition-colors relative overflow-hidden">
+                    <input {...getDirectInput()} webkitdirectory="true" directory="" />
+                    <p className="text-sm font-bold text-accent">Drop files here or click to browse</p>
+                  </div>
+                  {selectedFiles.length > 0 && (
+                    <div className="mt-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-xs font-black text-charcoal">{selectedFiles.length} files selected</span>
+                        <button onClick={() => setSelectedFiles([])} className="text-[10px] uppercase font-bold tracking-wider text-red-500 hover:underline">Clear all</button>
+                      </div>
+                      <ul className="max-h-32 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
+                        {selectedFiles.slice(0, 5).map((f, i) => (
+                          <li key={i} className="text-xs text-charcoal font-medium flex justify-between bg-white border border-gray-100 p-2 rounded-lg py-1.5">
+                            <span className="truncate pr-2">{f.name}</span>
+                            <span className="text-gray-400 font-mono">{(f.size / 1024).toFixed(0)}KB</span>
+                          </li>
+                        ))}
+                        {selectedFiles.length > 5 && <li className="text-[10px] text-gray-400 pt-1 font-bold text-center italic">+ {selectedFiles.length - 5} more files</li>}
+                      </ul>
+                      <button onClick={async () => {
+                        try {
+                          const { job_id } = await ingestAPI.uploadFiles(id, selectedFiles);
+                          addJob(job_id, "upload");
+                          setSelectedFiles([]);
+                          toast.success("Upload started!");
+                        } catch (e) { toast.error(e.message); }
+                      }} className="w-full mt-4 bg-accent text-white py-2.5 rounded-lg text-sm font-bold hover:bg-[#1D4ED8] shadow-sm transition-colors">
+                        Upload {selectedFiles.length} Files
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* ZIP Archive — Premium Feature */}
+                <div className="relative">
+                  {!isEnterprise ? (
+                    <PremiumBadge tooltip="Bulk ZIP upload is available on the Enterprise plan">
+                      <div className="bg-white rounded-2xl p-6 border-2 border-transparent shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                         <Archive size={32} className="text-accent mb-3" />
                         <h4 className="font-bold text-charcoal text-lg mb-1">ZIP Upload</h4>
                         <p className="text-xs text-charcoal mb-4 font-medium">Upload a ZIP containing all resume files</p>
-                        <div 
-                          {...getZipProps()} 
-                          className="border-2 border-dashed border-[#2563EB] rounded-xl h-[120px] flex items-center justify-center bg-blue-50/40 hover:bg-blue-50 cursor-pointer transition-colors relative overflow-hidden"
-                        >
-                          <input {...getZipInput()} />
-                          <p className="text-sm font-bold text-accent">Drop ZIP file here or click to browse</p>
+                        <div className="border-2 border-dashed border-gray-300 rounded-xl h-[120px] flex items-center justify-center bg-gray-50">
+                          <p className="text-sm font-bold text-gray-500">Drop ZIP file here</p>
                         </div>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Gmail Sync */}
-                  <div className="bg-white rounded-2xl p-6 border-2 border-transparent hover:border-accent transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                    <Mail size={32} className="text-accent mb-3" />
-                    <h4 className="font-bold text-charcoal text-lg mb-1">Gmail Sync</h4>
-                    <p className="text-xs text-charcoal mb-4 font-medium">Auto-fetch resumes sent to your email</p>
-                    {!session.gmail_address ? (
-                      <div className="flex flex-col h-[120px] justify-center items-center bg-gray-50 border border-gray-100 rounded-xl">
-                        <button onClick={async () => {
-                          try {
-                            const { auth_url } = await ingestAPI.getOAuthUrl("gmail", id);
-                            window.open(auth_url, "gmail_oauth", "width=500,height=600,left=200,top=100");
-                          } catch(e) { toast.error(e.message) }
-                        }} className="border-[1.5px] border-gray-300 bg-white hover:border-accent hover:text-accent font-bold text-charcoal px-4 py-2 rounded-lg text-sm transition-colors shadow-sm">
-                          Connect Gmail Account
-                        </button>
-                        <p className="text-[10px] font-semibold text-gray-400 mt-3 text-center">We only read emails with resume attachments</p>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col h-[120px] justify-center bg-green-50 rounded-xl border border-green-100 p-4">
-                        <div className="flex items-center gap-2 text-green-700 font-bold text-sm mb-1 bg-white px-3 py-1.5 rounded-lg border border-green-200 self-start">
-                          <Check size={16} strokeWidth={3}/> {session.gmail_address}
-                        </div>
-                        <p className="text-[11px] font-semibold text-green-600/70 mb-4 mt-2 pl-1">Last synced: {session.last_gmail_sync ? new Date(session.last_gmail_sync).toLocaleString() : 'Never'}</p>
-                        <button onClick={async () => {
-                          try {
-                            const { job_id } = await ingestAPI.syncGmail({ session_id: id });
-                            addJob(job_id, "gmail");
-                            toast.success("Gmail sync started");
-                          } catch(e) { toast.error(e.message) }
-                        }} className="bg-accent text-white py-2 rounded-lg text-sm font-bold hover:bg-[#1D4ED8] shadow-sm transition-colors mt-auto">
-                          Sync Now
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Drive / Form */}
-                  <div className="bg-white rounded-2xl p-6 border-2 border-transparent hover:border-accent transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col">
-                    <div className="flex items-center gap-4 mb-4 border-b border-gray-100 pb-3">
-                      <LinkIcon size={24} className="text-accent" />
-                      <div className="flex gap-6">
-                        <button 
-                          onClick={() => setGoogleType("drive")}
-                          className={`text-sm pb-[13px] -mb-[14px] transition-all font-semibold ${
-                            googleType === "drive" 
-                              ? "font-black text-charcoal border-b-2 border-accent" 
-                              : "text-gray-400 hover:text-gray-600"
-                          }`}
-                        >
-                          Drive
-                        </button>
-                        <button 
-                          onClick={() => setGoogleType("form")}
-                          className={`text-sm pb-[13px] -mb-[14px] transition-all font-semibold ${
-                            googleType === "form" 
-                              ? "font-black text-charcoal border-b-2 border-accent" 
-                              : "text-gray-400 hover:text-gray-600"
-                          }`}
-                        >
-                          Google Form
-                        </button>
+                    </PremiumBadge>
+                  ) : (
+                    <div className="bg-white rounded-2xl p-6 border-2 border-transparent hover:border-accent transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                      <Archive size={32} className="text-accent mb-3" />
+                      <h4 className="font-bold text-charcoal text-lg mb-1">ZIP Upload</h4>
+                      <p className="text-xs text-charcoal mb-4 font-medium">Upload a ZIP containing all resume files</p>
+                      <div
+                        {...getZipProps()}
+                        className="border-2 border-dashed border-[#2563EB] rounded-xl h-[120px] flex items-center justify-center bg-blue-50/40 hover:bg-blue-50 cursor-pointer transition-colors relative overflow-hidden"
+                      >
+                        <input {...getZipInput()} />
+                        <p className="text-sm font-bold text-accent">Drop ZIP file here or click to browse</p>
                       </div>
                     </div>
-                    <p className="text-xs text-charcoal mb-2 font-medium flex-1">
-                      {googleType === "drive" 
-                        ? "Sync from a shared Drive folder link" 
-                        : "Sync candidates from a Google Form response sheet"}
+                  )}
+                </div>
+
+                {/* Gmail Sync */}
+                <div className="bg-white rounded-2xl p-6 border-2 border-transparent hover:border-accent transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                  <Mail size={32} className="text-accent mb-3" />
+                  <h4 className="font-bold text-charcoal text-lg mb-1">Gmail Sync</h4>
+                  <p className="text-xs text-charcoal mb-4 font-medium">Auto-fetch resumes sent to your email</p>
+                  {!session.gmail_address ? (
+                    <div className="flex flex-col h-[120px] justify-center items-center bg-gray-50 border border-gray-100 rounded-xl">
+                      <button onClick={async () => {
+                        try {
+                          const { auth_url } = await ingestAPI.getOAuthUrl("gmail", id);
+                          window.open(auth_url, "gmail_oauth", "width=500,height=600,left=200,top=100");
+                        } catch (e) { toast.error(e.message) }
+                      }} className="border-[1.5px] border-gray-300 bg-white hover:border-accent hover:text-accent font-bold text-charcoal px-4 py-2 rounded-lg text-sm transition-colors shadow-sm">
+                        Connect Gmail Account
+                      </button>
+                      <p className="text-[10px] font-semibold text-gray-400 mt-3 text-center">We only read emails with resume attachments</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col h-[120px] justify-center bg-green-50 rounded-xl border border-green-100 p-4">
+                      <div className="flex items-center gap-2 text-green-700 font-bold text-sm mb-1 bg-white px-3 py-1.5 rounded-lg border border-green-200 self-start">
+                        <Check size={16} strokeWidth={3} /> {session.gmail_address}
+                      </div>
+                      <p className="text-[11px] font-semibold text-green-600/70 mb-4 mt-2 pl-1">Last synced: {session.last_gmail_sync ? new Date(session.last_gmail_sync).toLocaleString() : 'Never'}</p>
+                      <button onClick={async () => {
+                        try {
+                          const { job_id } = await ingestAPI.syncGmail({ session_id: id });
+                          addJob(job_id, "gmail");
+                          toast.success("Gmail sync started");
+                        } catch (e) { toast.error(e.message) }
+                      }} className="bg-accent text-white py-2 rounded-lg text-sm font-bold hover:bg-[#1D4ED8] shadow-sm transition-colors mt-auto">
+                        Sync Now
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Drive / Form */}
+                <div className="bg-white rounded-2xl p-6 border-2 border-transparent hover:border-accent transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col">
+                  <div className="flex items-center gap-4 mb-4 border-b border-gray-100 pb-3">
+                    <LinkIcon size={24} className="text-accent" />
+                    <div className="flex gap-6">
+                      <button
+                        onClick={() => setGoogleType("drive")}
+                        className={`text-sm pb-[13px] -mb-[14px] transition-all font-semibold ${googleType === "drive"
+                            ? "font-black text-charcoal border-b-2 border-accent"
+                            : "text-gray-400 hover:text-gray-600"
+                          }`}
+                      >
+                        Drive
+                      </button>
+                      <button
+                        onClick={() => setGoogleType("form")}
+                        className={`text-sm pb-[13px] -mb-[14px] transition-all font-semibold ${googleType === "form"
+                            ? "font-black text-charcoal border-b-2 border-accent"
+                            : "text-gray-400 hover:text-gray-600"
+                          }`}
+                      >
+                        Google Form
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-charcoal mb-2 font-medium flex-1">
+                    {googleType === "drive"
+                      ? "Sync from a shared Drive folder link"
+                      : "Sync candidates from a Google Form response sheet"}
+                  </p>
+
+                  {googleType === "drive" ? (
+                    <p className="text-[11px] font-semibold text-green-600/70 mb-4 pl-1">
+                      Last synced: {session.last_gdrive_sync ? new Date(session.last_gdrive_sync).toLocaleString() : 'Never'}
                     </p>
-                    
-                    {googleType === "drive" ? (
-                      <p className="text-[11px] font-semibold text-green-600/70 mb-4 pl-1">
-                        Last synced: {session.last_gdrive_sync ? new Date(session.last_gdrive_sync).toLocaleString() : 'Never'}
-                      </p>
-                    ) : (
-                      <p className="text-[11px] font-semibold text-green-600/70 mb-4 pl-1">
-                        Last synced: {session.last_gform_sync ? new Date(session.last_gform_sync).toLocaleString() : 'Never'}
-                      </p>
-                    )}
-                    <div className="flex flex-col justify-end mt-auto">
-                      <input 
-                        type="text" 
-                        placeholder={googleType === "drive" 
-                          ? "Paste Google Drive folder URL here..." 
-                          : "Paste Google Form response Sheet URL here..."} 
-                        value={driveUrl} 
-                        onChange={e=>setDriveUrl(e.target.value)} 
-                        className="w-full text-xs p-2.5 font-medium border-2 border-gray-100 rounded-lg mb-2 focus:border-accent focus:outline-none bg-gray-50" 
-                      />
-                      <button 
+                  ) : (
+                    <p className="text-[11px] font-semibold text-green-600/70 mb-4 pl-1">
+                      Last synced: {session.last_gform_sync ? new Date(session.last_gform_sync).toLocaleString() : 'Never'}
+                    </p>
+                  )}
+                  <div className="flex flex-col justify-end mt-auto">
+                    <input
+                      type="text"
+                      placeholder={googleType === "drive"
+                        ? "Paste Google Drive folder URL here..."
+                        : "Paste Google Form response Sheet URL here..."}
+                      value={driveUrl}
+                      onChange={e => setDriveUrl(e.target.value)}
+                      className="w-full text-xs p-2.5 font-medium border-2 border-gray-100 rounded-lg mb-2 focus:border-accent focus:outline-none bg-gray-50"
+                    />
+                    <button
+                      onClick={async () => {
+                        try {
+                          const { auth_url } = await ingestAPI.getOAuthUrl(googleType, id);
+                          window.open(auth_url, "gdrive_oauth", "width=500,height=600,left=200,top=100");
+                        } catch (e) { toast.error(e.message); }
+                      }}
+                      className="bg-gray-100 hover:bg-gray-200 text-charcoal py-2 rounded-lg text-sm font-bold w-full transition-colors border border-gray-200 shadow-sm"
+                    >
+                      Connect & Sync
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Enterprise Import */}
+              <details className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border-2 border-transparent hover:border-gray-200 transition-colors overflow-hidden group">
+                <summary className="font-bold text-charcoal p-5 cursor-pointer bg-gray-50 flex items-center justify-between text-[15px]">
+                  <span className="flex items-center gap-2">
+                    <Building size={16} className="text-[#2563EB]" />
+                    <span>ATS / Enterprise Import</span>
+                  </span>
+                  <ChevronDown size={20} className="text-gray-400 group-open:rotate-180 transition-transform" />
+                </summary>
+                <div className="p-6 border-t border-gray-100 bg-white">
+                  <div className="flex gap-3 mb-6">
+                    <span className="bg-[#2A2A2A] text-white text-xs px-4 py-1.5 rounded-full font-bold shadow-sm">CSV</span>
+                    <span className="text-gray-500 text-xs px-4 py-1.5 font-bold hover:bg-gray-100 rounded-full cursor-pointer transition-colors border border-gray-200 bg-white">JSON</span>
+                    <span className="text-gray-500 text-xs px-4 py-1.5 font-bold hover:bg-gray-100 rounded-full cursor-pointer transition-colors border border-gray-200 bg-white">Excel</span>
+                  </div>
+                  <div className="bg-blue-50/50 border border-blue-200 text-blue-900 p-4 rounded-xl text-xs mb-5 shadow-sm">
+                    <strong className="block mb-1 text-sm">Expected columns:</strong>
+                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">name</span>
+                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">email</span>
+                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">phone</span>
+                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">location</span>
+                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">skills (semicolon-separated)</span>
+                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">experience_years</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-4 items-stretch h-32" {...getAtsProps()}>
+                    <div className={`border-2 border-dashed rounded-xl flex-1 flex flex-col items-center justify-center cursor-pointer transition-colors ${atsFile ? 'border-accent bg-blue-50' : 'border-gray-300 bg-gray-50/50 hover:bg-gray-50'}`}>
+                      <input {...getAtsInput()} />
+                      <span className="text-2xl mb-2">📄</span>
+                      <span className="text-sm text-gray-500 font-bold">{atsFile ? atsFile.name : 'Drop CSV / Excel file here'}</span>
+                    </div>
+                    <div className="flex flex-col justify-center gap-3 min-w-[200px]">
+                      <button className="text-accent font-bold text-xs border-2 border-accent bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors"><Download size={16} /> Download sample CSV</button>
+                      <button
                         onClick={async () => {
+                          if (!atsFile) return;
                           try {
-                            const { auth_url } = await ingestAPI.getOAuthUrl(googleType, id);
-                            window.open(auth_url, "gdrive_oauth", "width=500,height=600,left=200,top=100");
+                            toast.success("Import processing...");
+                            const res = await ingestAPI.importATS(id, atsFile.name.endsWith(".json") ? "json" : atsFile.name.endsWith(".xlsx") ? "xlsx" : "csv", atsFile);
+                            toast.success(`Imported ${res.imported} records. Failed: ${res.failed}`);
+                            setAtsFile(null);
+                            queryClient.invalidateQueries({ queryKey: ["candidates", id] });
                           } catch (e) { toast.error(e.message); }
                         }}
-                        className="bg-gray-100 hover:bg-gray-200 text-charcoal py-2 rounded-lg text-sm font-bold w-full transition-colors border border-gray-200 shadow-sm"
+                        disabled={!atsFile}
+                        className={`font-bold text-sm px-4 py-2.5 rounded-xl transition-colors ${atsFile ? 'bg-accent text-white hover:bg-[#1D4ED8]' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
                       >
-                        Connect & Sync
+                        Import Records
                       </button>
                     </div>
                   </div>
                 </div>
+              </details>
 
-                {/* Enterprise Import */}
-                <details className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border-2 border-transparent hover:border-gray-200 transition-colors overflow-hidden group">
-                  <summary className="font-bold text-charcoal p-5 cursor-pointer bg-gray-50 flex items-center justify-between text-[15px]">
-                    <span className="flex items-center gap-2">
-                      <Building size={16} className="text-[#2563EB]" />
-                      <span>ATS / Enterprise Import</span>
-                    </span>
-                    <ChevronDown size={20} className="text-gray-400 group-open:rotate-180 transition-transform" />
-                  </summary>
-                  <div className="p-6 border-t border-gray-100 bg-white">
-                    <div className="flex gap-3 mb-6">
-                      <span className="bg-[#2A2A2A] text-white text-xs px-4 py-1.5 rounded-full font-bold shadow-sm">CSV</span>
-                      <span className="text-gray-500 text-xs px-4 py-1.5 font-bold hover:bg-gray-100 rounded-full cursor-pointer transition-colors border border-gray-200 bg-white">JSON</span>
-                      <span className="text-gray-500 text-xs px-4 py-1.5 font-bold hover:bg-gray-100 rounded-full cursor-pointer transition-colors border border-gray-200 bg-white">Excel</span>
-                    </div>
-                    <div className="bg-blue-50/50 border border-blue-200 text-blue-900 p-4 rounded-xl text-xs mb-5 shadow-sm">
-                      <strong className="block mb-1 text-sm">Expected columns:</strong> 
-                      <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">name</span>
-                      <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">email</span>
-                      <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">phone</span>
-                      <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">location</span>
-                      <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">skills (semicolon-separated)</span>
-                      <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">experience_years</span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-4 items-stretch h-32" {...getAtsProps()}>
-                      <div className={`border-2 border-dashed rounded-xl flex-1 flex flex-col items-center justify-center cursor-pointer transition-colors ${atsFile ? 'border-accent bg-blue-50' : 'border-gray-300 bg-gray-50/50 hover:bg-gray-50'}`}>
-                        <input {...getAtsInput()} />
-                        <span className="text-2xl mb-2">📄</span>
-                        <span className="text-sm text-gray-500 font-bold">{atsFile ? atsFile.name : 'Drop CSV / Excel file here'}</span>
-                      </div>
-                      <div className="flex flex-col justify-center gap-3 min-w-[200px]">
-                        <button className="text-accent font-bold text-xs border-2 border-accent bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors"><Download size={16}/> Download sample CSV</button>
-                        <button 
-                          onClick={async () => {
-                            if (!atsFile) return;
-                            try {
-                              toast.success("Import processing...");
-                              const res = await ingestAPI.importATS(id, atsFile.name.endsWith(".json") ? "json" : atsFile.name.endsWith(".xlsx") ? "xlsx" : "csv", atsFile);
-                              toast.success(`Imported ${res.imported} records. Failed: ${res.failed}`);
-                              setAtsFile(null);
-                              queryClient.invalidateQueries({ queryKey: ["candidates", id] });
-                            } catch (e) { toast.error(e.message); }
-                          }}
-                          disabled={!atsFile}
-                          className={`font-bold text-sm px-4 py-2.5 rounded-xl transition-colors ${atsFile ? 'bg-accent text-white hover:bg-[#1D4ED8]' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-                        >
-                          Import Records
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </details>
-
-                {/* Jobs Tracking */}
-                {Object.values(jobs).length > 0 && (
-                  <div className="mt-8">
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 pl-1 flex items-center gap-2">
-                      <ActivityIndicator /> Active Background Jobs
-                    </h3>
-                    <div className="space-y-3">
-                      {Object.values(jobs).map((job) => (
-                        <div key={job.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 border-l-4 border-l-accent flex items-center justify-between">
-                          <div className="flex-1 mr-6">
-                            <div className="flex justify-between items-end mb-2">
-                              <div className="font-bold text-sm text-charcoal capitalize flex items-center gap-2">
-                                <RefreshCw size={14} className={job.status === 'processing' ? 'animate-spin text-accent' : 'text-gray-400'} />
-                                {job.type} Job
-                              </div>
-                              <div className="text-[11px] font-black font-mono text-gray-500 uppercase tracking-widest">{job.processed || 0} / {job.total || 0} resumes</div>
+              {/* Jobs Tracking */}
+              {Object.values(jobs).length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 pl-1 flex items-center gap-2">
+                    <ActivityIndicator /> Active Background Jobs
+                  </h3>
+                  <div className="space-y-3">
+                    {Object.values(jobs).map((job) => (
+                      <div key={job.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 border-l-4 border-l-accent flex items-center justify-between">
+                        <div className="flex-1 mr-6">
+                          <div className="flex justify-between items-end mb-2">
+                            <div className="font-bold text-sm text-charcoal capitalize flex items-center gap-2">
+                              <RefreshCw size={14} className={job.status === 'processing' ? 'animate-spin text-accent' : 'text-gray-400'} />
+                              {job.type} Job
                             </div>
-                            <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                              <div className="bg-accent h-full transition-all duration-300" style={{ width: `${job.progress_percent || 0}%` }}></div>
-                            </div>
+                            <div className="text-[11px] font-black font-mono text-gray-500 uppercase tracking-widest">{job.processed || 0} / {job.total || 0} resumes</div>
                           </div>
-                          <div className="w-[110px] text-right flex justify-end">
-                            {job.status === 'pending' && <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider bg-gray-100 px-3 py-1.5 rounded-md border border-gray-200">Waiting...</span>}
-                            {job.status === 'processing' && <span className="text-[10px] text-amber-700 font-black uppercase tracking-wider bg-blue-100 px-3 py-1.5 rounded-md border border-amber-200 shadow-sm flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>Processing</span>}
-                            {job.status === 'done' && <span className="text-[10px] text-green-700 font-black uppercase tracking-wider bg-green-100 px-3 py-1.5 rounded-md border border-green-200 shadow-sm flex items-center justify-end gap-1.5"><Check size={12} strokeWidth={3}/> Complete</span>}
-                            {job.status === 'failed' && <span className="text-[10px] text-red-700 font-black uppercase tracking-wider bg-red-100 px-3 py-1.5 rounded-md border border-red-200 shadow-sm flex items-center justify-end gap-1.5"><X size={12} strokeWidth={3}/> Failed ({job.failed || 0})</span>}
+                          <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                            <div className="bg-accent h-full transition-all duration-300" style={{ width: `${job.progress_percent || 0}%` }}></div>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                        <div className="w-[110px] text-right flex justify-end">
+                          {job.status === 'pending' && <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider bg-gray-100 px-3 py-1.5 rounded-md border border-gray-200">Waiting...</span>}
+                          {job.status === 'processing' && <span className="text-[10px] text-amber-700 font-black uppercase tracking-wider bg-blue-100 px-3 py-1.5 rounded-md border border-amber-200 shadow-sm flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>Processing</span>}
+                          {job.status === 'done' && <span className="text-[10px] text-green-700 font-black uppercase tracking-wider bg-green-100 px-3 py-1.5 rounded-md border border-green-200 shadow-sm flex items-center justify-end gap-1.5"><Check size={12} strokeWidth={3} /> Complete</span>}
+                          {job.status === 'failed' && <span className="text-[10px] text-red-700 font-black uppercase tracking-wider bg-red-100 px-3 py-1.5 rounded-md border border-red-200 shadow-sm flex items-center justify-end gap-1.5"><X size={12} strokeWidth={3} /> Failed ({job.failed || 0})</span>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* CANDIDATES TAB */}
           {activeTab === "candidates" && (
             <div className="flex flex-col h-full bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 p-6">
-              
+
               <div className="flex overflow-x-auto pb-4 gap-3 hide-scrollbar border-b border-gray-100 mb-5">
                 {session.rounds?.map(r => (
-                  <button 
+                  <button
                     key={r.id || r.order}
                     onClick={() => setActiveRound(r.order)}
-                    className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-shadow transition-colors border-2 ${
-                      activeRound === r.order ? 'bg-accent text-white border-accent shadow-md shadow-orange-500/20' : 'bg-gray-50 text-gray-500 border-transparent hover:text-charcoal hover:bg-gray-100'
-                    }`}
+                    className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-shadow transition-colors border-2 ${activeRound === r.order ? 'bg-accent text-white border-accent shadow-md shadow-orange-500/20' : 'bg-gray-50 text-gray-500 border-transparent hover:text-charcoal hover:bg-gray-100'
+                      }`}
                   >
                     {r.name} <span className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-black ${activeRound === r.order ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'}`}>{session.candidate_counts_per_round?.[String(r.order)] || 0}</span>
                   </button>
                 ))}
-                <button 
+                <button
                   onClick={() => setActiveRound("hired")}
-                  className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-shadow transition-colors border-2 ${
-                    activeRound === "hired" ? 'bg-green-600 text-white border-green-600 shadow-md shadow-green-600/20' : 'bg-green-50 text-green-700 border-transparent hover:bg-green-100 hover:text-green-800'
-                  }`}
+                  className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-shadow transition-colors border-2 ${activeRound === "hired" ? 'bg-green-600 text-white border-green-600 shadow-md shadow-green-600/20' : 'bg-green-50 text-green-700 border-transparent hover:bg-green-100 hover:text-green-800'
+                    }`}
                 >
                   Hired <span className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-black inline-block min-w-5 text-center ${activeRound === "hired" ? 'bg-white/20 text-white' : 'bg-green-200 text-green-800'}`}>{candidatesData?.total_hired ?? session?.total_hired ?? 0}</span>
                 </button>
-                <button 
+                <button
                   onClick={() => setActiveRound("rejected")}
-                  className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-shadow transition-colors border-2 ${
-                    activeRound === "rejected" ? 'bg-red-600 text-white border-red-600 shadow-md shadow-red-600/20' : 'bg-red-50 text-red-700 border-transparent hover:bg-red-100 hover:text-red-800'
-                  }`}
+                  className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-shadow transition-colors border-2 ${activeRound === "rejected" ? 'bg-red-600 text-white border-red-600 shadow-md shadow-red-600/20' : 'bg-red-50 text-red-700 border-transparent hover:bg-red-100 hover:text-red-800'
+                    }`}
                 >
                   Rejected <span className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-black inline-block min-w-5 text-center ${activeRound === "rejected" ? 'bg-white/20 text-white' : 'bg-red-200 text-red-800'}`}>{candidatesData?.total_rejected ?? session?.total_rejected ?? 0}</span>
                 </button>
@@ -957,14 +912,14 @@ export default function SessionWorkspacePage() {
 
               <div className="flex flex-wrap gap-4 items-center bg-gray-50 border border-gray-200 p-4 rounded-xl">
                 <div className="relative flex-1 min-w-[200px] z-20">
-                  <input 
-                    type="text" 
-                    placeholder="Search names..." 
-                    value={filters.search} 
-                    onChange={e=>setFilters({...filters, search: e.target.value})} 
+                  <input
+                    type="text"
+                    placeholder="Search names..."
+                    value={filters.search}
+                    onChange={e => setFilters({ ...filters, search: e.target.value })}
                     onFocus={() => setShowNameSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowNameSuggestions(false), 200)}
-                    className="w-full border-2 border-gray-200 p-2.5 rounded-lg text-sm font-medium focus:border-accent focus:outline-none bg-white shadow-sm" 
+                    className="w-full border-2 border-gray-200 p-2.5 rounded-lg text-sm font-medium focus:border-accent focus:outline-none bg-white shadow-sm"
                   />
                   {showNameSuggestions && (
                     <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1">
@@ -981,7 +936,7 @@ export default function SessionWorkspacePage() {
                               key={idx}
                               onMouseDown={(e) => {
                                 e.preventDefault();
-                                setFilters({...filters, search: sug});
+                                setFilters({ ...filters, search: sug });
                                 setShowNameSuggestions(false);
                               }}
                               className="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-gray-50 text-charcoal truncate"
@@ -996,7 +951,7 @@ export default function SessionWorkspacePage() {
                     </div>
                   )}
                 </div>
-                <select value={filters.location} onChange={e=>setFilters({...filters, location: e.target.value})} className="border-2 border-gray-200 p-2.5 rounded-lg text-sm font-bold focus:outline-none focus:border-accent text-charcoal bg-white shadow-sm cursor-pointer">
+                <select value={filters.location} onChange={e => setFilters({ ...filters, location: e.target.value })} className="border-2 border-gray-200 p-2.5 rounded-lg text-sm font-bold focus:outline-none focus:border-accent text-charcoal bg-white shadow-sm cursor-pointer">
                   <option value="">All Locations</option>
                   {Array.from(new Set(
                     (allCandidatesList || [])
@@ -1009,18 +964,18 @@ export default function SessionWorkspacePage() {
                 </select>
                 <div className="flex items-center gap-3 border-2 border-gray-200 p-2.5 rounded-lg px-4 bg-white shadow-sm">
                   <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Score &gt;</span>
-                  <input type="range" min="0" max="100" step="5" value={filters.min_score} onChange={e=>setFilters({...filters, min_score: parseInt(e.target.value)})} className="w-24 accent-[#2563EB] cursor-pointer" />
+                  <input type="range" min="0" max="100" step="5" value={filters.min_score} onChange={e => setFilters({ ...filters, min_score: parseInt(e.target.value) })} className="w-24 accent-[#2563EB] cursor-pointer" />
                   <span className="text-xs font-black text-charcoal w-6 bg-gray-100 p-1 rounded inline-block text-center">{filters.min_score}</span>
                 </div>
                 <div className="relative w-48 z-20">
-                  <input 
-                    type="text" 
-                    placeholder="Must have skill..." 
-                    value={filters.skill} 
-                    onChange={e=>setFilters({...filters, skill: e.target.value})} 
+                  <input
+                    type="text"
+                    placeholder="Must have skill..."
+                    value={filters.skill}
+                    onChange={e => setFilters({ ...filters, skill: e.target.value })}
                     onFocus={() => setShowSkillSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSkillSuggestions(false), 200)}
-                    className="w-full border-2 border-gray-200 p-2.5 rounded-lg text-sm font-medium focus:border-accent focus:outline-none bg-white shadow-sm" 
+                    className="w-full border-2 border-gray-200 p-2.5 rounded-lg text-sm font-medium focus:border-accent focus:outline-none bg-white shadow-sm"
                   />
                   {showSkillSuggestions && (
                     <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1">
@@ -1037,7 +992,7 @@ export default function SessionWorkspacePage() {
                               key={idx}
                               onMouseDown={(e) => {
                                 e.preventDefault();
-                                setFilters({...filters, skill: sug});
+                                setFilters({ ...filters, skill: sug });
                                 setShowSkillSuggestions(false);
                               }}
                               className="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-gray-50 text-charcoal truncate"
@@ -1052,7 +1007,7 @@ export default function SessionWorkspacePage() {
                     </div>
                   )}
                 </div>
-                <select value={filters.sort} onChange={e=>setFilters({...filters, sort: e.target.value})} className="border-2 border-gray-200 p-2.5 rounded-lg text-sm focus:outline-none focus:border-accent font-bold ml-auto bg-white shadow-sm cursor-pointer text-charcoal">
+                <select value={filters.sort} onChange={e => setFilters({ ...filters, sort: e.target.value })} className="border-2 border-gray-200 p-2.5 rounded-lg text-sm focus:outline-none focus:border-accent font-bold ml-auto bg-white shadow-sm cursor-pointer text-charcoal">
                   <option>Match Score ↓</option>
                   <option>Name A-Z</option>
                   <option>Newest</option>
@@ -1065,18 +1020,18 @@ export default function SessionWorkspacePage() {
                 {candidatesList.length > 0 ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 pb-12">
                     {candidatesList.map(cand => (
-                       <CandidateCard 
-                         key={cand.id} 
-                         candidate={cand}
-                         sessionId={id}
-                         rounds={session?.rounds || []}
-                         onAction={() => {
-                           queryClient.invalidateQueries({ queryKey: ["candidates", id] });
-                           queryClient.invalidateQueries({ queryKey: ["all_candidates", id] });
-                           queryClient.invalidateQueries({ queryKey: ["session", id] });
-                         }}
-                         isHighlighted={highlightedIds?.includes(cand.id)}
-                       />
+                      <CandidateCard
+                        key={cand.id}
+                        candidate={cand}
+                        sessionId={id}
+                        rounds={session?.rounds || []}
+                        onAction={() => {
+                          queryClient.invalidateQueries({ queryKey: ["candidates", id] });
+                          queryClient.invalidateQueries({ queryKey: ["all_candidates", id] });
+                          queryClient.invalidateQueries({ queryKey: ["session", id] });
+                        }}
+                        isHighlighted={highlightedIds?.includes(cand.id)}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -1086,11 +1041,11 @@ export default function SessionWorkspacePage() {
                     <p className="text-sm text-gray-400 font-medium max-w-sm mb-6">
                       {activeRound === 1 && Object.values(jobs).length === 0 ? "You haven't uploaded any resumes yet. Start ingesting files to populate this round." : "Try adjusting your filters or check a different round pipeline."}
                     </p>
-                    {activeRound === 1 && <button onClick={()=>setActiveTab("upload")} className="px-6 py-2.5 border-2 border-accent text-accent rounded-xl font-bold hover:bg-blue-50 hover:shadow-sm transition-colors text-sm flex items-center gap-2"><Upload size={16}/> Go to Upload</button>}
+                    {activeRound === 1 && <button onClick={() => setActiveTab("upload")} className="px-6 py-2.5 border-2 border-accent text-accent rounded-xl font-bold hover:bg-blue-50 hover:shadow-sm transition-colors text-sm flex items-center gap-2"><Upload size={16} /> Go to Upload</button>}
                   </div>
                 )}
               </div>
-              
+
               {/* PAGINATION */}
               {candidatesData?.pages > 1 && (
                 <div className="mt-6 flex justify-center">
@@ -1171,7 +1126,7 @@ export default function SessionWorkspacePage() {
                           {cluster.count} {cluster.count === 1 ? 'candidate' : 'candidates'}
                         </span>
                       </div>
-                      
+
                       {/* Cluster Candidate List */}
                       <div className="p-5 flex-1 overflow-y-auto max-h-[350px] divide-y divide-gray-50 dark:divide-zinc-800/50">
                         {cluster.candidates.map((cand) => (
@@ -1217,7 +1172,7 @@ export default function SessionWorkspacePage() {
                   { label: "Hired Final", val: hiredFinal, c: "text-green-600", bg: "bg-green-50" },
                   { label: "Rejected", val: rejectedCount, c: "text-red-500", bg: "bg-red-50" },
                   { label: "Avg Match Score", val: `${avgMatchScore}%`, c: "text-[#2563EB]", bg: "bg-blue-50" },
-                ].map((s,i) => (
+                ].map((s, i) => (
                   <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-center relative overflow-hidden group">
                     <div className={`absolute top-0 inset-x-0 h-1.5 ${s.bg} border-b border-gray-100 transition-all group-hover:h-full -z-10 opacity-50`}></div>
                     <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-2">{s.label}</div>
@@ -1232,41 +1187,41 @@ export default function SessionWorkspacePage() {
                   <div className="flex-1 -ml-4">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={[
-                        {name:"0-20", count: allCandidatesList.filter(c=>c.match_score<=20).length}, 
-                        {name:"20-40", count: allCandidatesList.filter(c=>c.match_score>20 && c.match_score<=40).length}, 
-                        {name:"40-60", count: allCandidatesList.filter(c=>c.match_score>40 && c.match_score<=60).length}, 
-                        {name:"60-80", count: allCandidatesList.filter(c=>c.match_score>60 && c.match_score<=80).length}, 
-                        {name:"80-100", count: allCandidatesList.filter(c=>c.match_score>80).length}
+                        { name: "0-20", count: allCandidatesList.filter(c => c.match_score <= 20).length },
+                        { name: "20-40", count: allCandidatesList.filter(c => c.match_score > 20 && c.match_score <= 40).length },
+                        { name: "40-60", count: allCandidatesList.filter(c => c.match_score > 40 && c.match_score <= 60).length },
+                        { name: "60-80", count: allCandidatesList.filter(c => c.match_score > 60 && c.match_score <= 80).length },
+                        { name: "80-100", count: allCandidatesList.filter(c => c.match_score > 80).length }
                       ]}>
-                        <XAxis dataKey="name" tick={{fontSize:12, fill:'#6B7280', fontWeight:600}} axisLine={{stroke:'#E5E7EB'}} tickLine={false} dy={10} />
-                        <YAxis tick={{fontSize:12, fill:'#6B7280', fontWeight:600}} axisLine={false} tickLine={false} dx={-10} />
-                        <Tooltip cursor={{fill: '#F5F0E8', radius: 8}} contentStyle={{borderRadius:12, border:'1px solid #E5E7EB', boxShadow:'0 8px 24px rgba(0,0,0,0.08)', fontWeight:700}}/>
-                        <Bar dataKey="count" fill="#2563EB" radius={[6,6,0,0]} barSize={40} />
+                        <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 600 }} axisLine={{ stroke: '#E5E7EB' }} tickLine={false} dy={10} />
+                        <YAxis tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 600 }} axisLine={false} tickLine={false} dx={-10} />
+                        <Tooltip cursor={{ fill: '#F5F0E8', radius: 8 }} contentStyle={{ borderRadius: 12, border: '1px solid #E5E7EB', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontWeight: 700 }} />
+                        <Bar dataKey="count" fill="#2563EB" radius={[6, 6, 0, 0]} barSize={40} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-                
+
                 <div className="bg-white rounded-2xl p-7 border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] h-[360px] flex flex-col">
                   <h3 className="font-black text-charcoal text-lg mb-4 flex items-center gap-2"><div className="w-2 h-6 bg-blue-500 rounded-full"></div>Status Breakdown</h3>
                   <div className="flex-1 flex justify-center items-center relative">
                     <div className="w-[240px] h-[240px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                          <Pie 
+                          <Pie
                             data={[
-                              {name:"Active", value: scoredActive}, 
-                              {name:"Rejected", value: rejectedCount}, 
-                              {name:"Hired", value: hiredFinal}
-                            ].filter(d => d.value > 0)} 
+                              { name: "Active", value: scoredActive },
+                              { name: "Rejected", value: rejectedCount },
+                              { name: "Hired", value: hiredFinal }
+                            ].filter(d => d.value > 0)}
                             dataKey="value" innerRadius={70} outerRadius={90} paddingAngle={4}
                             stroke="none"
                           >
-                            <Cell fill="#3B82F6"/>
-                            <Cell fill="#EF4444"/>
-                            <Cell fill="#22C55E"/>
+                            <Cell fill="#3B82F6" />
+                            <Cell fill="#EF4444" />
+                            <Cell fill="#22C55E" />
                           </Pie>
-                          <Tooltip contentStyle={{borderRadius:12, border:'1px solid #E5E7EB', boxShadow:'0 8px 24px rgba(0,0,0,0.08)', fontWeight:700}}/>
+                          <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E5E7EB', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', fontWeight: 700 }} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
@@ -1288,7 +1243,7 @@ export default function SessionWorkspacePage() {
                         { stage: "HR Round", count: (session.candidate_counts_per_round?.["3"] || 0) + hiredFinal, color: "bg-pink-500" },
                         { stage: "Hired Final", count: hiredFinal, color: "bg-emerald-500" }
                       ];
-                      
+
                       const maxCount = totalParsed || 1;
                       return funnelData.map((f, i) => {
                         const pct = Math.round((f.count / maxCount) * 105); // slight padding for visibility
@@ -1327,14 +1282,14 @@ export default function SessionWorkspacePage() {
                       </tr>
                     </thead>
                     <tbody className="cursor-pointer">
-                      {[...allCandidatesList].sort((a,b) => (b.match_score||0) - (a.match_score||0)).slice(0, 5).map((cand, i) => (
-                        <tr 
-                          key={cand.id} 
+                      {[...allCandidatesList].sort((a, b) => (b.match_score || 0) - (a.match_score || 0)).slice(0, 5).map((cand, i) => (
+                        <tr
+                          key={cand.id}
                           onClick={() => setActiveDetailCandidate(cand)}
                           className="border-b last:border-b-0 border-gray-50 hover:bg-blue-50/30 transition-colors group"
                         >
                           <td className="p-4 pl-6 text-gray-400">
-                            <span className={`inline-block w-6 text-center font-black ${i===0?'text-amber-600':i===1?'text-gray-500':i===2?'text-amber-800':''}`}>#{i+1}</span>
+                            <span className={`inline-block w-6 text-center font-black ${i === 0 ? 'text-amber-600' : i === 1 ? 'text-gray-500' : i === 2 ? 'text-amber-800' : ''}`}>#{i + 1}</span>
                           </td>
                           <td className="p-4 font-bold text-charcoal group-hover:text-amber-600 transition-colors">{cand.name}</td>
                           <td className="p-4"><span className="bg-green-100 text-green-700 px-3 py-1 rounded-lg font-black">{cand.match_score}%</span></td>
@@ -1357,11 +1312,11 @@ export default function SessionWorkspacePage() {
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-charcoal/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto flex flex-col hide-scrollbar border border-gray-100">
-            
+
             {/* Modal Header */}
             <div className="flex justify-between items-center pb-4 border-b border-gray-100 mb-6">
               <h2 className="text-xl font-black text-charcoal">Edit Session Details</h2>
-              <button 
+              <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-charcoal transition-colors"
               >
@@ -1371,13 +1326,13 @@ export default function SessionWorkspacePage() {
 
             {/* Modal Content */}
             <div className="space-y-5 flex-1 pr-1">
-              
+
               {/* Session Name & Job Title */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Session Name</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
                     className="w-full text-sm p-2.5 border-[1.5px] border-gray-200 rounded-lg focus:border-accent focus:outline-none transition-colors"
@@ -1386,8 +1341,8 @@ export default function SessionWorkspacePage() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Job Title</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={editJobTitle}
                     onChange={e => setEditJobTitle(e.target.value)}
                     className="w-full text-sm p-2.5 border-[1.5px] border-gray-200 rounded-lg focus:border-accent focus:outline-none transition-colors"
@@ -1399,7 +1354,7 @@ export default function SessionWorkspacePage() {
               {/* Job Description */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Job Description</label>
-                <textarea 
+                <textarea
                   rows={4}
                   value={editJobDescription}
                   onChange={e => setEditJobDescription(e.target.value)}
@@ -1412,8 +1367,8 @@ export default function SessionWorkspacePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Min Experience (Years)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={editMinExperience}
                     onChange={e => setEditMinExperience(e.target.value)}
                     className="w-full text-sm p-2.5 border-[1.5px] border-gray-200 rounded-lg focus:border-accent focus:outline-none transition-colors"
@@ -1422,8 +1377,8 @@ export default function SessionWorkspacePage() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Min Match Score (%)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={editMinMatchScore}
                     onChange={e => setEditMinMatchScore(e.target.value)}
                     className="w-full text-sm p-2.5 border-[1.5px] border-gray-200 rounded-lg focus:border-accent focus:outline-none transition-colors"
@@ -1473,10 +1428,10 @@ export default function SessionWorkspacePage() {
               {/* Required Skills */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Required Skills</label>
-                <TagInput 
-                  tags={editRequiredSkills} 
-                  onChange={setEditRequiredSkills} 
-                  placeholder="Type skill and press Enter..." 
+                <TagInput
+                  tags={editRequiredSkills}
+                  onChange={setEditRequiredSkills}
+                  placeholder="Type skill and press Enter..."
                   tagColor="amber"
                 />
               </div>
@@ -1484,10 +1439,10 @@ export default function SessionWorkspacePage() {
               {/* Nice-to-have Skills */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Nice-to-have Skills</label>
-                <TagInput 
-                  tags={editNiceToHave} 
-                  onChange={setEditNiceToHave} 
-                  placeholder="Type skill and press Enter..." 
+                <TagInput
+                  tags={editNiceToHave}
+                  onChange={setEditNiceToHave}
+                  placeholder="Type skill and press Enter..."
                   tagColor="blue"
                 />
               </div>
@@ -1495,10 +1450,10 @@ export default function SessionWorkspacePage() {
               {/* Preferred Locations */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Preferred Locations</label>
-                <TagInput 
-                  tags={editPreferredLocations} 
-                  onChange={setEditPreferredLocations} 
-                  placeholder="Type location and press Enter..." 
+                <TagInput
+                  tags={editPreferredLocations}
+                  onChange={setEditPreferredLocations}
+                  placeholder="Type location and press Enter..."
                   tagColor="gray"
                 />
               </div>
@@ -1510,8 +1465,8 @@ export default function SessionWorkspacePage() {
                   <div key={idx} className="flex flex-col gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
                     <div className="flex gap-4 items-center">
                       <span className="text-xs font-bold text-gray-400 w-16">Round {round.order}</span>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={round.name}
                         onChange={e => {
                           const updated = [...editRounds];
@@ -1521,8 +1476,8 @@ export default function SessionWorkspacePage() {
                         className="flex-1 text-xs p-2 border border-gray-200 bg-white rounded-lg focus:border-accent focus:outline-none font-bold"
                         placeholder="Round Name"
                       />
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={round.interviewer || ""}
                         onChange={e => {
                           const updated = [...editRounds];
@@ -1559,14 +1514,14 @@ export default function SessionWorkspacePage() {
 
             {/* Modal Actions */}
             <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-6">
-              <button 
+              <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="border-[1.5px] border-gray-200 hover:bg-gray-50 text-charcoal px-5 py-2.5 rounded-xl font-bold transition-all text-sm"
                 disabled={isSaving}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleSaveChanges}
                 className="bg-accent hover:bg-[#1D4ED8] text-white px-5 py-2.5 rounded-xl font-bold transition-all text-sm shadow flex items-center gap-2"
                 disabled={isSaving}
@@ -1582,7 +1537,7 @@ export default function SessionWorkspacePage() {
 
       {activeDetailCandidate && (
         <div className="hidden">
-          <CandidateCard 
+          <CandidateCard
             candidate={activeDetailCandidate}
             sessionId={id}
             rounds={session?.rounds || []}
