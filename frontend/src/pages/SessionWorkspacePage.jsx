@@ -446,72 +446,129 @@ export default function SessionWorkspacePage() {
     <div className="flex h-[calc(100vh-60px)] overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 bg-cream flex flex-col hide-scrollbar">
         
-        {/* HEADER */}
-        <div>
-          <div className="flex items-center gap-3 mb-2">
+        {/* EXECUTIVE HEADER */}
+        <div className="mb-6 rounded-3xl border border-border bg-card p-6 shadow-sm relative overflow-hidden">
+          {/* Subtle Accent Glow Background */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+          {/* Top Breadcrumb & Status Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <Link 
               to="/dashboard/sessions" 
-              className="text-gray-400 hover:text-charcoal transition-colors flex items-center gap-1.5 text-xs font-bold"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors group"
             >
-              <ArrowLeft size={14} /> Back to Sessions
+              <div className="grid h-6 w-6 place-items-center rounded-lg border border-border bg-background group-hover:border-foreground/20 transition-colors">
+                <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
+              </div>
+              <span>Back to Sessions</span>
             </Link>
-          </div>
-          <h1 className="text-[24px] font-bold text-charcoal">{session.name}</h1>
-          <p className="text-base text-gray-500 mt-0.5">{session.job_title}</p>
-          
-          <div className="flex justify-between items-center mt-4 border-b border-gray-200 pb-4">
-            <div className="flex items-center gap-3">
-              <span className={`px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-wider border ${
-                session.status === "completed" ? "bg-blue-100 text-blue-700 border-blue-200" :
-                session.status === "archived" ? "bg-gray-200 text-gray-700 border-gray-300" :
-                "bg-green-100 text-green-700 border-green-200"
+
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-2xs ${
+                session.status === "completed" ? "bg-blue-50 text-blue-700 border-blue-200/80 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800" :
+                session.status === "archived" ? "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700" :
+                "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
               }`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${
+                  session.status === "completed" ? "bg-blue-500 animate-pulse" :
+                  session.status === "archived" ? "bg-zinc-400" :
+                  "bg-emerald-500 animate-pulse"
+                }`} />
                 {session.status || "Active"}
               </span>
-              <span className="text-sm font-semibold text-charcoal bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
-                Round {currentRoundIndex + 1} of {session.rounds?.length || 1}
+
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-border bg-background text-foreground shadow-2xs">
+                <span className="text-muted-foreground">Round</span>
+                <span className="font-bold text-primary">{currentRoundIndex + 1}</span>
+                <span className="text-muted-foreground">of {session.rounds?.length || 1}</span>
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={handleMatchAll} className="bg-accent hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 shadow-sm">
-                <Zap size={16} fill="currentColor" /> Match All
+          </div>
+
+          {/* Title & Actions Row */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-3 border-t border-border/60">
+            {/* Title & Job Information */}
+            <div className="space-y-1 max-w-2xl">
+              <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                {session.name}
+              </h1>
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <span className="inline-flex items-center gap-1 text-foreground font-semibold">
+                  <Building size={13} className="text-muted-foreground" /> {session.job_title}
+                </span>
+                <span>•</span>
+                <span>Created {session.created_at ? new Date(session.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}</span>
+              </div>
+            </div>
+
+            {/* Action Toolbar */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+              {/* Primary High-Priority Actions */}
+              <button 
+                onClick={handleMatchAll} 
+                className="inline-flex items-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm hover:shadow transition-all active:scale-[0.98] cursor-pointer"
+              >
+                <Zap size={14} className="fill-current text-white" />
+                <span>Match All</span>
               </button>
+              
               <Link
                 to={`/dashboard/sessions/${id}/results`}
-                className="border-[1.5px] border-green-600 text-green-600 hover:bg-green-50 px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 bg-white shadow-sm"
+                className="inline-flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 text-xs font-semibold px-4 py-2.5 rounded-xl shadow-xs transition-all active:scale-[0.98]"
               >
-                View Assessment Results
+                <BarChart3 size={14} />
+                <span>View Assessment Results</span>
               </Link>
-              <button 
-                onClick={() => setIsEditModalOpen(true)}
-                className="border-[1.5px] border-accent text-accent hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 bg-white shadow-sm"
-              >
-                <Settings size={16} /> Edit Session
-              </button>
-              <button 
-                onClick={() => {
-                  const url = exportAPI.candidatesUrl(id);
-                  if (url) window.open(url);
-                }} 
-                className="border-[1.5px] border-accent text-accent hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 bg-white"
-              >
-                <Download size={16} /> Export Hired
-              </button>
+
+              {/* Secondary Utility Actions */}
               <button 
                 onClick={() => {
                   const url = `${window.location.origin}/jobs/${id}`;
                   navigator.clipboard.writeText(url);
                   toast.success("Public Apply Link copied to clipboard!");
                 }}
-                className="border-[1.5px] border-accent text-accent hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 bg-white"
+                className="inline-flex items-center gap-1.5 border border-border bg-background hover:bg-muted text-foreground text-xs font-medium px-3.5 py-2.5 rounded-xl shadow-2xs transition-all"
+                title="Copy Candidate Application Link"
               >
-                <LinkIcon size={16} /> Copy Apply Link
+                <LinkIcon size={14} className="text-muted-foreground" />
+                <span>Copy Apply Link</span>
               </button>
+
+              <button 
+                onClick={() => {
+                  const url = exportAPI.candidatesUrl(id);
+                  if (url) window.open(url);
+                }} 
+                className="inline-flex items-center gap-1.5 border border-border bg-background hover:bg-muted text-foreground text-xs font-medium px-3.5 py-2.5 rounded-xl shadow-2xs transition-all"
+                title="Export Hired Candidates CSV"
+              >
+                <Download size={14} className="text-muted-foreground" />
+                <span>Export Hired</span>
+              </button>
+
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="inline-flex items-center gap-1.5 border border-border bg-background hover:bg-muted text-foreground text-xs font-medium px-3.5 py-2.5 rounded-xl shadow-2xs transition-all"
+                title="Edit Session Settings"
+              >
+                <Settings size={14} className="text-muted-foreground" />
+                <span>Edit Session</span>
+              </button>
+
+              {/* Management & Danger Actions */}
+              <div className="h-6 w-[1px] bg-border mx-1 hidden sm:block" />
+
               {session.status !== "completed" && (
-                <button onClick={handleEndSession} className="border-[1.5px] border-red-500 text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 bg-white">
-                  <X size={16} /> End Session
+                <button 
+                  onClick={handleEndSession} 
+                  className="inline-flex items-center gap-1.5 border border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 text-xs font-medium px-3.5 py-2.5 rounded-xl transition-all"
+                  title="End Active Session"
+                >
+                  <X size={14} />
+                  <span>End Session</span>
                 </button>
               )}
+
               <button 
                 onClick={async () => {
                   if (window.confirm(`Permanently delete session "${session.name}"? This will delete all candidates and cannot be undone.`)) {
@@ -522,9 +579,11 @@ export default function SessionWorkspacePage() {
                     } catch(e) { toast.error(e.message); }
                   }
                 }} 
-                className="border-[1.5px] border-red-500 text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 bg-white"
+                className="inline-flex items-center gap-1.5 border border-red-200 dark:border-red-900/40 bg-red-50/60 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:bg-red-100 text-xs font-medium px-3 py-2.5 rounded-xl transition-all"
+                title="Delete Session Permanently"
               >
-                <Trash2 size={16} /> Delete Session
+                <Trash2 size={14} />
+                <span>Delete</span>
               </button>
             </div>
           </div>
