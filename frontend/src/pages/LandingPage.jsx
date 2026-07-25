@@ -587,12 +587,9 @@ function BentoFeatures() {
       <div className="grid gap-5 md:grid-cols-3">
         {/* Large card — AI Parsing */}
         <motion.div variants={staggerItemVariants} className="md:col-span-2 relative z-0 p-[1px] rounded-2xl group transition-all duration-500 ease-out hover:z-10 hover:shadow-xl hover:-translate-y-1 cursor-pointer isolate">
-          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] overflow-hidden opacity-15 md:opacity-0 group-hover:opacity-30 transition-opacity duration-500 blur-lg pointer-events-none -z-20">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] aspect-square animate-[spin_6s_linear_infinite]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
-          </div>
-          <div className="absolute inset-0 opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl overflow-hidden -z-10">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] aspect-square animate-[spin_6s_linear_infinite]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
-          </div>
+          {/* Rainbow borders and blur reflections on hover */}
+          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] opacity-0 group-hover:opacity-40 transition-opacity duration-500 blur-2xl pointer-events-none -z-20 rainbow-bg" />
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl -z-10 rainbow-bg" />
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-between">
@@ -627,12 +624,9 @@ function BentoFeatures() {
 
         {/* Small card — Fraud */}
         <motion.div variants={staggerItemVariants} className="relative z-0 p-[1px] rounded-2xl group transition-all duration-500 ease-out hover:z-10 hover:shadow-xl hover:-translate-y-1 cursor-pointer isolate">
-          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] overflow-hidden opacity-15 md:opacity-0 group-hover:opacity-30 transition-opacity duration-500 blur-lg pointer-events-none -z-20">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250%] aspect-square animate-[spin_6s_linear_infinite_reverse]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
-          </div>
-          <div className="absolute inset-0 opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl overflow-hidden -z-10">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250%] aspect-square animate-[spin_6s_linear_infinite_reverse]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
-          </div>
+          {/* Rainbow borders and blur reflections on hover */}
+          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] opacity-0 group-hover:opacity-40 transition-opacity duration-500 blur-2xl pointer-events-none -z-20 rainbow-bg" />
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl -z-10 rainbow-bg" />
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-start">
@@ -656,12 +650,9 @@ function BentoFeatures() {
 
         {/* Small card — Matching */}
         <motion.div variants={staggerItemVariants} className="relative z-0 p-[1px] rounded-2xl group transition-all duration-500 ease-out hover:z-10 hover:shadow-xl hover:-translate-y-1 cursor-pointer isolate">
-          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] overflow-hidden opacity-15 md:opacity-0 group-hover:opacity-30 transition-opacity duration-500 blur-lg pointer-events-none -z-20">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250%] aspect-square animate-[spin_6s_linear_infinite]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
-          </div>
-          <div className="absolute inset-0 opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl overflow-hidden -z-10">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250%] aspect-square animate-[spin_6s_linear_infinite]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
-          </div>
+          {/* Rainbow borders and blur reflections on hover */}
+          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] opacity-0 group-hover:opacity-40 transition-opacity duration-500 blur-2xl pointer-events-none -z-20 rainbow-bg" />
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl -z-10 rainbow-bg" />
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-start">
@@ -685,12 +676,9 @@ function BentoFeatures() {
 
         {/* Large card — Multi-Source */}
         <motion.div variants={staggerItemVariants} className="md:col-span-2 relative z-0 p-[1px] rounded-2xl group transition-all duration-500 ease-out hover:z-10 hover:shadow-xl hover:-translate-y-1 cursor-pointer isolate">
-          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] overflow-hidden opacity-15 md:opacity-0 group-hover:opacity-30 transition-opacity duration-500 blur-lg pointer-events-none -z-20">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] aspect-square animate-[spin_6s_linear_infinite_reverse]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
-          </div>
-          <div className="absolute inset-0 opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl overflow-hidden -z-10">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] aspect-square animate-[spin_6s_linear_infinite_reverse]" style={{ background: "conic-gradient(from 0deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4)" }} />
-          </div>
+          {/* Rainbow borders and blur reflections on hover */}
+          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-[1.25rem] opacity-0 group-hover:opacity-40 transition-opacity duration-500 blur-2xl pointer-events-none -z-20 rainbow-bg" />
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl -z-10 rainbow-bg" />
           <div className="absolute inset-0 border border-border/80 rounded-2xl opacity-50 md:opacity-100 group-hover:opacity-0 transition-opacity duration-500 -z-10" />
 
           <div className="relative rounded-[15px] bg-card p-7 h-full w-full overflow-hidden flex flex-col justify-between">
@@ -1285,6 +1273,22 @@ export default function LandingPage() {
         .dark .bg-card, .dark .bg-surface {
           background-color: rgba(23, 21, 31, 0.45) !important;
           border-color: rgba(63, 63, 70, 0.4) !important;
+        }
+
+        /* Rainbow borders and reflection animations for cards */
+        .rainbow-bg {
+          background: linear-gradient(45deg, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000);
+          background-size: 400%;
+        }
+        
+        .group:hover .rainbow-bg {
+          animation: rainbow 20s linear infinite;
+        }
+        
+        @keyframes rainbow {
+          0% { background-position: 0 0; }
+          50% { background-position: 400% 0; }
+          100% { background-position: 0 0; }
         }
       `}</style>
 
