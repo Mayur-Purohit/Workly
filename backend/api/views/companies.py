@@ -1,5 +1,6 @@
 import json
 import uuid
+from collections import Counter
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from api.models import Company, Session, JobApplication, Notification, JobSeekerAccount
@@ -460,7 +461,6 @@ def public_market_trends(request):
             ]
 
         # Dynamic high growth domains from active jobs
-        from collections import Counter
         all_skills = []
         for sess in Session.objects.filter(status="active"):
             skills_req = sess.criteria.get("skills", []) if isinstance(sess.criteria, dict) else []

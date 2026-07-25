@@ -76,7 +76,7 @@ export function ExecutiveTemplate({ resume }) {
               <section>
                 <SectionTitle color={ACCENT} underline>Languages</SectionTitle>
                 <div style={{ fontSize: "9.5pt", color: "#444" }}>
-                  {resume.languages.map((l) => `${l.name} (${l.proficiency})`).join(" · ")}
+                  {resume.languages.map((l) => `${l.name}${l.proficiency ? ` (${l.proficiency})` : ""}`).join(" · ")}
                 </div>
               </section>
             )}
@@ -275,7 +275,7 @@ export function ExecutiveTemplate({ resume }) {
               Languages
             </SectionTitle>
             <div style={{ fontSize: "9.5pt", color: "#444" }}>
-              {resume.languages.map((l) => `${l.name} (${l.proficiency})`).join(" · ")}
+              {resume.languages.map((l) => `${l.name}${l.proficiency ? ` (${l.proficiency})` : ""}`).join(" · ")}
             </div>
           </section>
         )}

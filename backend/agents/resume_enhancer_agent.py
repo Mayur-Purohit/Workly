@@ -18,6 +18,9 @@ CRITICAL RULES — NEVER VIOLATE:
 6. Do NOT remove existing bullets.
 7. ATS keywords and missing skills MUST go into the `missing_keywords` and `skill_gaps` arrays.
 8. Summary rewrite must be based ONLY on information found in the resume — do not invent titles, years, or metrics.
+9. Do NOT mention any technology, tool, or framework in experience/project bullets that is NOT already mentioned in the resume's skills list, tech stack, or original bullet text.
+10. Do NOT add quantified results (e.g. "reduced load time by 40%", "served 10k users") unless the original bullet ALREADY contains that exact number.
+11. Keep the same NUMBER of bullets per experience/project — do not add or remove any.
 
 You return ONLY a single valid JSON object. No markdown fences. No prose."""
 
@@ -94,7 +97,7 @@ class ResumeEnhancerAgent:
         self.llm = RotateLLMClient()
         self.ats_agent = AtsCompatibilityAgent()
 
-    def enhance(self, resume_data: dict, job_description: str = "", live_ats_score: int = None) -> dict:
+    def enhance(self, resume_data: dict, job_description: str = "", live_ats_score: int = None, jd_requirements: dict = None) -> dict:
         try:
             safe_resume = _trim_resume(resume_data)
             resume_json = json.dumps(safe_resume, indent=2, ensure_ascii=False)
@@ -102,8 +105,10 @@ class ResumeEnhancerAgent:
 
             # Calculate base score if not provided
             if live_ats_score is None:
-                base_report = self.ats_agent.analyze(None, resume_data, jd_text)
+                base_report = self.ats_agent.analyze(None, resume_data, jd_text, jd_requirements=jd_requirements)
                 base_score = base_report.get("overallScore", 70)
+                if jd_requirements is None:
+                    jd_requirements = base_report.get("_jd_requirements")
             else:
                 base_score = int(live_ats_score)
 
@@ -131,6 +136,11 @@ class ResumeEnhancerAgent:
             # Apply default structures
             result = _apply_defaults(result)
 
+            # Post-LLM validation: strip any technologies not in original resume
+            original_skills_lower = set(s.lower().strip() for s in resume_data.get("skills", []) if s)
+            original_text_lower = resume_json.lower()
+            result = _validate_no_hallucination(result, original_skills_lower, original_text_lower)
+
             # Map professional_summary_enhanced -> summary_rewrite (which is used in frontend)
             summary_enhanced = result.get("professional_summary_enhanced", "").strip()
             if summary_enhanced and not summary_enhanced.endswith("."):
@@ -142,7 +152,7 @@ class ResumeEnhancerAgent:
             enhanced_resume = {
                 "personalInfo": resume_data.get("personalInfo", {}),
                 "summary": summary_enhanced or resume_data.get("summary") or resume_data.get("professional_summary") or "",
-                "skills": list(set(resume_data.get("skills", []) + result.get("missing_keywords", []))),
+                "skills": list(set(resume_data.get("skills", []))),
                 "experience": [],
                 "education": resume_data.get("education", []),
                 "projects": [],
@@ -187,7 +197,7 @@ class ResumeEnhancerAgent:
                 })
 
             # Compute enhanced score using AtsCompatibilityAgent on virtual enhanced resume
-            enhanced_report = self.ats_agent.analyze(None, enhanced_resume, jd_text)
+            enhanced_report = self.ats_agent.analyze(None, enhanced_resume, jd_text, jd_requirements=jd_requirements)
             ats_score_enhanced = enhanced_report.get("overallScore", base_score)
 
             result["ats_score_original"] = base_score
@@ -271,11 +281,72 @@ def _apply_defaults(result: dict) -> dict:
     ])
     return result
 
+def _validate_no_hallucination(result: dict, original_skills_lower: set, original_text_lower: str) -> dict:
+    """Post-LLM validation: ensure no fabricated technologies or metrics were introduced."""
+    import re
+    
+    # Common fabricated metric patterns
+    fabricated_patterns = [
+        r'\b\d+%\s+(increase|decrease|reduction|improvement|faster|slower)',
+        r'\b\d+x\s+(faster|improvement|increase)',
+        r'\$[\d,]+[kKmMbB]?\b',
+        r'\b\d+[kK]\+?\s+(users|customers|requests|transactions)',
+    ]
+    
+    def _has_new_metric(original_bullet: str, enhanced_bullet: str) -> bool:
+        """Check if enhanced bullet introduced metrics not in the original."""
+        for pattern in fabricated_patterns:
+            enhanced_matches = set(re.findall(pattern, enhanced_bullet.lower()))
+            original_matches = set(re.findall(pattern, original_bullet.lower()))
+            if enhanced_matches - original_matches:
+                return True
+        # Check for new numbers not in original
+        enhanced_numbers = set(re.findall(r'\b\d{2,}\b', enhanced_bullet))
+        original_numbers = set(re.findall(r'\b\d{2,}\b', original_bullet))
+        new_numbers = enhanced_numbers - original_numbers
+        # Allow years (19xx, 20xx) as they're common in resumes
+        new_numbers = {n for n in new_numbers if not re.match(r'^(19|20)\d{2}$', n)}
+        return bool(new_numbers)
+    
+    # Validate enhanced experience bullets
+    for ee in result.get("enhanced_experience", []):
+        original_bullets = ee.get("original_bullets", [])
+        enhanced_bullets = ee.get("enhanced_bullets", [])
+        if len(original_bullets) == len(enhanced_bullets):
+            for i, (orig, enh) in enumerate(zip(original_bullets, enhanced_bullets)):
+                if _has_new_metric(orig, enh):
+                    # Revert to original bullet if hallucination detected
+                    enhanced_bullets[i] = orig
+                    logger.warning("Hallucination detected in experience bullet, reverting: %s", enh[:80])
+            ee["enhanced_bullets"] = enhanced_bullets
+    
+    # Validate enhanced project bullets
+    for ep in result.get("enhanced_projects", []):
+        original_bullets = ep.get("original_bullets", [])
+        enhanced_bullets = ep.get("enhanced_bullets", [])
+        if len(original_bullets) == len(enhanced_bullets):
+            for i, (orig, enh) in enumerate(zip(original_bullets, enhanced_bullets)):
+                if _has_new_metric(orig, enh):
+                    enhanced_bullets[i] = orig
+                    logger.warning("Hallucination detected in project bullet, reverting: %s", enh[:80])
+            ep["enhanced_bullets"] = enhanced_bullets
+    
+    # Validate missing_keywords: only keep real, standard terms
+    validated_keywords = []
+    for kw in result.get("missing_keywords", []):
+        kw_clean = kw.lower().strip()
+        # Keep if it's a recognizable tech/skill term (not a fabricated phrase)
+        if len(kw_clean.split()) <= 3 and len(kw_clean) < 40:
+            validated_keywords.append(kw)
+    result["missing_keywords"] = validated_keywords
+    
+    return result
+
 def _fallback_enhancement(resume_data: dict, base_score: int = None) -> dict:
     orig = base_score if base_score is not None else 65
     return {
         "ats_score_original": orig,
-        "ats_score_enhanced": min(100, orig + 10),
+        "ats_score_enhanced": orig,  # No fake improvement — return honest score
         "professional_summary_enhanced": "",
         "summary_rewrite": "",
         "enhanced_experience": [],
@@ -284,9 +355,10 @@ def _fallback_enhancement(resume_data: dict, base_score: int = None) -> dict:
         "skill_gaps": [],
         "improvement_tips": [
             "Use clear, metric-based achievements for work experiences.",
-            "Verify spelling and standardize date representations."
+            "Verify spelling and standardize date representations.",
+            "Enhancement failed — please try again. Your original score is preserved."
         ],
-        "improvement_percentage": 15.0,
+        "improvement_percentage": 0.0,
         "keywords_added": [],
         "skills_improved": 0,
         "sections_improved": []

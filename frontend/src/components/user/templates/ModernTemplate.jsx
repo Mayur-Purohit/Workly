@@ -156,7 +156,7 @@ export function ModernTemplate({ resume }) {
             <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", fontSize: "9.5pt" }}>
               {resume.languages.map((l) => (
                 <div key={l.id} style={{ marginRight: "15px" }}>
-                  <span style={{ fontWeight: 600 }}>{l.name}</span>: <span style={{ color: "#666" }}>{l.proficiency}</span>
+                  <span style={{ fontWeight: 600 }}>{l.name}</span>{l.proficiency ? <span style={{ color: "#666" }}>: {l.proficiency}</span> : ""}
                 </div>
               ))}
             </div>
@@ -265,7 +265,7 @@ export function ModernTemplate({ resume }) {
                 {resume.languages.map((l) => (
                   <div key={l.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                     <span style={{ fontWeight: 600 }}>{l.name}</span>
-                    <span style={{ color: "#666", fontSize: "9pt" }}>{l.proficiency}</span>
+                    {l.proficiency && <span style={{ color: "#666", fontSize: "9pt" }}>{l.proficiency}</span>}
                   </div>
                 ))}
               </div>

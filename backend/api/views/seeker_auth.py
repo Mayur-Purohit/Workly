@@ -175,6 +175,7 @@ def register(request):
             location=data.get("location", "").strip() or None,
             headline=data.get("headline", "").strip() or None,
             skills=skills,
+            resume_data=data.get("resume_data", {}) or {},
             tier="free",
             phone_verified=data.get("phone_verified", False),
             email_verified=data.get("email_verified", False),

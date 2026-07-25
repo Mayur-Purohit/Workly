@@ -104,6 +104,96 @@ def parse_resume(request):
 
 
 @csrf_exempt
+def public_parse_resume(request):
+    """
+    POST /api/v1/public/parse-resume
+    Public endpoint to parse a resume file during Job Seeker signup.
+    """
+    if request.method != "POST":
+        return JsonResponse(error_response("Method not allowed"), status=405)
+
+    try:
+        file = request.FILES.get("file")
+        if not file:
+            return JsonResponse(error_response("No file provided"), status=400)
+
+        allowed_ext = (".pdf", ".docx", ".doc", ".txt")
+        if not file.name.lower().endswith(allowed_ext):
+            return JsonResponse(error_response("Only PDF, DOCX, DOC, or TXT files are accepted"), status=400)
+
+        if file.size > 10 * 1024 * 1024:  # 10 MB
+            return JsonResponse(error_response("File size must be under 10 MB"), status=400)
+
+        temp_dir = os.path.join(UPLOAD_DIR, "temp_parse")
+        os.makedirs(temp_dir, exist_ok=True)
+
+        fname = f"{uuid.uuid4()}_{file.name}"
+        file_path = os.path.join(temp_dir, fname)
+        with open(file_path, "wb+") as f:
+            for chunk in file.chunks():
+                f.write(chunk)
+
+        file_ext = os.path.splitext(file.name.lower())[1].lstrip(".")
+        if file_ext == "doc":
+            file_ext = "docx"
+
+        parser = ResumeParsingAgent()
+        result = async_to_sync(parser.parse)(file_path, file_ext)
+        parsed = result.get("parsed", {})
+
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            logger.warning("Failed to remove temporary parse file: %s", e)
+
+        # Build headline from current/latest role or professional summary
+        headline = ""
+        exp_list = parsed.get("experience", []) or []
+        if exp_list and len(exp_list) > 0:
+            first_exp = exp_list[0]
+            role = first_exp.get("role") or ""
+            company = first_exp.get("company") or ""
+            if role and company:
+                headline = f"{role} at {company}"
+            elif role:
+                headline = role
+        if not headline and parsed.get("professional_summary"):
+            headline = parsed.get("professional_summary")[:100]
+
+        years = parsed.get("total_experience_years")
+        if headline and years and isinstance(years, (int, float)) and years > 0:
+            headline += f" · {int(years) if float(years).is_integer() else years} yrs exp"
+
+        raw_skills = parsed.get("skills", [])
+        def flatten_skill(s):
+            if isinstance(s, str):
+                return s
+            if isinstance(s, dict):
+                return s.get("canonical_skill") or s.get("skill") or s.get("raw_skill") or s.get("name") or str(s)
+            return str(s)
+        skills_flat = [flatten_skill(s) for s in raw_skills if s]
+
+        response_data = {
+            "full_name": parsed.get("name") or "",
+            "email": parsed.get("email") or "",
+            "phone": parsed.get("phone") or "",
+            "location": parsed.get("location") or "",
+            "headline": headline,
+            "skills": skills_flat,
+            "raw_parsed_data": parsed
+        }
+
+        return JsonResponse(success_response(response_data))
+
+    except Exception as e:
+        import traceback
+        logger.error("Error in public_parse_resume view:\n%s", traceback.format_exc())
+        return JsonResponse(error_response(f"Server error: {str(e)}"), status=500)
+
+
+
+@csrf_exempt
 @require_api_key
 @check_rate_limit("match")
 def global_match(request):

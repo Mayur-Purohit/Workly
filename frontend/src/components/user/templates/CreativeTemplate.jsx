@@ -128,7 +128,7 @@ export function CreativeTemplate({ resume }) {
                         borderRadius: "999px",
                       }}
                     >
-                      {l.name} ({l.proficiency})
+                      {l.name}{l.proficiency ? ` (${l.proficiency})` : ""}
                     </span>
                   ))}
                 </div>
@@ -359,7 +359,7 @@ export function CreativeTemplate({ resume }) {
                     borderRadius: "999px",
                   }}
                 >
-                  {l.name} ({l.proficiency})
+                  {l.name}{l.proficiency ? ` (${l.proficiency})` : ""}
                 </span>
               ))}
             </div>

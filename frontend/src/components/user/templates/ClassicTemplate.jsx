@@ -51,7 +51,7 @@ export function ClassicTemplate({ resume }) {
             {resume.languages && resume.languages.length > 0 && (
               <Section title="Languages">
                 <div>
-                  {resume.languages.map((l) => `${l.name} (${l.proficiency})`).join(" · ")}
+                  {resume.languages.map((l) => `${l.name}${l.proficiency ? ` (${l.proficiency})` : ""}`).join(" · ")}
                 </div>
               </Section>
             )}
@@ -211,7 +211,7 @@ export function ClassicTemplate({ resume }) {
       {resume.languages && resume.languages.length > 0 && (
         <Section title="Languages">
           <div>
-            {resume.languages.map((l) => `${l.name} (${l.proficiency})`).join(" · ")}
+            {resume.languages.map((l) => `${l.name}${l.proficiency ? ` (${l.proficiency})` : ""}`).join(" · ")}
           </div>
         </Section>
       )}

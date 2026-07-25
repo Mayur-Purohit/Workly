@@ -239,6 +239,13 @@ def manage_drafts(request):
             if not content:
                 seeker = request.seeker
                 resume_data = seeker.resume_data or {}
+                if isinstance(resume_data, str):
+                    try:
+                        resume_data = json.loads(resume_data)
+                    except Exception:
+                        resume_data = {}
+                if not isinstance(resume_data, dict):
+                    resume_data = {}
                 
                 # Format skills list from user account
                 raw_skills = seeker.skills or []
@@ -265,64 +272,101 @@ def manage_drafts(request):
                 
                 # Experience mappings
                 experience = []
-                for idx, exp in enumerate(resume_data.get("experience", [])):
-                    bullets = exp.get("bullets", [])
-                    if not bullets and exp.get("description"):
-                        bullets = [exp["description"]]
-                    experience.append({
-                        "id": exp.get("id") or str(idx + 1),
-                        "company": exp.get("company", ""),
-                        "title": exp.get("role", "") or exp.get("title", ""),
-                        "location": exp.get("location", ""),
-                        "startDate": exp.get("start_date", "") or exp.get("startDate", ""),
-                        "endDate": exp.get("end_date", "") or exp.get("endDate", ""),
-                        "bullets": bullets
-                    })
+                exp_source = resume_data.get("experience", [])
+                if isinstance(exp_source, list):
+                    for idx, exp in enumerate(exp_source):
+                        if not isinstance(exp, dict):
+                            if isinstance(exp, str):
+                                exp = {"description": exp}
+                            else:
+                                continue
+                        bullets = exp.get("bullets", [])
+                        if not isinstance(bullets, list):
+                            bullets = [str(bullets)] if bullets else []
+                        if not bullets and exp.get("description"):
+                            bullets = [exp["description"]]
+                        experience.append({
+                            "id": exp.get("id") or str(idx + 1),
+                            "company": exp.get("company", ""),
+                            "title": exp.get("role", "") or exp.get("title", ""),
+                            "location": exp.get("location", ""),
+                            "startDate": exp.get("start_date", "") or exp.get("startDate", ""),
+                            "endDate": exp.get("end_date", "") or exp.get("endDate", ""),
+                            "bullets": bullets
+                        })
                     
                 # Education mappings
                 education = []
-                for idx, edu in enumerate(resume_data.get("education", [])):
-                    education.append({
-                        "id": edu.get("id") or str(idx + 1),
-                        "school": edu.get("institution", "") or edu.get("school", ""),
-                        "degree": edu.get("degree", ""),
-                        "location": edu.get("location", ""),
-                        "startDate": edu.get("startDate", "") or "",
-                        "endDate": edu.get("year", "") or edu.get("year_end", "") or edu.get("endDate", "")
-                    })
+                edu_source = resume_data.get("education", [])
+                if isinstance(edu_source, list):
+                    for idx, edu in enumerate(edu_source):
+                        if not isinstance(edu, dict):
+                            if isinstance(edu, str):
+                                edu = {"school": edu}
+                            else:
+                                continue
+                        education.append({
+                            "id": edu.get("id") or str(idx + 1),
+                            "school": edu.get("institution", "") or edu.get("school", ""),
+                            "degree": edu.get("degree", ""),
+                            "location": edu.get("location", ""),
+                            "startDate": edu.get("startDate", "") or "",
+                            "endDate": edu.get("year", "") or edu.get("year_end", "") or edu.get("endDate", "")
+                        })
                     
                 # Projects mappings
                 projects = []
-                for idx, proj in enumerate(resume_data.get("projects", [])):
-                    tech_raw = proj.get("techStack") or proj.get("tech_stack") or proj.get("technologies") or []
-                    if isinstance(tech_raw, str):
-                        tech_list = [t.strip() for t in tech_raw.split(",") if t.strip()]
-                    elif isinstance(tech_raw, list):
-                        tech_list = [str(t).strip() for t in tech_raw if t]
-                    else:
-                        tech_list = []
-                    projects.append({
-                        "id": proj.get("id") or str(idx + 1),
-                        "name": proj.get("name", ""),
-                        "link": proj.get("link", "") or proj.get("url", ""),
-                        "description": proj.get("description", ""),
-                        "techStack": tech_list
-                    })
+                proj_source = resume_data.get("projects", [])
+                if isinstance(proj_source, list):
+                    for idx, proj in enumerate(proj_source):
+                        if not isinstance(proj, dict):
+                            if isinstance(proj, str):
+                                proj = {"name": proj}
+                            else:
+                                continue
+                        tech_raw = proj.get("techStack") or proj.get("tech_stack") or proj.get("technologies") or []
+                        if isinstance(tech_raw, str):
+                            tech_list = [t.strip() for t in tech_raw.split(",") if t.strip()]
+                        elif isinstance(tech_raw, list):
+                            tech_list = [str(t).strip() for t in tech_raw if t]
+                        else:
+                            tech_list = []
+                        projects.append({
+                            "id": proj.get("id") or str(idx + 1),
+                            "name": proj.get("name", ""),
+                            "link": proj.get("link", "") or proj.get("url", ""),
+                            "description": proj.get("description", ""),
+                            "techStack": tech_list
+                        })
                     
                 # Certifications and languages mappings
                 certifications = []
-                for idx, cert in enumerate(resume_data.get("certifications", [])):
-                    certifications.append({
-                        "id": cert.get("id") or str(idx + 1),
-                        "name": cert.get("name", ""),
-                        "issuer": cert.get("issuer", ""),
-                        "date": cert.get("date", "")
-                    })
+                cert_source = resume_data.get("certifications", [])
+                if isinstance(cert_source, list):
+                    for idx, cert in enumerate(cert_source):
+                        if not isinstance(cert, dict):
+                            if isinstance(cert, str):
+                                cert = {"name": cert}
+                            else:
+                                continue
+                        certifications.append({
+                            "id": cert.get("id") or str(idx + 1),
+                            "name": cert.get("name", ""),
+                            "issuer": cert.get("issuer", ""),
+                            "date": cert.get("date", "")
+                        })
                     
                 languages = []
-                for idx, lang in enumerate(resume_data.get("languages", [])):
-                    languages.append({
-                        "id": lang.get("id") or str(idx + 1),
+                lang_source = resume_data.get("languages", [])
+                if isinstance(lang_source, list):
+                    for idx, lang in enumerate(lang_source):
+                        if not isinstance(lang, dict):
+                            if isinstance(lang, str):
+                                lang = {"name": lang}
+                            else:
+                                continue
+                        languages.append({
+                            "id": lang.get("id") or str(idx + 1),
                         "name": lang.get("name", ""),
                         "proficiency": lang.get("proficiency", "")
                     })
@@ -884,21 +928,23 @@ def enhance_resume_draft(request):
         if not resume_data:
             return JsonResponse(error_response("No resume content to enhance"), status=400)
 
-        # 1. Run AtsCompatibilityAgent to extract live missing keywords and actual score
+        # 1. Run AtsCompatibilityAgent ONCE to get baseline score + JD requirements
         from agents.ats_compatibility_agent import AtsCompatibilityAgent
         ats_agent = AtsCompatibilityAgent()
         ats_report = ats_agent.analyze(None, resume_data, target_job_desc)
         ats_missing_keywords = ats_report.get("breakdown", {}).get("keywords", {}).get("missingKeywords", [])
         
-        # Sync the live ATS score dynamically
+        # Extract the pre-computed JD requirements and baseline score
+        jd_requirements = ats_report.get("_jd_requirements")
         actual_live_score = ats_report.get("overallScore")
         if actual_live_score is not None:
             live_ats_score = actual_live_score
 
-        # 2. Run the full Resume Enhancer Agent
+        # 2. Run the full Resume Enhancer Agent with pre-computed JD requirements
+        #    This prevents a second LLM JD parse, ensuring score consistency
         from agents.resume_enhancer_agent import ResumeEnhancerAgent
         agent = ResumeEnhancerAgent()
-        result = agent.enhance(resume_data, target_job_desc, live_ats_score=live_ats_score)
+        result = agent.enhance(resume_data, target_job_desc, live_ats_score=live_ats_score, jd_requirements=jd_requirements)
 
         if not result.get("success"):
             logger.warning("Enhancer returned fallback data: %s", result.get("error"))

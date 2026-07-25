@@ -19,9 +19,10 @@ import {
   Sparkles,
   MapPin,
   FileText,
-  User
+  User,
+  Upload
 } from 'lucide-react';
-import { authAPI, seekerAPI } from '../lib/api';
+import { authAPI, seekerAPI, publicAPI } from '../lib/api';
 import { portalAuth, portalBilling } from '../lib/portalApi';
 import { DEVELOPER_PLANS } from '../lib/constants';
 import { useAuthStore } from '../stores/authStore';
@@ -173,6 +174,48 @@ const AuthPage = ({ isLogin: initialIsLogin = true }) => {
     }
   };
   const [skills, setSkills] = useState('');
+  const [parsingResume, setParsingResume] = useState(false);
+  const [resumeData, setResumeData] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleResumeUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ['.pdf', '.docx', '.doc', '.txt'];
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!allowed.includes(ext)) {
+      toast.error('Please upload a PDF, DOCX, DOC, or TXT file');
+      return;
+    }
+
+    setParsingResume(true);
+    const toastId = toast.loading('Parsing resume with AI...');
+
+    try {
+      const data = await publicAPI.parseResume(file);
+
+      if (data.full_name) setFullName(data.full_name);
+      if (data.email) setEmail(data.email);
+      if (data.phone) setPhone(data.phone);
+      if (data.location) setLocationField(data.location);
+      if (data.headline) setHeadline(data.headline);
+      if (data.skills && Array.isArray(data.skills)) {
+        setSkills(data.skills.join(', '));
+      }
+      if (data.raw_parsed_data) {
+        setResumeData(data.raw_parsed_data);
+      }
+
+      toast.success('Resume parsed! Form details auto-filled.', { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to parse resume', { id: toastId });
+    } finally {
+      setParsingResume(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const [showPassRules, setShowPassRules] = useState(false);
 
@@ -345,9 +388,11 @@ const AuthPage = ({ isLogin: initialIsLogin = true }) => {
   // Google SSO Client Initialization
   useEffect(() => {
     const initClient = () => {
+      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!googleClientId) return;
       if (window.google) {
         googleClientRef.current = window.google.accounts.oauth2.initTokenClient({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          client_id: googleClientId,
           scope: "openid email profile",
           callback: async (tokenResponse) => {
             const currentRole = roleRef.current;
@@ -523,7 +568,8 @@ const AuthPage = ({ isLogin: initialIsLogin = true }) => {
             phone,
             phone_verified: phoneVerified,
             email_verified: isEmailVerified,
-            skills: skills ? skills.split(',').map(s => s.trim()) : []
+            skills: skills ? skills.split(',').map(s => s.trim()) : [],
+            resume_data: resumeData || {}
           });
           seekerAuth.setAuth(data);
           localStorage.setItem('vish_seeker_token', data.seeker_token);
@@ -801,6 +847,49 @@ const AuthPage = ({ isLogin: initialIsLogin = true }) => {
                 )}
                 {role === 'seeker' && (
                   <>
+                    {/* Resume Auto-Fill Banner */}
+                    <div style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(147, 51, 234, 0.05) 100%)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '12px 14px', borderRadius: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#2563EB', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)' }}>
+                          <Sparkles size={18} />
+                        </div>
+                        <div>
+                          <p style={{ fontSize: '12px', fontWeight: '700', color: '#1E293B', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            Auto-fill from Resume
+                            <span style={{ fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', background: 'rgba(37, 99, 235, 0.15)', color: '#2563EB', padding: '1px 5px', borderRadius: '4px' }}>Fast</span>
+                          </p>
+                          <p style={{ fontSize: '11px', color: '#64748B', margin: 0 }}>Upload PDF/DOCX to fill details automatically</p>
+                        </div>
+                      </div>
+                      
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleResumeUpload} 
+                        accept=".pdf,.docx,.doc,.txt" 
+                        style={{ display: 'none' }} 
+                      />
+                      
+                      <button
+                        type="button"
+                        disabled={parsingResume}
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{ padding: '8px 14px', background: '#fff', border: '1px solid rgba(37, 99, 235, 0.3)', color: '#2563EB', borderRadius: '10px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+                      >
+                        {parsingResume ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            <span>Parsing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload size={14} />
+                            <span>Upload</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
                     <div className="input-group">
                       <label>Full Name</label>
                       <input 

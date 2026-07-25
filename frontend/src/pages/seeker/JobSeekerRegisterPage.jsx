@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { seekerAPI } from '../../lib/api';
+import { publicAPI, seekerAPI } from '../../lib/api';
 import { useSeekerAuthStore } from '../../stores/seekerAuthStore';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Upload, Sparkles, Loader2 } from 'lucide-react';
 import VerificationModal from '../../components/VerificationModal';
 
 export default function JobSeekerRegisterPage() {
@@ -14,6 +14,9 @@ export default function JobSeekerRegisterPage() {
   const [verifyTarget, setVerifyTarget] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [parsingResume, setParsingResume] = useState(false);
+  const [resumeData, setResumeData] = useState(null);
+  const fileInputRef = useRef(null);
   const googleClientRef = useRef(null);
 
   useEffect(() => {
@@ -54,13 +57,51 @@ export default function JobSeekerRegisterPage() {
     document.body.appendChild(script);
   }, [navigate, setAuth]);
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ['.pdf', '.docx', '.doc', '.txt'];
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!allowed.includes(ext)) {
+      toast.error('Please upload a PDF, DOCX, DOC, or TXT file');
+      return;
+    }
+
+    setParsingResume(true);
+    const toastId = toast.loading('Parsing resume with AI...');
+
+    try {
+      const data = await publicAPI.parseResume(file);
+      
+      setForm(prev => ({
+        ...prev,
+        full_name: data.full_name || prev.full_name,
+        email: data.email || prev.email,
+        location: data.location || prev.location,
+        headline: data.headline || prev.headline,
+      }));
+      if (data.raw_parsed_data) {
+        setResumeData(data.raw_parsed_data);
+      }
+
+      toast.success('Resume parsed! Form details auto-filled.', { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to parse resume', { id: toastId });
+    } finally {
+      setParsingResume(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handle = async (e) => {
     e.preventDefault();
     if (!isEmailVerified) { toast.error('Please verify your email address first'); return; }
     if (form.password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
     setLoading(true);
     try {
-      const data = await seekerAPI.register(form);
+      const data = await seekerAPI.register({ ...form, resume_data: resumeData || {} });
       setAuth(data);
       localStorage.setItem('vish_seeker_token', data.seeker_token);
       localStorage.setItem('vish_seeker_data', JSON.stringify(data.seeker));
@@ -82,6 +123,50 @@ export default function JobSeekerRegisterPage() {
           <span className="text-gray-500 text-[14px] font-medium mb-1">Job Seeker Portal</span>
           <h1 className="text-3xl font-black tracking-tight text-accent">Create Account</h1>
         </div>
+
+        {/* Resume Auto-Fill Banner */}
+        <div className="mb-5 p-3.5 bg-gradient-to-r from-accent/10 via-accent/5 to-purple-500/10 border border-accent/20 rounded-2xl flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center shrink-0 shadow-md shadow-accent/20">
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-charcoal flex items-center gap-1">
+                Auto-fill from Resume
+                <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 bg-accent/20 text-accent rounded-md">Fast</span>
+              </p>
+              <p className="text-[11px] text-gray-500 font-medium">Upload PDF/DOCX to fill details automatically</p>
+            </div>
+          </div>
+          
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            accept=".pdf,.docx,.doc,.txt" 
+            className="hidden" 
+          />
+          
+          <button
+            type="button"
+            disabled={parsingResume || loading}
+            onClick={() => fileInputRef.current?.click()}
+            className="px-3.5 py-2 bg-white border border-accent/30 text-accent hover:bg-accent hover:text-white rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+          >
+            {parsingResume ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                <span>Parsing...</span>
+              </>
+            ) : (
+              <>
+                <Upload size={14} />
+                <span>Upload</span>
+              </>
+            )}
+          </button>
+        </div>
+
 
         <form onSubmit={handle} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">

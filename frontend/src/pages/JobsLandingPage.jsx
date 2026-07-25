@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Search, MapPin, Sparkles, CheckCircle2, TrendingUp, Compass, Cpu, FileText, ChevronRight } from 'lucide-react';
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import JobsNavbar from '../components/JobsNavbar';
@@ -71,6 +71,12 @@ export default function JobsLandingPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const [jobsList, setJobsList] = useState([]);
+
+  // Scroll animation transforms for background video (0px to 550px scroll range)
+  const { scrollY } = useScroll();
+  const bgOpacity = useTransform(scrollY, [0, 550], [1, 0]);
+  const bgScale = useTransform(scrollY, [0, 550], [1, 1.08]);
+  const bgY = useTransform(scrollY, [0, 550], [0, 60]);
 
   // Autocomplete UI states
   const [querySuggestions, setQuerySuggestions] = useState([]);
@@ -179,13 +185,42 @@ export default function JobsLandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] text-[#2A2A2A] font-sans flex flex-col">
+    <div className="min-h-screen bg-[#FDFCFB] text-[#2A2A2A] font-sans flex flex-col relative isolate">
+      
+      {/* SCROLL-ACTIVATED HERO VIDEO BACKGROUND */}
+      <motion.div
+        style={{
+          opacity: bgOpacity,
+          scale: bgScale,
+          y: bgY,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100vh',
+          zIndex: -2,
+          pointerEvents: 'none'
+        }}
+      >
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover filter saturate-[1.1] opacity-60"
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_170732_8a9ccda6-5cff-4628-b164-059c500a2b41.mp4"
+        />
+        {/* Soft overlay so text remains readable without being too faded */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#FDFCFB]/30 via-transparent to-[#FDFCFB]" />
+      </motion.div>
+
+      {/* Base background layer when video fades out on scroll */}
+      <div className="fixed inset-0 bg-[#FDFCFB] -z-30 pointer-events-none" />
+
       <JobsNavbar onUploadClick={() => setIsModalOpen(true)} />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-16 space-y-20">
         
-
-
         {/* Search Section */}
         <section className="text-center max-w-3xl mx-auto space-y-6 pt-4">
           <span className="bg-[#DCFCE7] text-[#15803D] text-[10px] font-black px-4 py-1.5 rounded-full tracking-wider uppercase">

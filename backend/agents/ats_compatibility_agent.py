@@ -63,6 +63,34 @@ TECH_DICT = {
     "microservices", "agile", "scrum", "rest", "grpc", "soap", "mvc", "tdd", "bdd", "ci/cd"
 }
 
+SOFT_SKILLS_DICT = {
+    "communication", "leadership", "teamwork", "problem solving", "analytical",
+    "collaboration", "mentoring", "project management", "time management",
+    "critical thinking", "adaptability", "creativity", "presentation",
+    "negotiation", "conflict resolution", "decision making", "strategic planning",
+    "stakeholder management", "cross functional", "team leadership"
+}
+
+DOMAIN_SKILLS_DICT = {
+    "machine learning", "deep learning", "nlp", "natural language processing",
+    "computer vision", "data science", "data engineering", "data analysis",
+    "data visualization", "etl", "big data", "hadoop", "spark", "kafka",
+    "airflow", "tableau", "power bi", "looker", "snowflake", "databricks",
+    "sagemaker", "tensorflow", "pytorch", "scikit-learn", "pandas", "numpy",
+    "jupyter", "mlops", "devops", "sre", "site reliability",
+    "cybersecurity", "penetration testing", "blockchain", "web3", "solidity",
+    "smart contracts", "mobile development", "ios", "android", "flutter",
+    "react native", "responsive design", "accessibility", "seo",
+    "ui design", "ux design", "figma", "adobe xd", "sketch",
+    "product management", "business analysis", "requirements gathering",
+    "system design", "distributed systems", "cloud architecture",
+    "serverless", "lambda", "api gateway", "load balancing",
+    "caching", "message queue", "rabbitmq", "celery", "websocket"
+}
+
+# Module-level cache for JD parse results to ensure deterministic scoring
+_jd_parse_cache = {}
+
 class AtsCompatibilityAgent:
     """
     Independent agent that performs production-grade ATS compatibility checks.
@@ -135,8 +163,30 @@ class AtsCompatibilityAgent:
                 return True
         return False
 
+    def _extract_keywords_deterministic(self, text: str) -> list:
+        """Extract keywords from text using dictionaries only — no LLM, fully deterministic."""
+        if not text:
+            return []
+        text_lower = text.lower()
+        found = set()
+        # Check TECH_DICT
+        for tech in TECH_DICT:
+            pattern = rf'\b{re.escape(tech)}\b'
+            if re.search(pattern, text_lower):
+                found.add(tech)
+        # Check DOMAIN_SKILLS_DICT
+        for skill in DOMAIN_SKILLS_DICT:
+            if skill in text_lower:
+                found.add(skill)
+        # Check SOFT_SKILLS_DICT
+        for skill in SOFT_SKILLS_DICT:
+            if skill in text_lower:
+                found.add(skill)
+        return sorted(found)
+
     def _extract_jd_requirements(self, jd_text: str) -> dict:
-        """Extract key components from target job description using LLM."""
+        """Extract key components from target job description using LLM + deterministic fallback.
+        Results are cached per JD text hash for deterministic scoring."""
         if not jd_text or not jd_text.strip():
             return {
                 "required_skills": [],
@@ -147,6 +197,15 @@ class AtsCompatibilityAgent:
                 "min_experience_years": 0,
                 "preferred_degree": ""
             }
+
+        # Cache check — ensures same JD always produces same keywords
+        import hashlib
+        jd_hash = hashlib.md5(jd_text.strip().lower().encode('utf-8')).hexdigest()
+        if jd_hash in _jd_parse_cache:
+            return _jd_parse_cache[jd_hash]
+
+        # Step 1: Deterministic extraction (always runs, always consistent)
+        deterministic_keywords = self._extract_keywords_deterministic(jd_text)
 
         system_prompt = (
             "You are an ATS Job Description Parser. Analyze the job description and extract details into a JSON object.\n"
@@ -168,7 +227,7 @@ class AtsCompatibilityAgent:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Job Description:\n{jd_text[:4000]}"}
                 ],
-                temperature=0.1,
+                temperature=0.0,
                 response_format={"type": "json_object"}
             )
             raw = response.choices[0].message.content.strip()
@@ -185,18 +244,37 @@ class AtsCompatibilityAgent:
             parsed.setdefault("responsibilities", [])
             parsed.setdefault("min_experience_years", 0)
             parsed.setdefault("preferred_degree", "")
+
+            # Step 2: Merge deterministic keywords into LLM results (union)
+            llm_techs = set(t.lower().strip() for t in parsed.get("technologies", []))
+            llm_frameworks = set(f.lower().strip() for f in parsed.get("frameworks", []))
+            all_llm = llm_techs | llm_frameworks
+            for kw in deterministic_keywords:
+                if kw not in all_llm:
+                    # Add to technologies if it's a tech term, otherwise to required_skills
+                    if kw in TECH_DICT or kw in DOMAIN_SKILLS_DICT:
+                        parsed["technologies"].append(kw)
+                    elif kw in SOFT_SKILLS_DICT:
+                        if kw not in [s.lower() for s in parsed["required_skills"]]:
+                            parsed["required_skills"].append(kw)
+
+            # Cache the result
+            _jd_parse_cache[jd_hash] = parsed
             return parsed
         except Exception as e:
             logger.error("JD Parsing agent failed: %s", e)
-            return {
-                "required_skills": [],
+            # Fallback: use deterministic extraction only
+            fallback = {
+                "required_skills": [k for k in deterministic_keywords if k in SOFT_SKILLS_DICT],
                 "preferred_skills": [],
-                "technologies": [],
+                "technologies": [k for k in deterministic_keywords if k in TECH_DICT or k in DOMAIN_SKILLS_DICT],
                 "frameworks": [],
                 "responsibilities": [],
                 "min_experience_years": 0,
                 "preferred_degree": ""
             }
+            _jd_parse_cache[jd_hash] = fallback
+            return fallback
 
     def _calculate_experience_years(self, parsed_data: dict) -> float:
         """Parse work experience dates and calculate total experience years."""
@@ -418,7 +496,7 @@ class AtsCompatibilityAgent:
             
         return max(0, score), issues
 
-    def analyze(self, resume_text: str, parsed_data: dict, target_job_description: str = None) -> dict:
+    def analyze(self, resume_text: str, parsed_data: dict, target_job_description: str = None, jd_requirements: dict = None) -> dict:
         # Build text description if not provided
         if not resume_text:
             lines = []
@@ -520,7 +598,7 @@ class AtsCompatibilityAgent:
         
         # 2. Match calculations
         if target_job_description and target_job_description.strip():
-            jd_req = self._extract_jd_requirements(target_job_description)
+            jd_req = jd_requirements if jd_requirements else self._extract_jd_requirements(target_job_description)
             
             # --- Keyword Match (35%) ---
             target_keywords = list(set(k.lower().strip() for k in (jd_req.get("technologies", []) + jd_req.get("frameworks", [])) if k))
@@ -882,6 +960,7 @@ class AtsCompatibilityAgent:
             "weaknesses": weaknesses[:4],
             "topSuggestions": top_suggestions[:4],
             "computedAt": datetime.now(timezone.utc).isoformat() + "Z",
+            "_jd_requirements": jd_req if target_job_description else None,
             "explanations": explanations,
             
             # Upgraded detailed sub-scores

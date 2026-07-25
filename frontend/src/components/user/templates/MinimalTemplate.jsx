@@ -54,7 +54,7 @@ export function MinimalTemplate({ resume }) {
               <div>
                 <div style={{ fontWeight: 600, marginBottom: "4px" }}>Languages</div>
                 <div style={{ color: "#444", fontSize: "9.5pt" }}>
-                  {resume.languages.map((l) => `${l.name} (${l.proficiency})`).join(", ")}
+                  {resume.languages.map((l) => `${l.name}${l.proficiency ? ` (${l.proficiency})` : ""}`).join(", ")}
                 </div>
               </div>
             )}
@@ -199,7 +199,7 @@ export function MinimalTemplate({ resume }) {
         <div style={{ marginTop: "16px" }}>
           <div style={{ fontWeight: 600, marginBottom: "4px" }}>Languages</div>
           <div style={{ color: "#444" }}>
-            {resume.languages.map((l) => `${l.name} (${l.proficiency})`).join(", ")}
+            {resume.languages.map((l) => `${l.name}${l.proficiency ? ` (${l.proficiency})` : ""}`).join(", ")}
           </div>
         </div>
       )}

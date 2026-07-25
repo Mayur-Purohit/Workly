@@ -108,7 +108,7 @@ export function CompactTemplate({ resume }) {
           <section style={{ marginBottom: "10px" }}>
             <SectionTitle color={ACCENT}>Languages</SectionTitle>
             <div style={{ fontSize: "9.5pt" }}>
-              {resume.languages.map((l) => `${l.name} (${l.proficiency})`).join(" · ")}
+              {resume.languages.map((l) => `${l.name}${l.proficiency ? ` (${l.proficiency})` : ""}`).join(" · ")}
             </div>
           </section>
         )}
@@ -215,7 +215,7 @@ export function CompactTemplate({ resume }) {
             <section>
               <SectionTitle color={ACCENT}>Languages</SectionTitle>
               <div style={{ fontSize: "9.5pt" }}>
-                {resume.languages.map((l) => `${l.name} (${l.proficiency})`).join(" · ")}
+                {resume.languages.map((l) => `${l.name}${l.proficiency ? ` (${l.proficiency})` : ""}`).join(" · ")}
               </div>
             </section>
           )}

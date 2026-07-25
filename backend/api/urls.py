@@ -197,6 +197,7 @@ urlpatterns = [
     path('api/v1/public/jobs/<str:session_id>', jobs.get_public_job, name='public-jobs-detail'),
     path('api/v1/public/jobs/<str:session_id>/apply', jobs.apply_public_job, name='public-jobs-apply'),
     path('api/v1/public/jobs/<str:session_id>/safety-check', jobs.scan_job_safety_public, name='public-jobs-safety-check'),
+    path('api/v1/public/parse-resume', parse.public_parse_resume, name='public-parse-resume'),
 
     # ── Protection & Fraud Detection ──────────────────────────────────────────
     path('api/v1/parse', parse.parse_resume, name='api-parse'),
