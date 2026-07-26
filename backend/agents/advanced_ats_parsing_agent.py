@@ -61,11 +61,23 @@ class AdvancedAtsParsingAgent:
                             min_crossings = crossings
                             best_x = x
                             
-                    # Treat as two-column if min_crossings is low relative to blocks
+                    # Treat as two-column ONLY if block geometry clearly shows two distinct columns
                     is_two_column = False
-                    if len(blocks) > 4:
-                        ratio = min_crossings / len(blocks)
-                        if min_crossings <= 2 or ratio < 0.15:
+                    if len(blocks) > 4 and best_x is not None:
+                        left_count = 0
+                        right_count = 0
+                        spanning_count = 0
+                        for b in blocks:
+                            x0, y0, x1, y1 = b[0], b[1], b[2], b[3]
+                            if y0 >= 100 and y1 <= page_height - 60:
+                                width = x1 - x0
+                                if width > page_width * 0.70:
+                                    spanning_count += 1
+                                elif x1 <= best_x + 15:
+                                    left_count += 1
+                                elif x0 >= best_x - 15:
+                                    right_count += 1
+                        if left_count >= 2 and right_count >= 2 and spanning_count <= 2:
                             is_two_column = True
                             
                     if is_two_column:
@@ -133,9 +145,7 @@ class AdvancedAtsParsingAgent:
         """
         if not text:
             return ""
-        # Split lines, strip, and join
         lines = [line.strip() for line in text.splitlines()]
-        # Filter out multiple consecutive empty lines
         cleaned_lines = []
         consecutive_empty = 0
         for line in lines:
@@ -148,7 +158,7 @@ class AdvancedAtsParsingAgent:
                 cleaned_lines.append(line)
         
         cleaned_text = "\n".join(cleaned_lines)
-        return cleaned_text[:12000]  # Hard limit to stay within safe token limits
+        return cleaned_text[:12000]
 
     def clean_url(self, url: str) -> str:
         """Helper to ensure URLs are formatted properly with a protocol."""
@@ -157,10 +167,8 @@ class AdvancedAtsParsingAgent:
         url = url.strip()
         if not url:
             return ""
-        # Strip stray trailing punctuation
         url = url.rstrip(".,;)")
         if not re.match(r"^https?://", url, re.IGNORECASE):
-            # If it's a known short-form handle like "yuvraj346" without a domain, skip it
             if "/" not in url and "." not in url:
                 return ""
             return "https://" + url
@@ -172,12 +180,17 @@ class AdvancedAtsParsingAgent:
             return self.get_empty_resume_dict()
 
         system_prompt = (
-            "You are an elite AI Resume Parsing Agent. The resume text may come from a two-column PDF layout "
-            "where text blocks are partially interleaved — contact info, skills, and projects may appear jumbled. "
-            "Reconstruct all sections correctly despite the scrambled order.\n\n"
-            "CRITICAL OPTIMIZATION: Rewrite and enhance the professional summary, experience bullets, and project "
-            "descriptions to make them highly professional and ATS-optimized (by using strong action verbs, including "
-            "key industry keywords matching their target/current roles, and formatting for readability).\n\n"
+            "You are an elite AI Resume Parsing Agent. Your task is to perform 100% COMPLETE, VERBATIM EXTRACTION "
+            "of ALL content from the candidate's resume. Do NOT omit, drop, combine, or compress any experience role, "
+            "company, job title, date range, or bullet point.\n\n"
+            "CRITICAL EXTRACTION MANDATES:\n"
+            "1. EXPERIENCE: Extract EVERY SINGLE work experience / job entry listed on the resume. If the resume has "
+            "2 or more jobs (e.g. 'Marketing Executive' and 'Operations Associate'), you MUST extract BOTH jobs as separate "
+            "entries in the 'experience' array. NEVER drop an entry.\n"
+            "2. SKILLS EXTRACTION: Extract ALL skills into a flat array of individual skill names. If skills are listed under "
+            "category headings like 'Marketing: SEO, Google Ads', 'Analytics: Excel, Power BI', 'Tools: Canva', or 'Soft Skills: Negotiation', "
+            "strip the category heading prefix ('Marketing:', 'Tools:', etc.) and extract each skill item separately.\n"
+            "3. PROJECTS & EDUCATION: Extract 100% of all listed projects and degrees.\n\n"
             "Extract everything into this exact JSON schema:\n"
             "{\n"
             "  \"personalInfo\": {\n"
@@ -186,20 +199,20 @@ class AdvancedAtsParsingAgent:
             "    \"email\": \"email address\",\n"
             "    \"phone\": \"phone number\",\n"
             "    \"location\": \"city, state or country\",\n"
-            "    \"website\": \"personal website URL or empty string\",\n"
-            "    \"linkedin\": \"full LinkedIn profile URL (e.g. https://linkedin.com/in/username)\",\n"
-            "    \"github\": \"full GitHub profile URL (e.g. https://github.com/username)\"\n"
+            "    \"website\": \"personal website URL\",\n"
+            "    \"linkedin\": \"full LinkedIn profile URL\",\n"
+            "    \"github\": \"full GitHub profile URL\"\n"
             "  },\n"
-            "  \"summary\": \"ATS-friendly professional summary or profile paragraph\",\n"
-            "  \"skills\": [\"Python\", \"React\", \"Docker\"],\n"
+            "  \"summary\": \"professional summary or profile paragraph\",\n"
+            "  \"skills\": [\"SEO\", \"Google Ads\", \"Excel\"],\n"
             "  \"experience\": [\n"
             "    {\n"
             "      \"company\": \"Company Name\",\n"
             "      \"title\": \"Job Title\",\n"
             "      \"location\": \"City, Country\",\n"
-            "      \"startDate\": \"Month Year\",\n"
-            "      \"endDate\": \"Month Year or Present\",\n"
-            "      \"bullets\": [\"ATS-friendly bullet: Achieved X by doing Y\", \"Led team of Z people\"]\n"
+            "      \"startDate\": \"Jan 2024\",\n"
+            "      \"endDate\": \"Present\",\n"
+            "      \"bullets\": [\"Bullet 1\", \"Bullet 2\"]\n"
             "    }\n"
             "  ],\n"
             "  \"education\": [\n"
@@ -207,16 +220,16 @@ class AdvancedAtsParsingAgent:
             "      \"school\": \"University / College name\",\n"
             "      \"degree\": \"B.E. Computer Engineering\",\n"
             "      \"location\": \"City\",\n"
-            "      \"startDate\": \"Jul 2024\",\n"
-            "      \"endDate\": \"May 2028\"\n"
+            "      \"startDate\": \"2020\",\n"
+            "      \"endDate\": \"2022\"\n"
             "    }\n"
             "  ],\n"
             "  \"projects\": [\n"
             "    {\n"
             "      \"name\": \"Project Name\",\n"
-            "      \"link\": \"https://github.com/user/repo or live URL or empty string\",\n"
-            "      \"bullets\": [\"Engineered X supporting Y users, achieving Z measurable outcome\", \"Built A using B, reducing C by D%\"],\n"
-            "      \"techStack\": [\"Python\", \"Flask\", \"MySQL\"]\n"
+            "      \"link\": \"\",\n"
+            "      \"bullets\": [\"Bullet 1\"],\n"
+            "      \"techStack\": [\"Python\", \"React\"]\n"
             "    }\n"
             "  ],\n"
             "  \"certifications\": [\n"
@@ -233,34 +246,12 @@ class AdvancedAtsParsingAgent:
             "    }\n"
             "  ]\n"
             "}\n\n"
-            "CRITICAL RULES:\n"
-            "1. PROJECTS are MANDATORY — extract ALL projects listed. Look for project headings, project names "
-            "followed by tech stacks (lines starting with 'Stack:' or listing technologies). "
-            "ALWAYS split each project into 2-4 separate bullet points in the 'bullets' array — NEVER return a single "
-            "paragraph. If the source resume has one dense paragraph per project, intelligently split it into distinct "
-            "achievement-focused bullets (e.g. one bullet for the core feature built, one for a technical challenge solved, "
-            "one for the measurable outcome). Each bullet MUST start with a strong action verb (Engineered, Built, "
-            "Architected, Optimized, Designed, Automated, Reduced, Implemented — vary them, do not repeat the same verb "
-            "across bullets). Wherever the source text implies scale, performance, or impact (e.g. 'scalable', "
-            "'real-time', 'high-performance'), rewrite it with a concrete estimated metric if reasonably inferable from "
-            "context (e.g. 'supporting concurrent users', 'reducing latency to under Xms') — but NEVER fabricate a "
-            "specific number that isn't supported by the source text; instead use qualitative-but-specific phrasing if no "
-            "number is available. techStack should be a clean array of technology names parsed from lines like "
-            "'Stack: Python, Flask, MySQL'.\n"
-            "2. For GitHub URL: look for patterns like 'GitHub: username' or 'github.com/username' and construct "
-            "the full URL https://github.com/username.\n"
-            "3. For LinkedIn URL: look for patterns like 'LinkedIn: /in/slug' or 'linkedin.com/in/slug' and construct "
-            "the full URL https://linkedin.com/in/slug.\n"
-            "4. CERTIFICATIONS: extract all listed certifications. If a LinkedIn certifications URL is present, "
-            "create one entry named 'View all certifications' with the URL as the issuer field.\n"
-            "5. Skills should be a flat array of individual skill strings, not categories.\n"
-            "6. Clean up experience bullets — remove leading symbols (▸, •, -, *).\n"
-            "7. Return ONLY valid JSON. No markdown. No explanation."
+            "Return ONLY valid JSON. No markdown. No explanation."
         )
 
         try:
             response = self.client.chat.completions.create(
-                model="gemini-2.5-flash",
+                model="gemini-1.5-flash",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Resume Text:\n{preprocessed}"}
@@ -270,7 +261,6 @@ class AdvancedAtsParsingAgent:
             )
             raw = response.choices[0].message.content.strip()
             
-            # Clean markdown JSON wraps
             if raw.startswith("```json"):
                 raw = raw[7:]
             if raw.startswith("```"):
@@ -280,13 +270,97 @@ class AdvancedAtsParsingAgent:
             raw = raw.strip()
 
             parsed = json.loads(raw)
+            normalized = self.normalize_parsed_content(parsed)
 
-            # Ensure all schema keys exist and default if not
-            return self.normalize_parsed_content(parsed)
+            # If experience is empty but text has experience lines, run deterministic fallback as recovery
+            if not normalized.get("experience") and ("experience" in preprocessed.lower() or "employment" in preprocessed.lower()):
+                fallback = self._fallback_text_parse(text)
+                if fallback.get("experience"):
+                    normalized["experience"] = fallback["experience"]
+
+            return normalized
 
         except Exception as e:
-            logger.error("AdvancedAtsParsingAgent parsing failed: %s", e)
-            return self.get_empty_resume_dict()
+            logger.error("AdvancedAtsParsingAgent parsing failed: %s — running fallback parser", e)
+            return self._fallback_text_parse(text)
+
+    def _fallback_text_parse(self, text: str) -> dict:
+        """Deterministic regex-based fallback parser when LLM response is incomplete or fails."""
+        res = self.get_empty_resume_dict()
+        if not text:
+            return res
+
+        # Contact Info
+        email_re = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
+        if email_re:
+            res["personalInfo"]["email"] = email_re.group(0)
+
+        phone_re = re.search(r'[\+\(]?[0-9][0-9\s\-\(\)]{8,15}[0-9]', text)
+        if phone_re:
+            res["personalInfo"]["phone"] = phone_re.group(0).strip()
+
+        # Simple section splitter
+        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        if lines:
+            res["personalInfo"]["fullName"] = lines[0]
+
+        # Extract Experience entries by searching for dates pattern (e.g., "Jan 2024 - Present")
+        exp_entries = []
+        date_pattern = re.compile(r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}|\d{4})\s*[–\-\u2013—to]+\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}|\d{4}|Present|Current)', re.IGNORECASE)
+        
+        current_exp = None
+        in_experience = False
+        for line in lines:
+            lower = line.lower()
+            if "experience" in lower or "work history" in lower or "employment" in lower:
+                in_experience = True
+                continue
+            elif in_experience and any(sec in lower for sec in ["education", "skills", "projects", "certifications"]):
+                in_experience = False
+
+            if in_experience:
+                m = date_pattern.search(line)
+                if m:
+                    if current_exp:
+                        exp_entries.append(current_exp)
+                    parts = line.split("|") if "|" in line else (line.split("—") if "—" in line else line.split("-"))
+                    role_comp = parts[0].strip() if parts else line
+                    current_exp = {
+                        "id": str(uuid.uuid4()),
+                        "company": role_comp,
+                        "title": role_comp,
+                        "location": "",
+                        "startDate": m.group(1),
+                        "endDate": m.group(2),
+                        "bullets": []
+                    }
+                elif current_exp and line.startswith(("•", "-", "▸", "*")):
+                    current_exp["bullets"].append(line.lstrip("•-▸* ").strip())
+
+        if current_exp:
+            exp_entries.append(current_exp)
+        res["experience"] = exp_entries
+
+        # Extract Skills
+        skills_set = set()
+        in_skills = False
+        for line in lines:
+            lower = line.lower()
+            if "skills" in lower:
+                in_skills = True
+                continue
+            elif in_skills and any(sec in lower for sec in ["experience", "education", "projects"]):
+                in_skills = False
+            if in_skills:
+                # Strip category prefixes
+                cleaned_line = re.sub(r'^(Marketing|Analytics|Tools|Soft Skills|Technical Skills|Skills):\s*', '', line, flags=re.IGNORECASE)
+                for item in re.split(r'[,|•·]', cleaned_line):
+                    item_clean = item.strip()
+                    if item_clean and len(item_clean) < 40:
+                        skills_set.add(item_clean)
+        res["skills"] = sorted(list(skills_set))
+
+        return res
 
     def get_empty_resume_dict(self) -> dict:
         return {
