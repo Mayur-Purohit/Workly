@@ -360,6 +360,8 @@ export const seekerAPI = {
   getParseStatus: () => seekerReq('GET', '/api/v1/seeker/resume/parse-status'),
   enhanceResume: (jobDescription = '') =>
     seekerReq('POST', '/api/v1/seeker/resume/enhance', { job_description: jobDescription }),
+  checkAtsScore: (jobDescription = '') =>
+    seekerReq('POST', '/api/v1/seeker/resume/check-ats', { job_description: jobDescription }),
 
   // Resume Builder Drafts & ATS Agent
   getDrafts: () => seekerReq('GET', '/api/v1/seeker/resume/drafts'),

@@ -1041,7 +1041,14 @@ class AtsCompatibilityAgent:
             if summary:
                 lines.append(f"Summary: {summary}")
             
-            skills = parsed_data.get("skills", [])
+            skills_raw = parsed_data.get("skills", [])
+            skills = []
+            for s in skills_raw:
+                if isinstance(s, dict):
+                    val = s.get("name") or s.get("skill") or s.get("fullName") or s.get("title") or str(s)
+                    skills.append(str(val))
+                elif s:
+                    skills.append(str(s))
             if skills:
                 lines.append("Skills: " + ", ".join(skills))
                 
@@ -1086,7 +1093,14 @@ class AtsCompatibilityAgent:
         cand_years = self._calculate_experience_years(parsed_data)
         
         # Extract candidate skills for matching
-        candidate_skills = list(set(str(s).lower().strip() for s in parsed_data.get("skills", []) if s))
+        candidate_skills = []
+        for s in parsed_data.get("skills", []):
+            if isinstance(s, dict):
+                val = s.get("name") or s.get("skill") or s.get("fullName") or str(s)
+                candidate_skills.append(str(val).lower().strip())
+            elif s:
+                candidate_skills.append(str(s).lower().strip())
+        candidate_skills = list(set(candidate_skills))
         
         # Extract projects and populate diagnostic variables early
         parsed_projects = []
