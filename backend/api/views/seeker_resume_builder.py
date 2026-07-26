@@ -142,11 +142,24 @@ def ats_check(request):
             except ResumeDraft.DoesNotExist:
                 return JsonResponse(error_response("Resume draft not found"), status=404)
         elif uploaded_resume_id or (not content and request.seeker.resume_data):
-            # Case A (existing profile resume): Reuse parsed data
-            parsed_data = request.seeker.resume_data or {}
-            # Try to read raw text from the physical file path to maximize evaluation fidelity
-            if request.seeker.resume_file_path and os.path.exists(request.seeker.resume_file_path):
-                resume_text = extract_text_from_file(request.seeker.resume_file_path)
+            # Case A (existing profile resume): Ensure high-fidelity column-aware parsed data
+            seeker = request.seeker
+            if seeker.resume_file_path and os.path.exists(seeker.resume_file_path):
+                try:
+                    from asgiref.sync import async_to_sync
+                    from agents.advanced_ats_parsing_agent import AdvancedAtsParsingAgent
+                    parser = AdvancedAtsParsingAgent()
+                    resume_text = AdvancedAtsParsingAgent.extract_text_column_aware(seeker.resume_file_path)
+                    parsed_data = async_to_sync(parser.parse)(resume_text)
+                    # Sync updated high-fidelity data back to seeker account
+                    seeker.resume_data = parsed_data
+                    seeker.save(update_fields=["resume_data"])
+                except Exception as parse_err:
+                    logger.warning("Failed to re-parse active profile resume: %s", parse_err)
+                    parsed_data = seeker.resume_data or {}
+            else:
+                parsed_data = seeker.resume_data or {}
+
         elif content:
             # Case B (unsaved editor edits): Direct editor content
             parsed_data = content
@@ -157,8 +170,8 @@ def ats_check(request):
         content_str = json.dumps(parsed_data, sort_keys=True)
         job_desc_str = target_job_desc or ""
         hash_input = f"{content_str}||{resume_text}||{job_desc_str}".encode('utf-8')
-        # Bust cache when ATS scoring calibration changes
-        hash_input = hash_input + b"||ats_calibration=v4"
+        # Bust cache when ATS scoring calibration or parser logic updates
+        hash_input = hash_input + b"||ats_calibration=v6"
         content_hash = hashlib.md5(hash_input).hexdigest()
         
         cache_key = (user_id, content_hash)
@@ -175,9 +188,9 @@ def ats_check(request):
         times.append(now)
         _user_check_times[user_id] = times
         
-        # 3. Perform Analysis
+        # 3. Perform Analysis (pass None for resume_text to guarantee 100% score parity across draft and profile scans)
         agent = AtsCompatibilityAgent()
-        report = agent.analyze(resume_text, parsed_data, target_job_desc)
+        report = agent.analyze(None, parsed_data, target_job_desc)
         
         # Cache Result
         _ats_check_cache[cache_key] = report
@@ -237,152 +250,206 @@ def manage_drafts(request):
             template_id = body.get("templateId", "modern")
             content = body.get("content")
             
-            # If no content is provided but user wants to prefill ("Import my existing resume")
+            # If no content is provided but user wants to prefill ("Import my profile data")
             if not content:
                 seeker = request.seeker
-                resume_data = seeker.resume_data or {}
-                if isinstance(resume_data, str):
+                content = None
+
+                # 1. Primary path: If seeker uploaded a physical resume file, re-extract column-aware for 100% parity
+                if seeker.resume_file_path and os.path.exists(seeker.resume_file_path):
                     try:
-                        resume_data = json.loads(resume_data)
-                    except Exception:
+                        from asgiref.sync import async_to_sync
+                        from agents.advanced_ats_parsing_agent import AdvancedAtsParsingAgent
+                        parser = AdvancedAtsParsingAgent()
+                        text = AdvancedAtsParsingAgent.extract_text_column_aware(seeker.resume_file_path)
+                        content = async_to_sync(parser.parse)(text)
+                    except Exception as parse_err:
+                        logger.warning("Failed to re-parse profile resume file directly: %s", parse_err)
+
+                # 2. Secondary path: Perform robust, lossless mapping from seeker.resume_data
+                if not content or not isinstance(content, dict):
+                    resume_data = seeker.resume_data or {}
+                    if isinstance(resume_data, str):
+                        try:
+                            resume_data = json.loads(resume_data)
+                        except Exception:
+                            resume_data = {}
+                    if not isinstance(resume_data, dict):
                         resume_data = {}
-                if not isinstance(resume_data, dict):
-                    resume_data = {}
-                
-                # Format skills list from user account
-                raw_skills = seeker.skills or []
-                skills_list = []
-                for s in raw_skills:
-                    if isinstance(s, dict):
-                        name = s.get("canonical_skill") or s.get("raw_skill") or ""
-                    else:
-                        name = str(s)
-                    if name.strip():
-                        skills_list.append(name.strip())
-                
-                # Check for standard sections
-                personal_info = {
-                    "fullName": seeker.full_name or "",
-                    "title": seeker.headline or "",
-                    "email": seeker.email or "",
-                    "phone": seeker.phone or "",
-                    "location": seeker.location or "",
-                    "website": resume_data.get("website_url", "") or "",
-                    "linkedin": resume_data.get("linkedin_url", "") or "",
-                    "github": resume_data.get("github_url", "") or ""
-                }
-                
-                # Experience mappings
-                experience = []
-                exp_source = resume_data.get("experience", [])
-                if isinstance(exp_source, list):
-                    for idx, exp in enumerate(exp_source):
-                        if not isinstance(exp, dict):
-                            if isinstance(exp, str):
-                                exp = {"description": exp}
+
+                    p_info = resume_data.get("personalInfo") or {}
+                    if not isinstance(p_info, dict): p_info = {}
+
+                    personal_info = {
+                        "fullName": p_info.get("fullName") or resume_data.get("name") or seeker.full_name or "",
+                        "title": p_info.get("title") or resume_data.get("headline") or seeker.headline or "",
+                        "email": p_info.get("email") or resume_data.get("email") or seeker.email or "",
+                        "phone": p_info.get("phone") or resume_data.get("phone") or seeker.phone or "",
+                        "location": p_info.get("location") or resume_data.get("location") or seeker.location or "",
+                        "website": p_info.get("website") or resume_data.get("website_url") or "",
+                        "linkedin": p_info.get("linkedin") or resume_data.get("linkedin_url") or "",
+                        "github": p_info.get("github") or resume_data.get("github_url") or ""
+                    }
+
+                    summary = (
+                        resume_data.get("summary") or
+                        resume_data.get("professional_summary") or
+                        resume_data.get("summary_rewrite") or
+                        ""
+                    )
+
+                    skills_list = []
+                    raw_skills = resume_data.get("skills") or seeker.skills or []
+                    if isinstance(raw_skills, list):
+                        for s in raw_skills:
+                            if isinstance(s, dict):
+                                name = s.get("canonical_skill") or s.get("raw_skill") or s.get("skill") or s.get("name") or ""
                             else:
-                                continue
-                        bullets = exp.get("bullets", [])
-                        if not isinstance(bullets, list):
-                            bullets = [str(bullets)] if bullets else []
-                        if not bullets and exp.get("description"):
-                            bullets = [exp["description"]]
-                        experience.append({
-                            "id": exp.get("id") or str(idx + 1),
-                            "company": exp.get("company", ""),
-                            "title": exp.get("role", "") or exp.get("title", ""),
-                            "location": exp.get("location", ""),
-                            "startDate": exp.get("start_date", "") or exp.get("startDate", ""),
-                            "endDate": exp.get("end_date", "") or exp.get("endDate", ""),
-                            "bullets": bullets
-                        })
-                    
-                # Education mappings
-                education = []
-                edu_source = resume_data.get("education", [])
-                if isinstance(edu_source, list):
-                    for idx, edu in enumerate(edu_source):
-                        if not isinstance(edu, dict):
-                            if isinstance(edu, str):
-                                edu = {"school": edu}
+                                name = str(s)
+                            if name.strip() and name.strip() not in skills_list:
+                                skills_list.append(name.strip())
+
+                    experience = []
+                    exp_source = resume_data.get("experience") or resume_data.get("work_experience") or []
+                    if isinstance(exp_source, list):
+                        for idx, exp in enumerate(exp_source):
+                            if not isinstance(exp, dict):
+                                if isinstance(exp, str):
+                                    exp = {"description": exp}
+                                else:
+                                    continue
+
+                            bullets = exp.get("bullets", [])
+                            if not isinstance(bullets, list) or not bullets:
+                                resp = exp.get("responsibilities", [])
+                                if isinstance(resp, list) and resp:
+                                    bullets = [str(r).strip() for r in resp if str(r).strip()]
+                                elif exp.get("description"):
+                                    desc_str = str(exp["description"])
+                                    lines = [l.strip().lstrip("•*- ").strip() for l in desc_str.split("\n") if l.strip()]
+                                    bullets = lines if lines else [desc_str]
                             else:
-                                continue
-                        education.append({
-                            "id": edu.get("id") or str(idx + 1),
-                            "school": edu.get("institution", "") or edu.get("school", ""),
-                            "degree": edu.get("degree", ""),
-                            "location": edu.get("location", ""),
-                            "startDate": edu.get("startDate", "") or "",
-                            "endDate": edu.get("year", "") or edu.get("year_end", "") or edu.get("endDate", "")
-                        })
-                    
-                # Projects mappings
-                projects = []
-                proj_source = resume_data.get("projects", [])
-                if isinstance(proj_source, list):
-                    for idx, proj in enumerate(proj_source):
-                        if not isinstance(proj, dict):
-                            if isinstance(proj, str):
-                                proj = {"name": proj}
+                                bullets = [str(b).strip() for b in bullets if str(b).strip()]
+
+                            start_d = exp.get("startDate") or exp.get("start_date") or ""
+                            end_d = exp.get("endDate") or exp.get("end_date") or exp.get("duration") or exp.get("dates") or ""
+
+                            experience.append({
+                                "id": exp.get("id") or str(idx + 1),
+                                "company": exp.get("company", ""),
+                                "title": exp.get("title") or exp.get("role") or exp.get("job_title") or "",
+                                "location": exp.get("location", ""),
+                                "startDate": start_d,
+                                "endDate": end_d,
+                                "bullets": bullets
+                            })
+
+                    education = []
+                    edu_source = resume_data.get("education", [])
+                    if isinstance(edu_source, list):
+                        for idx, edu in enumerate(edu_source):
+                            if not isinstance(edu, dict):
+                                if isinstance(edu, str):
+                                    edu = {"school": edu}
+                                else:
+                                    continue
+
+                            school = edu.get("school") or edu.get("institution") or ""
+                            degree = edu.get("degree") or ""
+                            field = edu.get("field") or ""
+                            if field and degree and field.lower() not in degree.lower():
+                                degree = f"{degree} in {field}"
+
+                            start_d = edu.get("startDate") or edu.get("start_date") or ""
+                            end_d = edu.get("endDate") or edu.get("year") or edu.get("year_end") or edu.get("end_date") or ""
+
+                            education.append({
+                                "id": edu.get("id") or str(idx + 1),
+                                "school": school,
+                                "degree": degree,
+                                "location": edu.get("location", ""),
+                                "startDate": start_d,
+                                "endDate": end_d
+                            })
+
+                    projects = []
+                    proj_source = resume_data.get("projects", [])
+                    if isinstance(proj_source, list):
+                        for idx, proj in enumerate(proj_source):
+                            if not isinstance(proj, dict):
+                                if isinstance(proj, str):
+                                    proj = {"name": proj}
+                                else:
+                                    continue
+
+                            bullets = proj.get("bullets", [])
+                            if not isinstance(bullets, list) or not bullets:
+                                if proj.get("description"):
+                                    desc_str = str(proj["description"])
+                                    lines = [l.strip().lstrip("•*- ").strip() for l in desc_str.split("\n") if l.strip()]
+                                    bullets = lines if lines else [desc_str]
+                                else:
+                                    bullets = []
                             else:
-                                continue
-                        tech_raw = proj.get("techStack") or proj.get("tech_stack") or proj.get("technologies") or []
-                        if isinstance(tech_raw, str):
-                            tech_list = [t.strip() for t in tech_raw.split(",") if t.strip()]
-                        elif isinstance(tech_raw, list):
-                            tech_list = [str(t).strip() for t in tech_raw if t]
-                        else:
-                            tech_list = []
-                        projects.append({
-                            "id": proj.get("id") or str(idx + 1),
-                            "name": proj.get("name", ""),
-                            "link": proj.get("link", "") or proj.get("url", ""),
-                            "description": proj.get("description", ""),
-                            "techStack": tech_list
-                        })
-                    
-                # Certifications and languages mappings
-                certifications = []
-                cert_source = resume_data.get("certifications", [])
-                if isinstance(cert_source, list):
-                    for idx, cert in enumerate(cert_source):
-                        if not isinstance(cert, dict):
-                            if isinstance(cert, str):
-                                cert = {"name": cert}
+                                bullets = [str(b).strip() for b in bullets if str(b).strip()]
+
+                            tech_raw = proj.get("techStack") or proj.get("tech_stack") or proj.get("technologies") or []
+                            if isinstance(tech_raw, str):
+                                tech_list = [t.strip() for t in tech_raw.split(",") if t.strip()]
+                            elif isinstance(tech_raw, list):
+                                tech_list = [str(t).strip() for t in tech_raw if t]
                             else:
-                                continue
-                        certifications.append({
-                            "id": cert.get("id") or str(idx + 1),
-                            "name": cert.get("name", ""),
-                            "issuer": cert.get("issuer", ""),
-                            "date": cert.get("date", "")
-                        })
-                    
-                languages = []
-                lang_source = resume_data.get("languages", [])
-                if isinstance(lang_source, list):
-                    for idx, lang in enumerate(lang_source):
-                        if not isinstance(lang, dict):
-                            if isinstance(lang, str):
-                                lang = {"name": lang}
-                            else:
-                                continue
-                        languages.append({
-                            "id": lang.get("id") or str(idx + 1),
-                        "name": lang.get("name", ""),
-                        "proficiency": lang.get("proficiency", "")
-                    })
-                    
-                content = {
-                    "personalInfo": personal_info,
-                    "summary": resume_data.get("professional_summary") or "",
-                    "skills": skills_list,
-                    "experience": experience,
-                    "education": education,
-                    "projects": projects,
-                    "certifications": certifications,
-                    "languages": languages
-                }
+                                tech_list = []
+
+                            projects.append({
+                                "id": proj.get("id") or str(idx + 1),
+                                "name": proj.get("name") or proj.get("title") or "",
+                                "link": proj.get("link") or proj.get("url") or "",
+                                "bullets": bullets,
+                                "techStack": tech_list
+                            })
+
+                    certifications = []
+                    cert_source = resume_data.get("certifications", [])
+                    if isinstance(cert_source, list):
+                        for idx, cert in enumerate(cert_source):
+                            if not isinstance(cert, dict):
+                                if isinstance(cert, str):
+                                    cert = {"name": cert}
+                                else:
+                                    continue
+                            certifications.append({
+                                "id": cert.get("id") or str(idx + 1),
+                                "name": cert.get("name", ""),
+                                "issuer": cert.get("issuer", ""),
+                                "date": cert.get("date") or cert.get("year") or ""
+                            })
+
+                    languages = []
+                    lang_source = resume_data.get("languages", [])
+                    if isinstance(lang_source, list):
+                        for idx, lang in enumerate(lang_source):
+                            if not isinstance(lang, dict):
+                                if isinstance(lang, str):
+                                    lang = {"name": lang}
+                                else:
+                                    continue
+                            languages.append({
+                                "id": lang.get("id") or str(idx + 1),
+                                "name": lang.get("name", ""),
+                                "proficiency": lang.get("proficiency", "")
+                            })
+
+                    content = {
+                        "personalInfo": personal_info,
+                        "summary": summary,
+                        "skills": skills_list,
+                        "experience": experience,
+                        "education": education,
+                        "projects": projects,
+                        "certifications": certifications,
+                        "languages": languages
+                    }
                 
             draft = ResumeDraft.objects.create(
                 seeker=request.seeker,

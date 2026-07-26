@@ -10,7 +10,7 @@ import {
   Mail, MapPin, Pencil, Briefcase, GraduationCap, 
   Award, FileText, Settings, Phone, CheckCircle2, 
   Loader2, X, Plus, Trash2, Save, Eye, Sparkles, AlertCircle,
-  UploadCloud
+  UploadCloud, FolderKanban, BadgeCheck, AlignLeft
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -76,18 +76,30 @@ export default function UserProfile() {
     
     const resume = data.resume_data || {};
     const exp = resume.experience || resume.work_experience || [];
-    setEditExperience(exp.map(x => ({
-      role: x.role || x.job_title || "",
-      company: x.company || "",
-      duration: x.duration || x.dates || "",
-      description: x.description || ""
-    })));
+    setEditExperience(exp.map(x => {
+      // Build duration from start_date/end_date if duration/dates not present
+      let duration = x.duration || x.dates || "";
+      if (!duration && (x.start_date || x.end_date)) {
+        duration = `${x.start_date || ""} - ${x.end_date || ""}`.trim().replace(/^-\s*|\s*-$/g, "");
+      }
+      // Build description from responsibilities array if description not present
+      let description = x.description || "";
+      if (!description && Array.isArray(x.responsibilities) && x.responsibilities.length) {
+        description = x.responsibilities.filter(Boolean).map(r => `• ${r}`).join("\n");
+      }
+      return {
+        role: x.role || x.job_title || x.title || "",
+        company: x.company || "",
+        duration,
+        description
+      };
+    }));
 
     const edu = resume.education || [];
     setEditEducation(edu.map(ed => ({
       degree: ed.degree || "",
       school: ed.school || ed.institution || "",
-      year: ed.year || ""
+      year: ed.year || ed.year_end || ""
     })));
 
     setEditSkills(data.skills || []);
@@ -427,6 +439,9 @@ export default function UserProfile() {
   const workExperience = seeker?.resume_data?.experience || [];
   const educationList = seeker?.resume_data?.education || [];
   const skillsList = seeker?.skills || [];
+  const projectsList = seeker?.resume_data?.projects || [];
+  const certsList = seeker?.resume_data?.certifications || [];
+  const profileSummary = seeker?.resume_data?.summary || seeker?.resume_data?.professional_summary || "";
   const pref = seeker?.open_to || {};
   const prefLocations = pref.locations || [];
   const prefWorkTypes = pref.workTypes || pref.work_types || ["Remote", "Hybrid"];
@@ -663,13 +678,17 @@ export default function UserProfile() {
                   {workExperience.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No experience parsed from resume yet.</p>
                   ) : (
-                    workExperience.map((x, idx) => (
-                      <div key={idx} className="space-y-1">
-                        <div className="font-semibold text-[17px] text-slate-900 leading-snug">{x.role || x.job_title || "Role"}</div>
-                        <div className="text-sm text-slate-500 font-medium">{x.company || "Company"} &middot; {x.duration || x.dates || "Duration"}</div>
-                        {x.description && <p className="mt-2 text-sm text-slate-600 leading-relaxed">{x.description}</p>}
-                      </div>
-                    ))
+                    workExperience.map((x, idx) => {
+                      const duration = x.duration || x.dates || (x.start_date || x.end_date ? `${x.start_date || ""} - ${x.end_date || ""}`.trim().replace(/^-\s*|\s*-$/g, "") : "");
+                      const desc = x.description || (Array.isArray(x.responsibilities) && x.responsibilities.length ? x.responsibilities.filter(Boolean).join("; ") : "");
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="font-semibold text-[17px] text-slate-900 leading-snug">{x.role || x.job_title || x.title || "Role"}</div>
+                          <div className="text-sm text-slate-500 font-medium">{x.company || "Company"}{duration ? ` · ${duration}` : ""}</div>
+                          {desc && <p className="mt-2 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{desc}</p>}
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               )}
@@ -721,12 +740,16 @@ export default function UserProfile() {
                   {educationList.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No education parsed from resume yet.</p>
                   ) : (
-                    educationList.map((ed, idx) => (
-                      <div key={idx} className="space-y-1">
-                        <div className="font-semibold text-[17px] text-slate-900 leading-snug">{ed.degree || "Degree"}</div>
-                        <div className="text-sm text-slate-500 font-medium">{ed.school || ed.institution || "Institution"} &middot; {ed.year || "Year"}</div>
-                      </div>
-                    ))
+                    educationList.map((ed, idx) => {
+                      const yearVal = ed.year || ed.year_end || "";
+                      const cgpaVal = ed.cgpa ? ` · CGPA: ${ed.cgpa}` : "";
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="font-semibold text-[17px] text-slate-900 leading-snug">{ed.degree || "Degree"}</div>
+                          <div className="text-sm text-slate-500 font-medium">{ed.school || ed.institution || "Institution"}{yearVal ? ` · ${yearVal}` : ""}{cgpaVal}</div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               )}
@@ -776,6 +799,60 @@ export default function UserProfile() {
                 </div>
               )}
             </Section>
+
+            {/* Professional Summary Section */}
+            {profileSummary && (
+              <Section icon={AlignLeft} title="Professional Summary" color="#6366f1">
+                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{profileSummary}</p>
+              </Section>
+            )}
+
+            {/* Projects Section */}
+            {projectsList.length > 0 && (
+              <Section icon={FolderKanban} title="Projects" color="#8b5cf6">
+                <div className="space-y-5">
+                  {projectsList.map((proj, idx) => (
+                    <div key={idx} className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="font-semibold text-[17px] text-slate-900 leading-snug">{proj.name || proj.title || "Project"}</div>
+                        {proj.url && (
+                          <a href={proj.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">↗ Link</a>
+                        )}
+                      </div>
+                      {proj.description && <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{proj.description}</p>}
+                      {Array.isArray(proj.tech_stack) && proj.tech_stack.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {proj.tech_stack.map((t, i) => (
+                            <span key={i} className="pill bg-violet-50 border border-violet-200/60 px-2 py-0.5 rounded-md text-[10px] font-semibold text-violet-700">{t}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {/* Certifications Section */}
+            {certsList.length > 0 && (
+              <Section icon={BadgeCheck} title="Certifications" color="#059669">
+                <div className="space-y-3">
+                  {certsList.map((cert, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <BadgeCheck className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="font-semibold text-sm text-slate-900">{cert.name || "Certification"}</div>
+                        <div className="text-xs text-slate-500">
+                          {cert.issuer && <span>{cert.issuer}</span>}
+                          {cert.issuer && cert.year && <span> · </span>}
+                          {cert.year && <span>{cert.year}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
           </div>
 
           {/* Right sidebar details & preferences */}

@@ -57,14 +57,25 @@ def upload_resume(request):
             for chunk in file.chunks():
                 f.write(chunk)
 
-        # Parse with existing agent (async → sync)
-        file_ext = os.path.splitext(file.name.lower())[1].lstrip(".")  # pdf, docx, txt etc.
-        if file_ext == "doc":
-            file_ext = "docx"
-        parser = ResumeParsingAgent()
+        # Parse with AdvancedAtsParsingAgent (column-aware PDF layout extraction)
         from asgiref.sync import async_to_sync
-        result = async_to_sync(parser.parse)(file_path, file_ext)
-        parsed = result.get("parsed", {})
+        from agents.advanced_ats_parsing_agent import AdvancedAtsParsingAgent
+
+        parser = AdvancedAtsParsingAgent()
+        text = AdvancedAtsParsingAgent.extract_text_column_aware(file_path)
+        parsed = async_to_sync(parser.parse)(text)
+
+        # Attach backward-compatibility aliases for legacy view consumers
+        p_info = parsed.get("personalInfo", {})
+        if isinstance(p_info, dict):
+            parsed["name"] = p_info.get("fullName") or seeker.full_name
+            parsed["email"] = p_info.get("email") or seeker.email
+            parsed["phone"] = p_info.get("phone") or seeker.phone
+            parsed["location"] = p_info.get("location") or seeker.location
+            parsed["linkedin_url"] = p_info.get("linkedin", "")
+            parsed["github_url"] = p_info.get("github", "")
+        
+        parsed["professional_summary"] = parsed.get("summary", "")
 
         # Normalize skills
         raw_skills = parsed.get("skills", [])
@@ -96,8 +107,8 @@ def upload_resume(request):
         seeker.skills = normalized_skills
 
         # Auto-fill headline if empty
-        if not seeker.headline and parsed.get("current_role"):
-            seeker.headline = parsed["current_role"]
+        if not seeker.headline and p_info.get("title"):
+            seeker.headline = p_info["title"]
 
         seeker.save(update_fields=["resume_file_path", "resume_data", "skills", "headline"])
 
@@ -108,7 +119,7 @@ def upload_resume(request):
                 "email": parsed.get("email"),
                 "skills": normalized_skills[:20],  # first 20
                 "total_skills": len(normalized_skills),
-                "experience_years": parsed.get("total_experience_years", 0),
+                "experience_years": len(parsed.get("experience", [])),
                 "education": parsed.get("education", []),
                 "summary": parsed.get("summary", ""),
             }

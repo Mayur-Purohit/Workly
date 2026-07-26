@@ -82,3 +82,6 @@ backend/datasets/Resume/
 # Exclude directories per user request
 OK/
 OLD ONES/
+
+# Ignore markdown files per user request
+*.md

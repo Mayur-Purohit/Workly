@@ -640,40 +640,7 @@ function BentoFeatures() {
         </div>
       )
     },
-    {
-      id: 'fraud',
-      title: 'Fraud Detection',
-      subtitle: 'Three-Signal Authenticity Check',
-      description: 'Comprehensive verification protecting your pipeline from fake resumes, AI-generated fluff, and plagiarized profiles.',
-      color: 'var(--google-red)',
-      icon: <Shield className="h-6 w-6 text-[var(--google-red)]" />,
-      className: 'md:col-span-1',
-      tags: ["Plagiarism Check", "AI Text Classifier", "Originality Score"],
-      details: (
-        <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
-          <p>
-            Protect your hiring team from fraudulent resumes and exaggerated qualifications using Workly's multi-layer verification system.
-          </p>
-          <div className="space-y-2 p-3.5 rounded-2xl bg-muted/50 border border-border/60 text-xs">
-            <div className="flex justify-between items-center text-foreground font-medium">
-              <span>Originality Score</span>
-              <span className="text-[var(--google-green)] font-semibold">98% Authentic</span>
-            </div>
-            <div className="flex justify-between items-center text-foreground font-medium">
-              <span>AI Generation Probability</span>
-              <span className="text-foreground">12% (Low Risk)</span>
-            </div>
-            <div className="flex justify-between items-center text-foreground font-medium">
-              <span>Plagiarism & Template Duplicate</span>
-              <span className="text-[var(--google-green)] font-semibold">0% Clean</span>
-            </div>
-          </div>
-          <p>
-            Every candidate is cross-referenced against public databases and template registries to flag inconsistencies before interviews.
-          </p>
-        </div>
-      )
-    },
+
     {
       id: 'matching',
       title: 'Semantic Matching',
@@ -706,7 +673,7 @@ function BentoFeatures() {
       description: 'Unify candidates arriving from direct uploads, ZIP batches, Gmail, Google Drive, Google Forms, and ATS integrations.',
       color: 'var(--google-yellow)',
       icon: <Upload className="h-6 w-6 text-[var(--google-yellow)]" />,
-      className: 'md:col-span-2',
+      className: 'md:col-span-3',
       tags: ["6 Intake Channels", "Auto-Deduplication", "Unified Storage"],
       sources: [
         { icon: FileText, label: "Direct Upload", desc: "PDF & Word" },

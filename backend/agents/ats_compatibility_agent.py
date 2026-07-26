@@ -1065,9 +1065,14 @@ class AtsCompatibilityAgent:
             lines.append("\nProjects:")
             for proj in parsed_data.get("projects", []):
                 pname = proj.get("name", "") or proj.get("title", "")
-                desc = proj.get("description", "")
                 link = proj.get("link", "") or proj.get("url", "")
-                lines.append(f"{pname} ({link}): {desc}")
+                pbullets = proj.get("bullets", [])
+                if isinstance(pbullets, list) and pbullets:
+                    pbullets_str = "\n".join(f"- {b}" for b in pbullets if b)
+                    lines.append(f"Project: {pname} ({link})\n{pbullets_str}")
+                else:
+                    desc = proj.get("description", "")
+                    lines.append(f"Project: {pname} ({link}): {desc}")
                 
             resume_text = "\n".join(lines)
 
