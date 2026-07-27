@@ -516,7 +516,8 @@ class AtsCompatibilityAgent:
                 "ci", "cd", "cicd", "promql", "jaeger", "dockerfile", "microservices", "microservice",
                 "bitbucket", "terraform", "k8s", "helm", "orchestrated", "streamlined", "configured", 
                 "refactored", "containerized", "monitored", "automated", "provisioned", "redhat",
-                "centos", "debian", "ubuntu", "linux", "graphql", "restful", "apis", "sdk", "sdks"
+                "centos", "debian", "ubuntu", "linux", "graphql", "restful", "apis", "sdk", "sdks",
+                "spearheaded", "engineered"
             }
             
             for s in skills:
@@ -772,33 +773,42 @@ class AtsCompatibilityAgent:
         return max(0, score), issues
 
     def _check_general_keywords(self, resume_text: str, parsed_data: dict) -> tuple:
-        """4%: Variety of recognizable technical keywords PLUS baseline SWE-fundamentals
-        coverage (DSA, System Design, Cloud, Docker/K8s, CI/CD, Testing) — a resume can
-        max out on web-framework keyword density and still be missing these entirely."""
-        text_lower = (resume_text or "").lower()
-        found = self._extract_keywords_deterministic(resume_text)
-        tech_found = [k for k in found if k in TECH_DICT or k in DOMAIN_SKILLS_DICT]
-        skills_declared = len(parsed_data.get("skills", []) or [])
+        """Evaluates domain-agnostic keyword richness and skill density across any industry/role."""
+        skills = parsed_data.get("skills", []) or []
+        skills_declared = len(skills)
 
-        variety_score = min(100, (len(tech_found) / 14) * 100)
-        declared_score = min(100, (skills_declared / 10) * 100)
+        # Collect all unique multi-character tokens from skills and text
+        extracted_tokens = set()
+        for s in skills:
+            if isinstance(s, dict):
+                val = s.get("name") or s.get("skill") or str(s)
+            else:
+                val = str(s)
+            for token in re.findall(r'\b[a-zA-Z0-9+#.-]{2,30}\b', val.lower()):
+                extracted_tokens.add(token)
 
-        baseline_hits = set(k for k in BASELINE_SWE_KEYWORDS if k in text_lower)
-        if re.search(r'\bdsa\b', text_lower):
-            baseline_hits.add("data structures")
-        baseline_score = min(100, (len(baseline_hits) / 5) * 100)
+        for exp in parsed_data.get("experience", []) or []:
+            title = exp.get("title", "") or exp.get("role", "")
+            for token in re.findall(r'\b[a-zA-Z]{3,20}\b', title.lower()):
+                extracted_tokens.add(token)
 
-        score = round(variety_score * 0.45 + declared_score * 0.25 + baseline_score * 0.30)
+        found_techs = [k for k in self._extract_keywords_deterministic(resume_text) if k in TECH_DICT or k in DOMAIN_SKILLS_DICT]
+
+        skill_density_score = min(100, (skills_declared / 8) * 100)
+        token_richness_score = min(100, (len(extracted_tokens) / 10) * 100)
+        tech_variety_score = min(100, max(60, (len(found_techs) / 5) * 100)) if found_techs else 80
+
+        score = round(0.50 * skill_density_score + 0.30 * token_richness_score + 0.20 * tech_variety_score)
+        score = max(40, min(100, score))
 
         issues = []
-        if len(tech_found) < 6:
-            issues.append("Low variety of recognizable technical keywords in the resume text. Name specific tools/languages/frameworks, not just categories.")
-        if skills_declared < 6:
-            issues.append("Skills section looks sparse. List more relevant technical keywords for broader ATS keyword matching.")
-        if len(baseline_hits) < 2:
-            issues.append("No mention of core SWE fundamentals (DSA, System Design, CI/CD, Docker/Kubernetes, Cloud, Testing) — these are high-frequency keywords in most engineering job descriptions. Add any you genuinely have exposure to.")
+        if skills_declared < 5:
+            issues.append("Skills section looks sparse. List more specific industry tools and competencies.")
+        if len(extracted_tokens) < 8:
+            issues.append("Low density of specialized keywords. Mention specific tools, methodologies, and platforms.")
 
-        return max(0, score), issues, sorted(set(tech_found))
+        matched_display = [str(s.get("name") if isinstance(s, dict) else s) for s in skills if s]
+        return score, issues, matched_display[:15]
 
     def _check_readability_formatting(self, resume_text: str) -> tuple:
         """4%: Bullet symbol consistency, spacing, and overall length."""
@@ -887,7 +897,7 @@ class AtsCompatibilityAgent:
                 claim_hits.append(m.group(0))
         if claim_hits:
             score -= 35
-            issues.append("Resume states specific salary/CTC targets or exam-rank goals (e.g. a CTC figure, 'AIR 1'). Keep career goals qualitative and role-focused.")
+            issues.append("Resume states specific salary/CTC targets or exam-rank goals. Keep career goals qualitative and role-focused.")
 
         buzzword_hits = [b for b in SENIORITY_BUZZWORDS if b in text_lower]
         is_junior = cand_years < 2
@@ -929,36 +939,71 @@ class AtsCompatibilityAgent:
                                    cand_years: float, parsed_projects: list, proj_titles: list, candidate_skills: list) -> dict:
         """Builds the full report for the General (No-JD) ATS checklist using calibrated weights."""
 
-        structure_score, structure_issues = self._check_structure(resume_text, parsed_data)
-        grammar_score, grammar_issues = self._check_spelling_and_grammar(resume_text, parsed_data)
-        contact_score, contact_issues = self._check_contact_info(parsed_data, resume_text)
-        content_score, content_issues = self._check_content_quality(parsed_data)
-        quant_score, quant_issues = self._check_quantified_achievements(parsed_data)
-        verbs_score, verbs_issues = self._check_action_verbs(parsed_data)
-        bullet_score, bullet_issues = self._check_bullet_consistency(parsed_data)
+        # 1. Keyword Match (30%)
         keyword_score, keyword_issues, tech_found = self._check_general_keywords(resume_text, parsed_data)
+        
+        # 2. Skills Match (15%)
+        skills_score = min(100, 40 + len(candidate_skills) * 4.5)
+        
+        # 3. Experience Relevance (20% - dynamically shifted with Projects)
+        if cand_years < 2.0:
+            proj_weight = 0.15
+            exp_weight = 0.10
+        elif cand_years >= 5.0:
+            proj_weight = 0.03
+            exp_weight = 0.27
+        else:
+            ratio = (cand_years - 2.0) / 3.0
+            proj_weight = 0.15 - ratio * 0.12
+            exp_weight = 0.10 + ratio * 0.17
+
+        exp_score = min(100, 50 + int(cand_years * 10))
+
+        # 4. Achievement & Impact (10%)
+        verbs_score, verbs_issues = self._check_action_verbs(parsed_data)
+        quant_score, quant_issues = self._check_quantified_achievements(parsed_data)
+        achievement_impact_score = round(0.4 * verbs_score + 0.6 * quant_score)
+
+        # 5. Project Relevance (10% - dynamically shifted)
+        has_experience = bool(parsed_data.get("experience", []))
+        if not parsed_projects:
+            if cand_years >= 1.0 or has_experience:
+                exp_weight += proj_weight
+                proj_weight = 0.0
+                project_score = exp_score
+                proj_details = "N/A — Experienced candidate profile relies on professional work history."
+            else:
+                project_score = 0.0
+                proj_details = "No projects listed on candidate's resume."
+        else:
+            project_score = min(100, 50 + len(parsed_projects) * 15)
+            proj_details = f"Found {len(parsed_projects)} project(s)."
+
+        # 6. ATS Formatting (10%)
+        structure_score, structure_issues = self._check_structure(resume_text, parsed_data)
         readability_score, readability_issues = self._check_readability_formatting(resume_text)
-        certifications_score, certifications_issues = self._check_certifications(parsed_data, resume_text)
-        tone_score, tone_issues = self._check_professional_tone(resume_text, parsed_data, cand_years)
 
-        categories = {
-            "ats_parseability":        {"label": "ATS Parseability",              "weight": 0.18, "score": fmt_score,             "issues": fmt_issues},
-            "grammar_spelling":        {"label": "Grammar & Spelling",            "weight": 0.08, "score": grammar_score,         "issues": grammar_issues},
-            "resume_structure":        {"label": "Resume Structure",              "weight": 0.14, "score": structure_score,       "issues": structure_issues},
-            "contact_information":     {"label": "Contact Information",           "weight": 0.05, "score": contact_score,         "issues": contact_issues},
-            "content_quality":         {"label": "Content Quality & Depth",       "weight": 0.15, "score": content_score,         "issues": content_issues},
-            "quantified_achievements": {"label": "Quantified Achievements",       "weight": 0.10, "score": quant_score,           "issues": quant_issues},
-            "action_verbs":            {"label": "Action Verbs",                  "weight": 0.05, "score": verbs_score,           "issues": verbs_issues},
-            "bullet_consistency":      {"label": "Bullet Consistency",            "weight": 0.03, "score": bullet_score,          "issues": bullet_issues},
-            "general_keywords":        {"label": "General Technical Keywords",    "weight": 0.10, "score": keyword_score,         "issues": keyword_issues},
-            "readability_formatting":  {"label": "Readability & Formatting",      "weight": 0.04, "score": readability_score,     "issues": readability_issues},
-            "certifications":          {"label": "Certifications",                "weight": 0.03, "score": certifications_score, "issues": certifications_issues},
-            "professional_tone":       {"label": "Professional Tone & Depth",     "weight": 0.05, "score": tone_score,            "issues": tone_issues},
-        }
+        # 7. Job Title & Summary Match (5%)
+        headline = parsed_data.get("personalInfo", {}).get("title", "") or parsed_data.get("title", "")
+        summary = parsed_data.get("summary", "") or parsed_data.get("professional_summary", "")
+        if headline and summary:
+            job_title_match_score = 100
+        elif headline or summary:
+            job_title_match_score = 70
+        else:
+            job_title_match_score = 30
 
-        overall_score = round(sum(c["score"] * c["weight"] for c in categories.values()))
+        # Calculate Overall Score
+        overall_score = round(
+            keyword_score * 0.30 +
+            skills_score * 0.15 +
+            exp_score * exp_weight +
+            project_score * proj_weight +
+            achievement_impact_score * 0.10 +
+            fmt_score * 0.10 +
+            job_title_match_score * 0.05
+        )
 
-        # Content Completeness & Word Count Depth Scaling
         word_count = len((resume_text or "").split())
         if word_count < 180:
             overall_score = round(overall_score * 0.70)
@@ -967,29 +1012,58 @@ class AtsCompatibilityAgent:
 
         overall_score = max(5, min(overall_score, 100))
 
+        # Quality Checks (Badges)
+        grammar_score, grammar_issues = self._check_spelling_and_grammar(resume_text, parsed_data)
+        contact_score, contact_issues = self._check_contact_info(parsed_data, resume_text)
+        
+        quality_checks = {
+            "ats_parseability": fmt_score >= 80,
+            "contact_info": contact_score >= 80,
+            "grammar": grammar_score >= 80,
+            "education_met": True,
+            "resume_structure": structure_score >= 80,
+            "file_format": True,
+            "readability": readability_score >= 80
+        }
+
+        # Strengths & Weaknesses
         strengths = []
         weaknesses = []
-        for key, c in categories.items():
-            if c["score"] >= 85:
-                strengths.append(f"{c['label']}: strong ({c['score']}%).")
-            elif c["score"] < 65:
-                weaknesses.append(f"{c['label']}: needs work ({c['score']}%) — {c['issues'][0] if c['issues'] else 'review this section.'}")
+        if keyword_score >= 80:
+            strengths.append("Strong technical keyword presence across experience and skills.")
+        else:
+            weaknesses.append("Resume could benefit from more specific technical and domain terms.")
 
-        # Rank weakest categories (by points lost = weight * (100-score)) for top suggestions
-        ranked = sorted(categories.items(), key=lambda kv: kv[1]["weight"] * (100 - kv[1]["score"]), reverse=True)
+        if achievement_impact_score >= 80:
+            strengths.append("Excellent use of quantified metrics and action verbs.")
+        else:
+            weaknesses.append("Add measurable percentages, scale, or metrics to highlight job impact.")
+
+        if fmt_score >= 85:
+            strengths.append("Professional formatting layout that parses easily.")
+        else:
+            weaknesses.append("Formatting layout warnings detected (avoid tables/dividers, icons).")
+
+        # Suggestions
         top_suggestions = []
-        for key, c in ranked:
-            if c["issues"]:
-                top_suggestions.append(c["issues"][0])
-            if len(top_suggestions) >= 4:
-                break
+        if keyword_score < 75:
+            top_suggestions.append("Enrich technical skills section with baseline industry keywords.")
+        if achievement_impact_score < 75:
+            top_suggestions.append("Vary action verbs and quantify at least 40% of achievements.")
+        if fmt_score < 80:
+            top_suggestions.append("Ensure clean typography, single-spacing, and no text tables.")
+
         if not top_suggestions:
-            top_suggestions.append("Your resume is well optimized for general ATS parsing! Paste a target Job Description to get JD-specific tailoring scores too.")
+            top_suggestions.append("Your resume structure is well optimized! Upload a target Job Description to check match score.")
 
         explanations = [
-            f"{c['label']} ({round(c['weight']*100)}.0 pts max): Awarded {round(c['score'] * c['weight'], 2)} pts ({c['score']}% score)."
-            + (f" Issues: {'; '.join(c['issues'][:2])}" if c["issues"] else " No issues detected.")
-            for c in categories.values()
+            f"Keyword Match (30.0% weight): Scored {keyword_score}%. Evaluates density of relevant technical and domain-specific keywords.",
+            f"Skills Match (15.0% weight): Scored {skills_score}%. Assesses the volume and alignment of technical skills listed.",
+            f"Experience Relevance ({round(exp_weight * 100, 1)}% weight): Scored {exp_score}%. Evaluates depth and years of experience.",
+            f"Project Relevance ({round(proj_weight * 100, 1)}% weight): Scored {project_score}%. {proj_details}",
+            f"Achievement & Impact (10.0% weight): Scored {achievement_impact_score}%. Evaluates use of strong action verbs and quantified metrics.",
+            f"ATS Formatting (10.0% weight): Scored {fmt_score}%. Checks parseability, standard headings, and layout hazards.",
+            f"Job Title & Summary Match (5.0% weight): Scored {job_title_match_score}%. Validates headline and professional summary presence."
         ]
 
         report = {
@@ -1001,29 +1075,35 @@ class AtsCompatibilityAgent:
             "_jd_requirements": None,
             "mode": "general_ats",
             "explanations": explanations,
+            "top_missing_keywords": [],
+
+            "quality_checks": quality_checks,
 
             "detailed_breakdown": {
-                key: {
-                    "label": c["label"],
-                    "weight_pct": round(c["weight"] * 100),
-                    "score": c["score"],
-                    "issues": c["issues"]
-                } for key, c in categories.items()
+                "keyword_match": {"score": keyword_score, "matched": tech_found[:12], "missing": []},
+                "skills_match": {"score": skills_score, "matched": candidate_skills[:12], "missing": []},
+                "experience_relevance": {"score": exp_score, "details": "Evaluated based on tenure and descriptions."},
+                "achievement_impact": {
+                    "score": achievement_impact_score,
+                    "action_verbs_score": verbs_score,
+                    "quantified_score": quant_score
+                },
+                "project_relevance": {"score": project_score, "details": proj_details},
+                "ats_formatting": {"score": fmt_score, "issues": fmt_issues},
+                "job_title_match": {"score": job_title_match_score, "details": "Based on headline & summary presence."}
             },
 
-            # Legacy keys kept for frontend backward-compatibility
             "breakdown": {
                 "formatting": {"score": fmt_score, "issues": fmt_issues},
                 "structure": {"score": structure_score, "issues": structure_issues},
                 "keywords": {"score": keyword_score, "missingKeywords": [], "matchedKeywords": tech_found[:15]},
-                "content": {"score": round((content_score + quant_score + verbs_score) / 3), "weakBullets": grammar_issues},
+                "content": {"score": round((exp_score + project_score) / 2), "weakBullets": grammar_issues},
                 "integrity": {"score": contact_score, "flags": contact_issues}
             }
         }
         return report
 
     def analyze(self, resume_text: str, parsed_data: dict, target_job_description: str = None, jd_requirements: dict = None) -> dict:
-        # Build text description if not provided
         if not resume_text:
             lines = []
             personal = parsed_data.get("personalInfo", {}) or {}
@@ -1086,13 +1166,9 @@ class AtsCompatibilityAgent:
         resume_text_lower = resume_text.lower()
         model = get_embedding_model()
         
-        # 1. ATS Formatting (10%)
         fmt_score, fmt_issues = self._check_formatting(resume_text)
-        
-        # Candidate Experience Years and Degree details
         cand_years = self._calculate_experience_years(parsed_data)
         
-        # Extract candidate skills for matching
         candidate_skills = []
         for s in parsed_data.get("skills", []):
             if isinstance(s, dict):
@@ -1102,459 +1178,354 @@ class AtsCompatibilityAgent:
                 candidate_skills.append(str(s).lower().strip())
         candidate_skills = list(set(candidate_skills))
         
-        # Extract projects and populate diagnostic variables early
-        parsed_projects = []
-        for key in ["projects", "Projects", "PROJECTS"]:
-            if key in parsed_data:
-                parsed_projects = parsed_data[key] or []
-                break
-                
-        proj_titles = []
-        all_project_techs = set()
-        proj_descriptions_bullets = []
+        parsed_projects = parsed_data.get("projects", []) or []
+        proj_titles = [proj.get("name") or proj.get("title") or "" for proj in parsed_projects]
+        proj_titles = [t for t in proj_titles if t]
         
-        for proj in parsed_projects:
-            pname = proj.get("name") or proj.get("title") or ""
-            if pname:
-                proj_titles.append(pname)
-            pdesc = proj.get("description") or ""
-            if pdesc:
-                proj_descriptions_bullets.append(pdesc)
-            pbullets = proj.get("bullets") or proj.get("responsibilities") or []
-            if isinstance(pbullets, list):
-                proj_descriptions_bullets.extend([str(b) for b in pbullets if b])
-            elif isinstance(pbullets, str) and pbullets.strip():
-                proj_descriptions_bullets.append(pbullets.strip())
-            ptags = proj.get("techStack") or proj.get("tech_stack") or proj.get("technologies") or []
-            if isinstance(ptags, str):
-                ptags = [ptags]
-            for tag in ptags:
-                all_project_techs.update(self._extract_techs_from_text(str(tag)))
-            all_project_techs.update(self._extract_techs_from_text(pname))
-            all_project_techs.update(self._extract_techs_from_text(pdesc))
-            for bullet in pbullets:
-                all_project_techs.update(self._extract_techs_from_text(str(bullet)))
-                
-        jd_techs_all = set()
-        matched_techs = []
-        semantic_sim_score = 0.0
-        technology_overlap_score = 0.0
-        responsibility_overlap_score = 0.0
-        
-        # 2. Match calculations
-        if target_job_description and target_job_description.strip():
-            jd_req = jd_requirements if jd_requirements else self._extract_jd_requirements(target_job_description)
-            
-            # --- Keyword Match (35%) ---
-            target_keywords = list(set(k.lower().strip() for k in (jd_req.get("technologies", []) + jd_req.get("frameworks", [])) if k))
-            if not target_keywords:
-                # Add backup words from technology dictionary matching the JD text
-                jd_words = re.findall(r'\b[a-zA-Z]{3,18}\b', target_job_description.lower())
-                target_keywords = list(set(w for w in jd_words if w in TECH_DICT))
-                
-            matched_keywords = []
-            missing_keywords = []
-            
-            if target_keywords:
-                # Precompute embeddings for semantic keyword match
-                sim_matrix_kw = None
-                if model and candidate_skills:
-                    try:
-                        kw_embs = model.encode(target_keywords, convert_to_numpy=True)
-                        cand_embs = model.encode(candidate_skills, convert_to_numpy=True)
-                        
-                        kw_embs = kw_embs / (np.linalg.norm(kw_embs, axis=1, keepdims=True) + 1e-8)
-                        cand_embs = cand_embs / (np.linalg.norm(cand_embs, axis=1, keepdims=True) + 1e-8)
-                        
-                        sim_matrix_kw = np.dot(kw_embs, cand_embs.T)
-                    except Exception as e:
-                        logger.warning("Failed to encode keyword/skills embeddings: %s", e)
-                
-                for i, kw in enumerate(target_keywords):
-                    pattern = rf"\b{re.escape(kw)}\b"
-                    if re.search(pattern, resume_text_lower):
-                        matched_keywords.append(kw)
-                    elif sim_matrix_kw is not None and candidate_skills:
-                        max_sim = float(np.max(sim_matrix_kw[i]))
-                        if max_sim > 0.82:
-                            matched_keywords.append(kw)
-                        else:
-                            missing_keywords.append(kw)
-                    else:
-                        missing_keywords.append(kw)
-                keyword_match_score = int((len(matched_keywords) / len(target_keywords)) * 100) if target_keywords else 80
-            else:
-                # No target keywords extracted from JD — score by resume keyword density
-                resume_tech_count = len([w for w in re.findall(r'\b[a-zA-Z]{2,18}\b', resume_text_lower) if w in TECH_DICT])
-                keyword_match_score = min(85, 50 + resume_tech_count * 3)
-
-            # --- Skills Match (25%) ---
-            jd_skills = list(set(s.lower().strip() for s in (jd_req.get("required_skills", []) + jd_req.get("preferred_skills", [])) if s))
-            matched_skills = []
-            missing_skills = []
-            
-            if jd_skills:
-                if candidate_skills and model:
-                    try:
-                        jd_embs = model.encode(jd_skills, convert_to_numpy=True)
-                        cand_embs = model.encode(candidate_skills, convert_to_numpy=True)
-                        
-                        jd_embs = jd_embs / (np.linalg.norm(jd_embs, axis=1, keepdims=True) + 1e-8)
-                        cand_embs = cand_embs / (np.linalg.norm(cand_embs, axis=1, keepdims=True) + 1e-8)
-                        
-                        sim_matrix_sk = np.dot(jd_embs, cand_embs.T)
-                        for i, s in enumerate(jd_skills):
-                            max_sim = float(np.max(sim_matrix_sk[i]))
-                            if s in candidate_skills or max_sim > 0.82:
-                                matched_skills.append(s)
-                            else:
-                                missing_skills.append(s)
-                    except Exception:
-                        for s in jd_skills:
-                            if any(s in cs or cs in s for cs in candidate_skills):
-                                matched_skills.append(s)
-                            else:
-                                missing_skills.append(s)
-                elif candidate_skills:
-                    # Embedding model unavailable (e.g. running on low-RAM host without
-                    # HF_SPACE_EMBEDDING_URL configured) -> fall back to substring matching
-                    # instead of marking every required skill as missing.
-                    for s in jd_skills:
-                        if any(s in cs or cs in s for cs in candidate_skills):
-                            matched_skills.append(s)
-                        else:
-                            missing_skills.append(s)
-                else:
-                    missing_skills = jd_skills[:]
-                skills_match_score = int((len(matched_skills) / len(jd_skills)) * 100) if jd_skills else 80
-            else:
-                # No JD skills parsed — score by resume skill count
-                skills_match_score = min(85, 40 + len(candidate_skills) * 4)
-
-            # --- Experience Relevance (15%) ---
-            # Part A: Experience Years check
-            req_years = int(jd_req.get("min_experience_years", 0))
-            if req_years <= 0:
-                years_score = 100
-            else:
-                years_score = min(100.0, (cand_years / req_years) * 100.0)
-                
-            # Part B: Semantic alignment of experience bullets using SentenceTransformer embeddings
-            jd_responsibilities = [r.strip() for r in jd_req.get("responsibilities", []) if r.strip()]
-            if not jd_responsibilities and target_job_description:
-                # Fallback to lines of Job Description
-                jd_responsibilities = [line.strip() for line in target_job_description.split("\n") if line.strip() and len(line.strip()) > 35][:12]
-                
-            cand_bullets = []
-            for exp in parsed_data.get("experience", []):
-                bullets = exp.get("bullets", []) or exp.get("responsibilities", []) or []
-                if isinstance(bullets, list):
-                    cand_bullets.extend([b.strip() for b in bullets if b.strip()])
-                elif isinstance(bullets, str) and bullets.strip():
-                    cand_bullets.append(bullets.strip())
-                    
-            if not jd_responsibilities or not cand_bullets:
-                semantic_exp_score = 70.0
-                exp_details = "Default experience relevance profile applied (no responsibilities or candidate experience bullets found)."
-            else:
-                mean_sim, _ = compute_semantic_similarity(jd_responsibilities, cand_bullets)
-                # Map similarity [0.25, 0.75] -> [0.0, 100.0]
-                semantic_exp_score = min(100.0, max(0.0, (mean_sim - 0.25) / 0.5 * 100.0))
-                semantic_exp_score = round(semantic_exp_score)
-                exp_details = f"Experience bullets exhibit {round(mean_sim*100, 1)}% semantic similarity with JD responsibilities."
-                
-            experience_relevance_score = round(0.4 * years_score + 0.6 * semantic_exp_score)
-            
-            # --- Project Relevance (10%) ---
-
-            if not parsed_projects:
-                project_relevance_score = 0.0
-                technology_overlap_score = 0.0
-                responsibility_overlap_score = 0.0
-                semantic_sim_score = 0.0
-                proj_details = "No projects listed on candidate's resume."
-                matched_techs = []
-                jd_techs_all = []
-            else:
-                # 1. 60% Semantic Similarity: Cosine Similarity between combined project text and full JD text
-                proj_combined_parts = []
-                for proj in parsed_projects:
-                    pname = proj.get("name") or proj.get("title") or ""
-                    pdesc = proj.get("description") or ""
-                    ptags = ", ".join(str(t) for t in (proj.get("techStack") or proj.get("tech_stack") or proj.get("technologies") or []) if t)
-                    pbullets = " ".join(str(b) for b in (proj.get("bullets") or proj.get("responsibilities") or []) if b)
-                    proj_combined_parts.append(f"{pname} {pdesc} {ptags} {pbullets}")
-                combined_project_text = " ".join(proj_combined_parts).strip()
-                
-                if model and combined_project_text and target_job_description:
-                    try:
-                        proj_emb = model.encode([combined_project_text], convert_to_numpy=True)
-                        jd_emb = model.encode([target_job_description], convert_to_numpy=True)
-                        proj_emb = proj_emb / (np.linalg.norm(proj_emb, axis=1, keepdims=True) + 1e-8)
-                        jd_emb = jd_emb / (np.linalg.norm(jd_emb, axis=1, keepdims=True) + 1e-8)
-                        cos_sim = float(np.dot(proj_emb, jd_emb.T)[0][0])
-                        semantic_sim_score = min(100.0, max(0.0, (cos_sim - 0.2) / 0.45 * 100.0))
-                    except Exception as e:
-                        logger.error("Failed to compute combined project similarity: %s", e)
-                        semantic_sim_score = 50.0
-                        cos_sim = 0.5
-                else:
-                    semantic_sim_score = 50.0
-                    cos_sim = 0.5
-                    
-                # 2. 30% Technology Overlap
-                jd_techs_all = set(t.lower().strip() for t in (jd_req.get("technologies", []) + jd_req.get("frameworks", [])) if t)
-                if not jd_techs_all and target_job_description:
-                    jd_techs_all = self._extract_techs_from_text(target_job_description)
-                
-                matched_techs = []
-                for jd_t in jd_techs_all:
-                    matched = False
-                    for p_t in all_project_techs:
-                        if self._is_partial_match(jd_t, p_t):
-                            matched = True
-                            break
-                    if matched:
-                        matched_techs.append(jd_t)
-                
-                if not jd_techs_all:
-                    technology_overlap_score = 100.0
-                else:
-                    technology_overlap_score = (len(matched_techs) / len(jd_techs_all)) * 100.0
-                    
-                # 3. 10% Responsibility Overlap
-                jd_resps = jd_req.get("responsibilities", [])
-                if not jd_resps and target_job_description:
-                    jd_resps = [line.strip() for line in target_job_description.split("\n") if line.strip() and len(line.strip()) > 35][:12]
-                
-                if not jd_resps:
-                    responsibility_overlap_score = 100.0
-                elif not proj_descriptions_bullets:
-                    responsibility_overlap_score = 0.0
-                else:
-                    mean_sim_resp, _ = compute_semantic_similarity(jd_resps, proj_descriptions_bullets)
-                    responsibility_overlap_score = min(100.0, max(0.0, (mean_sim_resp - 0.15) / 0.5 * 100.0))
-                    
-                # Calculate Weighted Score
-                calculated_score = (
-                    0.60 * semantic_sim_score +
-                    0.30 * technology_overlap_score +
-                    0.10 * responsibility_overlap_score
-                )
-                
-                # Apply Completeness Points
-                completeness_points = 0
-                total_projects = len(parsed_projects)
-                for proj in parsed_projects:
-                    has_title = bool(proj.get("name") or proj.get("title"))
-                    has_desc = bool(proj.get("description"))
-                    has_tech = bool(proj.get("techStack") or proj.get("tech_stack") or proj.get("technologies"))
-                    proj_points = 0
-                    if has_title: proj_points += 10
-                    if has_desc: proj_points += 15
-                    if has_tech: proj_points += 10
-                    completeness_points += proj_points
-                completeness_score = min(100.0, (completeness_points / total_projects) * (100.0 / 35.0))
-                
-                # Fail-safe minimum (reduced to prevent inflation)
-                base_fail_safe = 15.0 + 0.05 * completeness_score
-                project_relevance_score = max(base_fail_safe, calculated_score)
-                project_relevance_score = round(project_relevance_score)
-                
-                proj_details = (
-                    f"Project relevance scored {round(project_relevance_score)}% "
-                    f"(60% semantic similarity: {round(semantic_sim_score, 1)}%, "
-                    f"30% tech overlap: {round(technology_overlap_score, 1)}%, "
-                    f"10% responsibility overlap: {round(responsibility_overlap_score, 1)}%)."
-                )
-
-            # --- Education Match (5%) ---
-            req_degree = jd_req.get("preferred_degree", "")
-            if not req_degree:
-                # No degree requirement in JD — give credit for having education listed
-                edu_list = parsed_data.get("education", []) or []
-                education_match_score = 85 if edu_list else 60
-                edu_details = "No specific education requirements parsed from target job description."
-            else:
-                edu_list = parsed_data.get("education", []) or []
-                if not edu_list:
-                    education_match_score = 40
-                    edu_details = "No education history listed on candidate's resume."
-                else:
-                    max_cand_level = 0
-                    cand_degree_name = ""
-                    for edu in edu_list:
-                        level = self._get_degree_level(edu.get("degree", ""))
-                        if level > max_cand_level:
-                            max_cand_level = level
-                            cand_degree_name = edu.get("degree", "")
-                            
-                    target_level = self._get_degree_level(req_degree)
-                    if max_cand_level >= target_level:
-                        education_match_score = 100
-                        edu_details = f"Candidate degree ({cand_degree_name}) matches or exceeds requirement ({req_degree})."
-                    else:
-                        education_match_score = max(50, 100 - (target_level - max_cand_level) * 20)
-                        edu_details = f"Candidate degree ({cand_degree_name}) is lower than preferred degree ({req_degree})."
-
-        else:
-            # No target Job Description provided — run the full General ATS checklist
-            # (12 weighted categories: Parseability, Grammar, Structure, Contact,
-            # Content Quality, Quantified Achievements, Action Verbs, Bullet Consistency,
-            # General Keywords, Readability, Certifications, Professional Tone/Red Flags).
-            # This returns immediately with a complete report.
+        if not target_job_description or not target_job_description.strip():
             return self._build_general_ats_report(
                 resume_text, parsed_data, fmt_score, fmt_issues, cand_years,
                 parsed_projects, proj_titles, candidate_skills
             )
 
-        # Compile strengths & weaknesses based on sub-scores
-        strengths = []
-        weaknesses = []
-
-        if keyword_match_score >= 80:
-            strengths.append("High alignment with Job Description technical keywords.")
+        jd_req = jd_requirements if jd_requirements else self._extract_jd_requirements(target_job_description)
+        
+        # --- 1. Keyword Match (30%) ---
+        target_keywords = list(set(k.lower().strip() for k in (jd_req.get("technologies", []) + jd_req.get("frameworks", [])) if k))
+        if not target_keywords:
+            jd_words = re.findall(r'\b[a-zA-Z]{3,18}\b', target_job_description.lower())
+            target_keywords = list(set(w for w in jd_words if w in TECH_DICT))
+            
+        matched_keywords = []
+        missing_keywords = []
+        
+        if target_keywords:
+            sim_matrix_kw = None
+            if model and candidate_skills:
+                try:
+                    kw_embs = model.encode(target_keywords, convert_to_numpy=True)
+                    cand_embs = model.encode(candidate_skills, convert_to_numpy=True)
+                    kw_embs = kw_embs / (np.linalg.norm(kw_embs, axis=1, keepdims=True) + 1e-8)
+                    cand_embs = cand_embs / (np.linalg.norm(cand_embs, axis=1, keepdims=True) + 1e-8)
+                    sim_matrix_kw = np.dot(kw_embs, cand_embs.T)
+                except Exception:
+                    pass
+            
+            for i, kw in enumerate(target_keywords):
+                pattern = rf"\b{re.escape(kw)}\b"
+                if re.search(pattern, resume_text_lower):
+                    matched_keywords.append(kw)
+                elif sim_matrix_kw is not None and candidate_skills:
+                    max_sim = float(np.max(sim_matrix_kw[i]))
+                    if max_sim > 0.82:
+                        matched_keywords.append(kw)
+                    else:
+                        missing_keywords.append(kw)
+                else:
+                    missing_keywords.append(kw)
+            keyword_match_score = int((len(matched_keywords) / len(target_keywords)) * 100) if target_keywords else 80
         else:
-            weaknesses.append("Low density of target Job Description technical keywords.")
+            resume_tech_count = len([w for w in re.findall(r'\b[a-zA-Z]{2,18}\b', resume_text_lower) if w in TECH_DICT])
+            keyword_match_score = min(85, 50 + resume_tech_count * 3)
 
-        if skills_match_score >= 85:
-            strengths.append("Declared skills list fully covers the required competencies.")
+        # --- 2. Skills Match (15%) ---
+        jd_skills = list(set(s.lower().strip() for s in (jd_req.get("required_skills", []) + jd_req.get("preferred_skills", [])) if s))
+        matched_skills = []
+        missing_skills = []
+        
+        if jd_skills:
+            if candidate_skills and model:
+                try:
+                    jd_embs = model.encode(jd_skills, convert_to_numpy=True)
+                    cand_embs = model.encode(candidate_skills, convert_to_numpy=True)
+                    jd_embs = jd_embs / (np.linalg.norm(jd_embs, axis=1, keepdims=True) + 1e-8)
+                    cand_embs = cand_embs / (np.linalg.norm(cand_embs, axis=1, keepdims=True) + 1e-8)
+                    sim_matrix_sk = np.dot(jd_embs, cand_embs.T)
+                    for i, s in enumerate(jd_skills):
+                        max_sim = float(np.max(sim_matrix_sk[i]))
+                        if s in candidate_skills or max_sim > 0.82:
+                            matched_skills.append(s)
+                        else:
+                            missing_skills.append(s)
+                except Exception:
+                    for s in jd_skills:
+                        if any(s in cs or cs in s for cs in candidate_skills):
+                            matched_skills.append(s)
+                        else:
+                            missing_skills.append(s)
+            else:
+                for s in jd_skills:
+                    if any(s in cs or cs in s for cs in candidate_skills):
+                        matched_skills.append(s)
+                    else:
+                        missing_skills.append(s)
+            skills_match_score = int((len(matched_skills) / len(jd_skills)) * 100) if jd_skills else 80
         else:
-            weaknesses.append("Missing core skills requested in the job description.")
+            skills_match_score = min(85, 40 + len(candidate_skills) * 4)
 
-        if experience_relevance_score >= 85:
-            strengths.append("Past job roles and descriptions are highly relevant to this position.")
+        # --- 3. Experience Relevance (20% - dynamically shifted with Projects) ---
+        req_years = int(jd_req.get("min_experience_years", 0))
+        if req_years <= 0:
+            years_score = 100
         else:
-            weaknesses.append("Past work experience lacks specific domain relevance for this role.")
-
-        if project_relevance_score >= 80:
-            strengths.append("Project portfolio highlights relevant technologies and capabilities.")
+            years_score = min(100.0, (cand_years / req_years) * 100.0)
+            
+        jd_responsibilities = [r.strip() for r in jd_req.get("responsibilities", []) if r.strip()]
+        if not jd_responsibilities and target_job_description:
+            jd_responsibilities = [line.strip() for line in target_job_description.split("\n") if line.strip() and len(line.strip()) > 35][:12]
+            
+        cand_bullets = []
+        for exp in parsed_data.get("experience", []):
+            bullets = exp.get("bullets", []) or exp.get("responsibilities", []) or []
+            if isinstance(bullets, list):
+                cand_bullets.extend([b.strip() for b in bullets if b.strip()])
+            elif isinstance(bullets, str) and bullets.strip():
+                cand_bullets.append(bullets.strip())
+                
+        if not jd_responsibilities or not cand_bullets:
+            semantic_exp_score = 70.0
+            exp_details = "Default experience relevance profile applied (no responsibilities or candidate experience bullets found)."
         else:
-            weaknesses.append("Project descriptions do not explicitly showcase job-aligned tech stack.")
+            mean_sim, _ = compute_semantic_similarity(jd_responsibilities, cand_bullets)
+            semantic_exp_score = min(100.0, max(0.0, (mean_sim - 0.25) / 0.5 * 100.0))
+            semantic_exp_score = round(semantic_exp_score)
+            exp_details = f"Experience bullets exhibit {round(mean_sim*100, 1)}% semantic similarity with JD responsibilities."
+            
+        experience_relevance_score = round(0.4 * years_score + 0.6 * semantic_exp_score)
 
-        if education_match_score >= 90:
-            strengths.append("Academic qualifications meet target specifications.")
-        elif education_match_score < 70:
-            weaknesses.append("Degree level does not match the preferred education requirement.")
+        # --- 4. Achievement & Impact (10%) ---
+        verbs_score, verbs_issues = self._check_action_verbs(parsed_data)
+        quant_score, quant_issues = self._check_quantified_achievements(parsed_data)
+        achievement_impact_score = round(0.4 * verbs_score + 0.6 * quant_score)
 
-        if fmt_score >= 90:
-            strengths.append("Excellent, clean formatting layout that parses easily.")
+        # --- 5. Project Relevance (10% - dynamically shifted) ---
+        if cand_years < 2.0:
+            proj_weight = 0.15
+            exp_weight = 0.10
+        elif cand_years >= 5.0:
+            proj_weight = 0.03
+            exp_weight = 0.27
         else:
-            weaknesses.append("Formatting layout warnings detected (long bullet points, symbols, columns).")
+            ratio = (cand_years - 2.0) / 3.0
+            proj_weight = 0.15 - ratio * 0.12
+            exp_weight = 0.10 + ratio * 0.17
 
-        # Compile final calculated score
+        has_experience = bool(parsed_data.get("experience", []))
+        if not parsed_projects:
+            if cand_years >= 1.0 or has_experience:
+                exp_weight += proj_weight
+                proj_weight = 0.0
+                project_relevance_score = experience_relevance_score
+                proj_details = "N/A — Experienced candidate profile relies on professional work history."
+            else:
+                project_relevance_score = 0.0
+                proj_details = "No projects listed on candidate's resume."
+            jd_techs_all = []
+            matched_techs = []
+        else:
+            all_project_techs = set()
+            proj_descriptions_bullets = []
+            for proj in parsed_projects:
+                pname = proj.get("name") or proj.get("title") or ""
+                pdesc = proj.get("description") or ""
+                pbullets = proj.get("bullets") or proj.get("responsibilities") or []
+                if isinstance(pbullets, list):
+                    proj_descriptions_bullets.extend([str(b) for b in pbullets if b])
+                elif isinstance(pbullets, str) and pbullets.strip():
+                    proj_descriptions_bullets.append(pbullets.strip())
+                ptags = proj.get("techStack") or proj.get("tech_stack") or proj.get("technologies") or []
+                if isinstance(ptags, str):
+                    ptags = [ptags]
+                for tag in ptags:
+                    all_project_techs.update(self._extract_techs_from_text(str(tag)))
+                all_project_techs.update(self._extract_techs_from_text(pname))
+                all_project_techs.update(self._extract_techs_from_text(pdesc))
+
+            proj_combined_parts = []
+            for proj in parsed_projects:
+                pname = proj.get("name") or proj.get("title") or ""
+                pdesc = proj.get("description") or ""
+                ptags = ", ".join(str(t) for t in (proj.get("techStack") or proj.get("tech_stack") or proj.get("technologies") or []) if t)
+                pbullets = " ".join(str(b) for b in (proj.get("bullets") or proj.get("responsibilities") or []) if b)
+                proj_combined_parts.append(f"{pname} {pdesc} {ptags} {pbullets}")
+            combined_project_text = " ".join(proj_combined_parts).strip()
+            
+            if model and combined_project_text and target_job_description:
+                try:
+                    proj_emb = model.encode([combined_project_text], convert_to_numpy=True)
+                    jd_emb = model.encode([target_job_description], convert_to_numpy=True)
+                    proj_emb = proj_emb / (np.linalg.norm(proj_emb, axis=1, keepdims=True) + 1e-8)
+                    jd_emb = jd_emb / (np.linalg.norm(jd_emb, axis=1, keepdims=True) + 1e-8)
+                    cos_sim = float(np.dot(proj_emb, jd_emb.T)[0][0])
+                    semantic_sim_score = min(100.0, max(0.0, (cos_sim - 0.2) / 0.45 * 100.0))
+                except Exception:
+                    semantic_sim_score = 50.0
+            else:
+                semantic_sim_score = 50.0
+                
+            jd_techs_all = set(t.lower().strip() for t in (jd_req.get("technologies", []) + jd_req.get("frameworks", [])) if t)
+            if not jd_techs_all and target_job_description:
+                jd_techs_all = self._extract_techs_from_text(target_job_description)
+            
+            matched_techs = []
+            for jd_t in jd_techs_all:
+                matched = False
+                for p_t in all_project_techs:
+                    if self._is_partial_match(jd_t, p_t):
+                        matched = True
+                        break
+                if matched:
+                    matched_techs.append(jd_t)
+            
+            technology_overlap_score = 100.0 if not jd_techs_all else (len(matched_techs) / len(jd_techs_all)) * 100.0
+            
+            jd_resps = jd_req.get("responsibilities", [])
+            if not jd_resps and target_job_description:
+                jd_resps = [line.strip() for line in target_job_description.split("\n") if line.strip() and len(line.strip()) > 35][:12]
+            
+            if not jd_resps:
+                responsibility_overlap_score = 100.0
+            elif not proj_descriptions_bullets:
+                responsibility_overlap_score = 0.0
+            else:
+                mean_sim_resp, _ = compute_semantic_similarity(jd_resps, proj_descriptions_bullets)
+                responsibility_overlap_score = min(100.0, max(0.0, (mean_sim_resp - 0.15) / 0.5 * 100.0))
+                
+            calculated_score = (0.60 * semantic_sim_score + 0.30 * technology_overlap_score + 0.10 * responsibility_overlap_score)
+            project_relevance_score = round(calculated_score)
+            proj_details = f"Project similarity: {round(semantic_sim_score)}%, technology overlap: {round(technology_overlap_score)}%."
+
+        # --- 6. ATS Formatting (10%) ---
+        # Already calculated at top: fmt_score
+
+        # --- 7. Job Title & Summary Match (5%) ---
+        target_title = jd_req.get("title", "") or (target_job_description.split("\n")[0] if target_job_description else "")
+        cand_title = parsed_data.get("personalInfo", {}).get("title", "") or parsed_data.get("title", "")
+        cand_summary = parsed_data.get("summary", "") or parsed_data.get("professional_summary", "")
+        
+        job_title_match_score = 50
+        if cand_title and target_title and model:
+            try:
+                title_embs = model.encode([target_title.lower(), cand_title.lower()], convert_to_numpy=True)
+                title_embs = title_embs / (np.linalg.norm(title_embs, axis=1, keepdims=True) + 1e-8)
+                t_sim = float(np.dot(title_embs[0], title_embs[1]))
+                job_title_match_score = max(0, min(100, round((t_sim - 0.2) / 0.6 * 100)))
+            except Exception:
+                if target_title.lower() in cand_title.lower() or cand_title.lower() in target_title.lower():
+                    job_title_match_score = 90
+        elif cand_title or cand_summary:
+            job_title_match_score = 70
+
+        # Calculate final overall score
         overall_score = round(
-            keyword_match_score * 0.35 +
-            skills_match_score * 0.25 +
-            experience_relevance_score * 0.15 +
-            project_relevance_score * 0.10 +
-            education_match_score * 0.05 +
-            fmt_score * 0.10
+            keyword_match_score * 0.30 +
+            skills_match_score * 0.15 +
+            experience_relevance_score * exp_weight +
+            project_relevance_score * proj_weight +
+            achievement_impact_score * 0.10 +
+            fmt_score * 0.10 +
+            job_title_match_score * 0.05
         )
         overall_score = max(5, min(overall_score, 100))
 
-        # Generate top coach suggestions
+        structure_score, structure_issues = self._check_structure(resume_text, parsed_data)
+        grammar_score, grammar_issues = self._check_spelling_and_grammar(resume_text, parsed_data)
+        contact_score, contact_issues = self._check_contact_info(parsed_data, resume_text)
+        readability_score, readability_issues = self._check_readability_formatting(resume_text)
+        
+        req_degree = jd_req.get("preferred_degree", "")
+        education_met = True
+        if req_degree:
+            edu_list = parsed_data.get("education", []) or []
+            if not edu_list:
+                education_met = False
+            else:
+                max_cand_level = 0
+                for edu in edu_list:
+                    max_cand_level = max(max_cand_level, self._get_degree_level(edu.get("degree", "")))
+                target_level = self._get_degree_level(req_degree)
+                education_met = max_cand_level >= target_level
+
+        quality_checks = {
+            "ats_parseability": fmt_score >= 80,
+            "contact_info": contact_score >= 80,
+            "grammar": grammar_score >= 80,
+            "education_met": education_met,
+            "resume_structure": structure_score >= 80,
+            "file_format": True,
+            "readability": readability_score >= 80
+        }
+
+        strengths = []
+        weaknesses = []
+        if keyword_match_score >= 80:
+            strengths.append("High alignment with Job Description keywords.")
+        else:
+            weaknesses.append("Missing critical keywords or frameworks from the Job Description.")
+
+        if skills_match_score >= 80:
+            strengths.append("Required skill competencies are strongly represented.")
+        else:
+            weaknesses.append("Missing core required skills outlined in the job criteria.")
+
+        if experience_relevance_score >= 80:
+            strengths.append("Past experience bullets have strong semantic alignment with the role.")
+        else:
+            weaknesses.append("Past work experience roles do not clearly match job responsibilities.")
+
         top_suggestions = []
         if missing_keywords:
-            top_suggestions.append(f"Incorporate target keywords: {', '.join(missing_keywords[:3])}")
+            top_suggestions.append(f"Incorporate missing keywords: {', '.join(missing_keywords[:3])}")
         if missing_skills:
             top_suggestions.append(f"Add missing required skills: {', '.join(missing_skills[:3])}")
-        if experience_relevance_score < 80:
-            top_suggestions.append("Quantify experience impact statements to match JD responsibilities.")
-        if project_relevance_score < 80:
-            top_suggestions.append("Tailor projects to highlight frameworks mentioned in the Job Description.")
-        if fmt_score < 90:
-            top_suggestions.append("Use standard fonts, clean delimiters, and shorten long bullet points.")
-            
+        if achievement_impact_score < 75:
+            top_suggestions.append("Vary action verbs and quantify bullet achievements with percentages.")
+
         if not top_suggestions:
-            top_suggestions.append("Your resume is well optimized! Tailor it to another job description to further match keywords.")
+            top_suggestions.append("Your resume is extremely well-optimized for this job description!")
 
-        # Local spelling & grammar check for achievements
-        spelling_and_grammar_score, spelling_and_grammar_issues = self._check_spelling_and_grammar(resume_text, parsed_data)
-
-        # Generate explanations explaining every point awarded or deducted
         explanations = [
-            f"Keyword Match (35.0 pts max): Awarded {round(keyword_match_score * 0.35, 2)} pts ({keyword_match_score}% matching density). Detected {len(matched_keywords)} target keywords. Deducted {round(35.0 - (keyword_match_score * 0.35), 2)} pts for {len(missing_keywords)} missing keywords.",
-            f"Skills Match (25.0 pts max): Awarded {round(skills_match_score * 0.25, 2)} pts ({skills_match_score}% competency matching). Detected {len(matched_skills)} core skills. Deducted {round(25.0 - (skills_match_score * 0.25), 2)} pts for {len(missing_skills)} missing skills.",
-            f"Experience Relevance (15.0 pts max): Awarded {round(experience_relevance_score * 0.15, 2)} pts ({experience_relevance_score}% relevance). Experience: {cand_years} yrs vs. target {req_years} yrs. Semantic alignment similarity is {round(semantic_exp_score)}%.",
-            f"Project Relevance (10.0 pts max): Awarded {round(project_relevance_score * 0.10, 2)} pts ({project_relevance_score}% score). Portfolio shows {len(parsed_data.get('projects', []))} project(s). {proj_details}",
-            f"Education Match (5.0 pts max): Awarded {round(education_match_score * 0.05, 2)} pts ({education_match_score}% score). {edu_details}",
-            f"ATS Formatting (10.0 pts max): Awarded {round(fmt_score * 0.10, 2)} pts ({fmt_score}% formatting layout score). Deducted {round(10.0 - (fmt_score * 0.10), 2)} pts due to formatting warnings: {'; '.join(fmt_issues) or 'None'}."
+            f"Keyword Match (30.0% weight): Scored {keyword_match_score}%. Evaluated {len(matched_keywords)} matching JD technical keywords.",
+            f"Skills Match (15.0% weight): Scored {skills_match_score}%. Assesses specific technology competencies list.",
+            f"Experience Relevance ({round(exp_weight * 100, 1)}% weight): Scored {experience_relevance_score}%. Alignment of job duties and years.",
+            f"Project Relevance ({round(proj_weight * 100, 1)}% weight): Scored {project_relevance_score}%. {proj_details}",
+            f"Achievement & Impact (10.0% weight): Scored {achievement_impact_score}%. Measures action verbs and metric density.",
+            f"ATS Formatting (10.0% weight): Scored {fmt_score}%. Verifies layout hazard check (dividers, icons).",
+            f"Job Title Match (5.0% weight): Scored {job_title_match_score}%. Headline matches role target title."
         ]
 
-        # Build full report
         report = {
             "overallScore": overall_score,
             "strengths": strengths[:4],
             "weaknesses": weaknesses[:4],
             "topSuggestions": top_suggestions[:4],
             "computedAt": datetime.now(timezone.utc).isoformat() + "Z",
-            "_jd_requirements": jd_req if target_job_description else None,
+            "_jd_requirements": jd_req,
             "explanations": explanations,
-            
-            # Upgraded detailed sub-scores
+            "top_missing_keywords": missing_keywords[:8],
+
+            "quality_checks": quality_checks,
+
             "detailed_breakdown": {
-                "keyword_match": {
-                    "score": keyword_match_score,
-                    "matched": matched_keywords[:15],
-                    "missing": missing_keywords[:12]
+                "keyword_match": {"score": keyword_match_score, "matched": matched_keywords[:12], "missing": missing_keywords[:12]},
+                "skills_match": {"score": skills_match_score, "matched": matched_skills[:12], "missing": missing_skills[:12]},
+                "experience_relevance": {"score": experience_relevance_score, "details": exp_details},
+                "achievement_impact": {
+                    "score": achievement_impact_score,
+                    "action_verbs_score": verbs_score,
+                    "quantified_score": quant_score
                 },
-                "skills_match": {
-                    "score": skills_match_score,
-                    "matched": matched_skills[:15],
-                    "missing": missing_skills[:12]
-                },
-                "experience_relevance": {
-                    "score": experience_relevance_score,
-                    "details": exp_details,
-                    "years": cand_years,
-                    "required_years": req_years
-                },
-                "project_relevance": {
-                    "score": project_relevance_score,
-                    "projects_found": proj_titles,
-                    "project_keywords": sorted(list(all_project_techs)),
-                    "jd_keywords": sorted(list(jd_techs_all)),
-                    "matched_keywords": sorted(list(matched_techs)),
-                    "semantic_similarity": round(semantic_sim_score, 1),
-                    "technology_overlap": round(technology_overlap_score, 1),
-                    "responsibility_overlap": round(responsibility_overlap_score, 1),
-                    "reason": proj_details
-                },
-                "education_match": {
-                    "score": education_match_score,
-                    "details": edu_details
-                },
-                "ats_formatting": {
-                    "score": fmt_score,
-                    "issues": fmt_issues
-                },
-                "explanations": explanations
+                "project_relevance": {"score": project_relevance_score, "details": proj_details},
+                "ats_formatting": {"score": fmt_score, "issues": fmt_issues},
+                "job_title_match": {"score": job_title_match_score, "details": "Matches headline to JD title."}
             },
-            
-            # Map legacy keys to prevent frontend crashes
+
             "breakdown": {
-                "formatting": {
-                    "score": fmt_score,
-                    "issues": fmt_issues
-                },
-                "structure": {
-                    "score": education_match_score,
-                    "issues": [edu_details] if education_match_score < 100 else []
-                },
-                "keywords": {
-                    "score": keyword_match_score,
-                    "missingKeywords": missing_keywords[:12],
-                    "matchedKeywords": matched_keywords[:15]
-                },
-                "content": {
-                    "score": round((experience_relevance_score * 0.6) + (project_relevance_score * 0.4)),
-                    "weakBullets": spelling_and_grammar_issues
-                },
-                "integrity": {
-                    "score": skills_match_score,
-                    "flags": []
-                }
+                "formatting": {"score": fmt_score, "issues": fmt_issues},
+                "structure": {"score": structure_score, "issues": structure_issues},
+                "keywords": {"score": keyword_match_score, "missingKeywords": missing_keywords[:12], "matchedKeywords": matched_keywords[:15]},
+                "content": {"score": round((experience_relevance_score + project_relevance_score) / 2), "weakBullets": grammar_issues},
+                "integrity": {"score": contact_score, "flags": contact_issues}
             }
         }
         return report

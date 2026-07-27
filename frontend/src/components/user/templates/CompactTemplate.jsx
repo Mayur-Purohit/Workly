@@ -96,7 +96,9 @@ export function CompactTemplate({ resume }) {
             {resume.certifications.map((c) => (
               <div key={c.id} style={{ marginBottom: "4px", fontSize: "9.5pt" }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <div style={{ fontWeight: 600 }}>{c.name} ({c.issuer})</div>
+                  <div style={{ fontWeight: 600 }}>{c.link ? (
+                    <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>{c.name} ↗</a>
+                  ) : c.name} ({c.issuer})</div>
                   <div style={{ color: "#666", fontSize: "9pt" }}>{c.date}</div>
                 </div>
               </div>
@@ -205,7 +207,9 @@ export function CompactTemplate({ resume }) {
               <SectionTitle color={ACCENT}>Certifications</SectionTitle>
               {resume.certifications.map((c) => (
                 <div key={c.id} style={{ marginBottom: "4px", fontSize: "9.5pt" }}>
-                  <div style={{ fontWeight: 600 }}>{c.name}</div>
+                  <div style={{ fontWeight: 600 }}>{c.link ? (
+                    <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>{c.name} ↗</a>
+                  ) : c.name}</div>
                   <div style={{ color: "#666", fontSize: "9pt" }}>{c.issuer} ({c.date})</div>
                 </div>
               ))}

@@ -285,31 +285,35 @@ def check_rate_limit(action: str):
             if action_limit == -1:
                 return view_func(request, *args, **kwargs)
 
-            now = datetime.now()
-            year_month = now.strftime("%Y-%m")
-            redis_key = f"rl:{api_key.secret_key}:{year_month}:{action}"
-            
-            used = redis_client.incr(redis_key)
-            
-            if used == 1:
-                last_day = calendar.monthrange(now.year, now.month)[1]
-                end_of_month = datetime(now.year, now.month, last_day, 23, 59, 59)
-                ttl = int((end_of_month - now).total_seconds())
-                redis_client.expire(redis_key, ttl)
+            try:
+                now = datetime.now()
+                year_month = now.strftime("%Y-%m")
+                redis_key = f"rl:{api_key.secret_key}:{year_month}:{action}"
                 
-            if used > action_limit:
-                redis_client.decr(redis_key)
-                return JsonResponse({
-                    "success": False,
-                    "error": f"Monthly {action} limit reached",
-                    "data": {
-                        "limit": action_limit,
-                        "used": used - 1,
-                        "tier": tier,
-                        "resets_on": "first of next month",
-                        "upgrade_url": "/developer/portal/billing"
-                    }
-                }, status=429)
+                used = redis_client.incr(redis_key)
+                
+                if used == 1:
+                    last_day = calendar.monthrange(now.year, now.month)[1]
+                    end_of_month = datetime(now.year, now.month, last_day, 23, 59, 59)
+                    ttl = int((end_of_month - now).total_seconds())
+                    redis_client.expire(redis_key, ttl)
+                    
+                if used > action_limit:
+                    redis_client.decr(redis_key)
+                    return JsonResponse({
+                        "success": False,
+                        "error": f"Monthly {action} limit reached",
+                        "data": {
+                            "limit": action_limit,
+                            "used": used - 1,
+                            "tier": tier,
+                            "resets_on": "first of next month",
+                            "upgrade_url": "/developer/portal/billing"
+                        }
+                    }, status=429)
+            except Exception as e:
+                # Fail open gracefully if Redis is temporarily offline in local dev
+                pass
                 
             return view_func(request, *args, **kwargs)
         return _wrapped_view

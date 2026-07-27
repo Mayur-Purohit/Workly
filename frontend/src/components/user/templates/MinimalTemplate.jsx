@@ -44,7 +44,11 @@ export function MinimalTemplate({ resume }) {
                 <div style={{ fontWeight: 600, marginBottom: "4px" }}>Certifications</div>
                 {resume.certifications.map((c) => (
                   <div key={c.id} style={{ marginBottom: "4px", fontSize: "9.5pt" }}>
-                    <span style={{ fontWeight: 600 }}>{c.name}</span>
+                    <span style={{ fontWeight: 600 }}>
+                      {c.link ? (
+                        <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>{c.name} ↗</a>
+                      ) : c.name}
+                    </span>
                     <div style={{ color: "#666", fontSize: "9pt" }}>{c.issuer} ({c.date})</div>
                   </div>
                 ))}
@@ -189,7 +193,11 @@ export function MinimalTemplate({ resume }) {
           <div style={{ fontWeight: 600, marginBottom: "4px" }}>Certifications</div>
           {resume.certifications.map((c) => (
             <div key={c.id} style={{ marginBottom: "4px" }}>
-              <span style={{ fontWeight: 600 }}>{c.name}</span> — {c.issuer} ({c.date})
+              <span style={{ fontWeight: 600 }}>
+                {c.link ? (
+                  <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>{c.name} ↗</a>
+                ) : c.name}
+              </span> — {c.issuer} ({c.date})
             </div>
           ))}
         </div>

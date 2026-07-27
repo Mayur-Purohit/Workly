@@ -223,9 +223,12 @@ def get_api_keys(request):
             this_month_calls = 0
             for action in ["parse", "match", "chat"]:
                 redis_key = f"rl:{k.secret_key}:{year_month}:{action}"
-                val = redis_client.get(redis_key)
-                if val:
-                    this_month_calls += int(val)
+                try:
+                    val = redis_client.get(redis_key)
+                    if val:
+                        this_month_calls += int(val)
+                except Exception:
+                    pass
 
             result.append({
                 "id": str(k.id),

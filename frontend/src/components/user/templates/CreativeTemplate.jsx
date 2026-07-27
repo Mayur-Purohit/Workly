@@ -107,7 +107,11 @@ export function CreativeTemplate({ resume }) {
               <Card title="Certifications" color={ACCENT}>
                 {resume.certifications.map((c) => (
                   <div key={c.id} style={{ marginBottom: "6px" }}>
-                    <div style={{ fontWeight: 600 }}>{c.name}</div>
+                    <div style={{ fontWeight: 600 }}>
+                      {c.link ? (
+                        <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>{c.name} ↗</a>
+                      ) : c.name}
+                    </div>
                     <div style={{ fontSize: "9pt", color: "#555" }}>{c.issuer} ({c.date})</div>
                   </div>
                 ))}
@@ -338,7 +342,11 @@ export function CreativeTemplate({ resume }) {
           <Card title="Certifications" color={ACCENT}>
             {resume.certifications.map((c) => (
               <div key={c.id} style={{ marginBottom: "6px" }}>
-                <div style={{ fontWeight: 600 }}>{c.name}</div>
+                <div style={{ fontWeight: 600 }}>
+                  {c.link ? (
+                    <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>{c.name} ↗</a>
+                  ) : c.name}
+                </div>
                 <div style={{ fontSize: "9pt", color: "#555" }}>{c.issuer} ({c.date})</div>
               </div>
             ))}

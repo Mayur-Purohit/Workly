@@ -6,7 +6,6 @@ No vision model needed — pure text extraction + LLM parsing.
 """
 import json
 import logging
-import PyPDF2
 import io
 
 from agents.llm import RotateLLMClient
@@ -19,14 +18,35 @@ class MCQPaperParserAgent:
         self.llm = RotateLLMClient()
 
     def extract_text_from_pdf(self, file_bytes: bytes) -> str:
-        """Extract all text from a PDF file."""
-        reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
-        text_parts = []
-        for page in reader.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text_parts.append(page_text)
-        return "\n\n".join(text_parts)
+        """Extract all text from a PDF file using PyMuPDF (fitz) or PyPDF2 fallback."""
+        try:
+            import fitz  # PyMuPDF
+            doc = fitz.open(stream=file_bytes, filetype="pdf")
+            text_parts = []
+            for page in doc:
+                text = page.get_text("text")
+                if text:
+                    text_parts.append(text)
+            return "\n\n".join(text_parts)
+        except Exception as e:
+            logger.warning("fitz extraction failed, trying pypdf: %s", e)
+
+        try:
+            try:
+                import pypdf
+                reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+            except ImportError:
+                import PyPDF2
+                reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+            text_parts = []
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text_parts.append(page_text)
+            return "\n\n".join(text_parts)
+        except Exception as e:
+            logger.error("All PDF extraction methods failed: %s", e)
+            return ""
 
     def extract_text_from_docx(self, file_bytes: bytes) -> str:
         """Extract all text from a DOCX file."""

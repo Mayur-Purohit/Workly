@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Check, Zap, BarChart3, Users, Brain, Sparkles, ArrowRight, X, MapPin, Mail, Briefcase, CheckCircle, XCircle, ChevronDown, Trophy, Star, Award, Phone, History, Trash2, Calendar } from 'lucide-react';
+import { Upload, FileText, Check, Zap, BarChart3, Users, Brain, Sparkles, ArrowRight, X, MapPin, Mail, Briefcase, CheckCircle, XCircle, ChevronDown, Trophy, Star, Award, Phone, History, Trash2, Calendar, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useDropzone } from 'react-dropzone';
 import LoadingSkeleton from '../components/LoadingSkeleton';
@@ -647,26 +647,37 @@ export default function SmartAnalyzerPage() {
             </div>
 
             <div className="mt-10 space-y-3 w-full max-w-sm">
-              {[
-                { text: "Extracting skills from JD", done: progress > 15 },
-                { text: "Parsing resume content (OCR + LLM)", done: progress > 35 },
-                { text: "Normalizing skills against taxonomy", done: progress > 55 },
-                { text: "Computing multi-factor match scores", done: progress > 80 },
-                { text: "Ranking candidates", done: progress > 95 },
-              ].map((s, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.15 }}
-                  className={`flex items-center gap-3 text-sm font-bold transition-all duration-500 ${s.done ? 'text-[#2A2A2A]' : 'text-gray-300'}`}
-                >
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all duration-500 ${s.done ? 'bg-green-500 text-white scale-100' : 'bg-gray-100 scale-90'}`}>
-                    <Check size={12} strokeWidth={3} />
-                  </div>
-                  {s.text}
-                </motion.div>
-              ))}
+              {(() => {
+                const steps = [
+                  { text: "Extracting skills from JD", done: progress > 15 },
+                  { text: "Uploading resumes to server", done: progress > 35 },
+                  { text: "Parsing resume content (OCR + LLM)", done: progress > 75 },
+                  { text: "Computing match scores & ranking", done: progress > 95 },
+                ];
+                return steps.map((s, i) => {
+                  const isActive = !s.done && (i === 0 || steps[i - 1].done);
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.15 }}
+                      className={`flex items-center gap-3 text-sm font-bold transition-all duration-500 ${s.done ? 'text-[#2A2A2A]' : isActive ? 'text-accent' : 'text-gray-300'}`}
+                    >
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all duration-500 ${s.done ? 'bg-green-500 text-white scale-100' : isActive ? 'bg-accent/10 text-accent scale-100 border border-accent/20' : 'bg-gray-100 text-gray-300 scale-90'}`}>
+                        {s.done ? (
+                          <Check size={12} strokeWidth={3} />
+                        ) : isActive ? (
+                          <Loader2 size={12} className="animate-spin text-accent" strokeWidth={3} />
+                        ) : (
+                          <Check size={12} strokeWidth={3} className="opacity-0" />
+                        )}
+                      </div>
+                      {s.text}
+                    </motion.div>
+                  );
+                });
+              })()}
             </div>
           </motion.div>
         )}

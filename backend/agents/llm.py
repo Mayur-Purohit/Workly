@@ -64,10 +64,12 @@ class RotateCompletions:
                     )
                     
                     # Map standard GPT models to Gemini
-                    default_flash = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+                    default_flash = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
                     gemini_model = default_flash
-                    if ("pro" in model.lower() or "gpt-4" in model.lower()) and "mini" not in model.lower():
-                        gemini_model = "gemini-2.5-pro"
+                    if "pro" in model.lower() or "gpt-4" in model.lower():
+                        gemini_model = "gemini-1.5-pro"
+                    elif "2.0" in model.lower():
+                        gemini_model = "gemini-2.0-flash"
                         
                     call_kwargs = {
                         "model": gemini_model,

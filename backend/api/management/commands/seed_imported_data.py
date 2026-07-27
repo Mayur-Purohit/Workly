@@ -65,6 +65,13 @@ class Command(BaseCommand):
             # Create or update Jobs (Sessions)
             for jdata in cdata["jobs"]:
                 job_id = uuid.UUID(jdata["id"])
+                crit = dict(jdata.get("criteria") or {})
+                if "salary_range" in jdata:
+                    crit["salary_range"] = jdata["salary_range"]
+                if "location" in jdata:
+                    crit["location"] = jdata["location"]
+                if "employment_type" in jdata:
+                    crit["employment_type"] = jdata["employment_type"]
                 session, j_created = Session.objects.update_or_create(
                     id=job_id,
                     defaults={
@@ -75,7 +82,7 @@ class Command(BaseCommand):
                         "rounds": jdata["rounds"],
                         "current_round_index": jdata["current_round_index"],
                         "status": jdata["status"],
-                        "criteria": jdata["criteria"],
+                        "criteria": crit,
                         "inferred_skills": jdata["inferred_skills"]
                     }
                 )

@@ -1753,7 +1753,8 @@ export default function ResumeEditor() {
                       id: crypto.randomUUID(), 
                       name: "", 
                       issuer: "", 
-                      date: "" 
+                      date: "",
+                      link: ""
                     }
                   ]
                 })
@@ -1779,6 +1780,18 @@ export default function ResumeEditor() {
                       handlePatchContent({
                         certifications: content.certifications.map((it, i) =>
                           i === idx ? { ...it, name: v } : it
+                        )
+                      })
+                    }
+                  />
+                  <Field
+                    label="Credential Link"
+                    placeholder="https://..."
+                    value={c.link || ""}
+                    onChange={(v) =>
+                      handlePatchContent({
+                        certifications: content.certifications.map((it, i) =>
+                          i === idx ? { ...it, link: v } : it
                         )
                       })
                     }
@@ -2162,13 +2175,71 @@ export default function ResumeEditor() {
 
                       <div className="space-y-3.5">
                         <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Checks Breakdown</h5>
-                        <BreakdownBar label="Keyword Match (35%)" score={atsReport.detailed_breakdown?.keyword_match?.score ?? atsReport.breakdown?.keywords?.score} />
-                        <BreakdownBar label="Skills Match (25%)" score={atsReport.detailed_breakdown?.skills_match?.score ?? atsReport.breakdown?.integrity?.score} />
-                        <BreakdownBar label="Experience Relevance (15%)" score={atsReport.detailed_breakdown?.experience_relevance?.score ?? 70} />
-                        <BreakdownBar label="Project Relevance (10%)" score={atsReport.detailed_breakdown?.project_relevance?.score ?? 70} />
-                        <BreakdownBar label="Education Match (5%)" score={atsReport.detailed_breakdown?.education_match?.score ?? atsReport.breakdown?.structure?.score} />
+                        <BreakdownBar label="Keyword Match (30%)" score={atsReport.detailed_breakdown?.keyword_match?.score ?? atsReport.breakdown?.keywords?.score} />
+                        <BreakdownBar label="Skills Match (15%)" score={atsReport.detailed_breakdown?.skills_match?.score ?? atsReport.breakdown?.integrity?.score} />
+                        <BreakdownBar label="Experience Relevance (20%)" score={atsReport.detailed_breakdown?.experience_relevance?.score ?? 70} />
+                        <BreakdownBar label={atsReport.detailed_breakdown?.project_relevance?.details?.includes("N/A") ? "Project Relevance (N/A)" : "Project Relevance (10%)"} score={atsReport.detailed_breakdown?.project_relevance?.score ?? 70} />
+                        <BreakdownBar label="Achievement & Impact (10%)" score={atsReport.detailed_breakdown?.achievement_impact?.score ?? 80} />
                         <BreakdownBar label="ATS Formatting (10%)" score={atsReport.detailed_breakdown?.ats_formatting?.score ?? atsReport.breakdown?.formatting?.score} />
+                        <BreakdownBar label="Job Title Match (5%)" score={atsReport.detailed_breakdown?.job_title_match?.score ?? 80} />
                       </div>
+
+                      {/* Non-Weighted Quality Checks (Badges) */}
+                      {atsReport.quality_checks && (
+                        <div className="space-y-3 border-t border-border/60 pt-4">
+                          <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Quality Checks</h5>
+                          <div className="grid grid-cols-2 gap-2 text-[10px] font-medium">
+                            <div className="flex items-center gap-1.5 p-2 rounded-xl bg-surface border border-border/40">
+                              {atsReport.quality_checks.ats_parseability ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                              ) : (
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                              )}
+                              <span>Parseability</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 p-2 rounded-xl bg-surface border border-border/40">
+                              {atsReport.quality_checks.contact_info ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                              ) : (
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                              )}
+                              <span>Contact Info</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 p-2 rounded-xl bg-surface border border-border/40">
+                              {atsReport.quality_checks.grammar ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                              ) : (
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                              )}
+                              <span>Grammar</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 p-2 rounded-xl bg-surface border border-border/40">
+                              {atsReport.quality_checks.education_met ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                              ) : (
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                              )}
+                              <span>Education Match</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 p-2 rounded-xl bg-surface border border-border/40">
+                              {atsReport.quality_checks.resume_structure ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                              ) : (
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                              )}
+                              <span>Structure</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 p-2 rounded-xl bg-surface border border-border/40">
+                              {atsReport.quality_checks.readability ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                              ) : (
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                              )}
+                              <span>Readability</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {(atsReport.strengths?.length > 0 || atsReport.weaknesses?.length > 0) && (
                         <div className="space-y-3 border-t border-border/60 pt-4">

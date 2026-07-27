@@ -7,9 +7,12 @@ socket.getaddrinfo = getaddrinfo_ipv4
 
 import os
 import sys
+from pathlib import Path
+from dotenv import load_dotenv
 
-# Ensure the backend directory is in the Python pathway
+# Ensure the backend directory is in the Python pathway and load environment variables early with override
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 
 import django
 # Initialize Django environment
@@ -56,6 +59,14 @@ celery_app.conf.update(
     task_track_started=True,
     broker_connection_retry_on_startup=True
 )
+
+def safe_dispatch_task(task_func, *args, **kwargs):
+    """Dispatches a Celery task via .delay(). If Redis/Celery is offline, executes task synchronously."""
+    try:
+        return task_func.delay(*args, **kwargs)
+    except Exception as e:
+        logging.warning(f"Celery/Redis broker offline ({e}). Executing task '{getattr(task_func, '__name__', str(task_func))}' synchronously...")
+        return task_func(*args, **kwargs)
 
 def _parse_resume_sync(file_path: str, skip_llm: bool = False) -> dict:
     """Synchronously extract text and parse a resume file using AI logic."""

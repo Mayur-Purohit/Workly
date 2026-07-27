@@ -76,6 +76,9 @@ def _parse_job_description_meta(description: str) -> dict:
 
 def _get_salary_range(session) -> str:
     criteria = session.criteria or {}
+    if isinstance(criteria, dict) and criteria.get("salary_range"):
+        return str(criteria["salary_range"])
+
     salary_min = criteria.get("salary_min")
     salary_max = criteria.get("salary_max")
     salary_currency = criteria.get("salary_currency", "USD")

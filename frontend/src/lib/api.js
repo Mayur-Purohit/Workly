@@ -31,20 +31,18 @@ function getHeaders(isFile = false) {
 }
 
 async function safeParseJson(res) {
-  const contentType = res.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) {
-    try {
-      return await res.json();
-    } catch (e) {
-      // Fall through to text parsing
-    }
-  }
   const text = await res.text();
+  if (!text) {
+    if (!res.ok) {
+      throw new Error(`Server status ${res.status}: ${res.statusText || 'Endpoint Error'}`);
+    }
+    return { success: true, data: null };
+  }
   try {
     return JSON.parse(text);
   } catch (e) {
     if (!res.ok) {
-      throw new Error(`Server status ${res.status}: ${res.statusText || 'Endpoint Error'}`);
+      throw new Error(`Server status ${res.status}: ${text.slice(0, 200)}`);
     }
     return { success: true, data: text };
   }

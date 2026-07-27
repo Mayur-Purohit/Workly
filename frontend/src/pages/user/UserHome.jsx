@@ -276,7 +276,7 @@ function Home() {
                       <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 dark:bg-zinc-900 dark:border-zinc-800">
                         {(() => {
                           const filteredList = Array.from(new Set(
-                            jobs
+                            realJobs
                               .map(j => j.title || j.job_title)
                               .filter(Boolean)
                               .filter(title => !search || title.toLowerCase().includes(search.toLowerCase()))
@@ -320,7 +320,7 @@ function Home() {
                       <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 dark:bg-zinc-900 dark:border-zinc-800">
                         {(() => {
                           const filteredList = Array.from(new Set(
-                            jobs
+                            realJobs
                               .map(j => j.location)
                               .filter(Boolean)
                               .filter(loc => !location || loc.toLowerCase().includes(location.toLowerCase()))
@@ -694,10 +694,10 @@ function Home() {
             <h3 className="mt-3 font-display text-2xl font-semibold tracking-tight sm:text-3xl">Hire calmer, faster</h3>
             <p className="mt-2 text-sm text-muted-foreground">Reach 120k+ pre-screened candidates with salary-transparent listings and one clean dashboard.</p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <Link to="/jobs/companies" className="pill inline-flex items-center gap-1.5 bg-foreground px-4 py-2 text-xs font-medium text-background hover:opacity-90">
+              <Link to="/login" className="pill inline-flex items-center gap-1.5 bg-foreground px-4 py-2 text-xs font-medium text-background hover:opacity-90">
                 Post a job
               </Link>
-              <Link to="/jobs/companies" className="pill inline-flex items-center gap-1.5 border border-border bg-background px-4 py-2 text-xs font-medium hover:bg-muted">
+              <Link to="/jobs/billing" className="pill inline-flex items-center gap-1.5 border border-border bg-background px-4 py-2 text-xs font-medium hover:bg-muted">
                 See pricing
               </Link>
             </div>

@@ -50,7 +50,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR / ".env", override=True)
 
 SECRET_KEY = os.getenv("JWT_SECRET")
 
@@ -162,6 +162,10 @@ CORS_ALLOW_HEADERS = [
 # Custom directory configs for uploading/photos
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 PHOTO_DIR = os.getenv("PHOTO_DIR", "photos")
+
+# Celery configurations
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://localhost:6379"))
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", os.getenv("REDIS_URL", "redis://localhost:6379"))
 
 # File upload limit configs (10MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760

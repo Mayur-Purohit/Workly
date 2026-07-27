@@ -190,7 +190,15 @@ class AdvancedAtsParsingAgent:
             "2. SKILLS EXTRACTION: Extract ALL skills into a flat array of individual skill names. If skills are listed under "
             "category headings like 'Marketing: SEO, Google Ads', 'Analytics: Excel, Power BI', 'Tools: Canva', or 'Soft Skills: Negotiation', "
             "strip the category heading prefix ('Marketing:', 'Tools:', etc.) and extract each skill item separately.\n"
-            "3. PROJECTS & EDUCATION: Extract 100% of all listed projects and degrees.\n\n"
+            "3. PROJECTS & EDUCATION: Extract 100% of all listed projects and degrees.\n"
+            "4. CERTIFICATIONS: Extract ALL certifications. If a certification section exists with names like 'AWS Certified', "
+            "'Google Analytics Certified', extract each as a separate entry with name, issuer, and date. If a LinkedIn "
+            "certifications URL is present, create one entry named 'View all certifications' with the URL as the issuer.\n"
+            "5. LANGUAGES: Extract ALL languages listed on the resume. Common patterns: 'Languages: English, Hindi, Gujarati' "
+            "or a dedicated Languages section. Extract each language with its proficiency level if mentioned (Native, Fluent, "
+            "Intermediate, Basic). If no proficiency is stated, leave proficiency as empty string.\n"
+            "6. If ANY section (certifications, languages, projects, etc.) is NOT present on the resume, return an empty array [] "
+            "for that field. Do NOT hallucinate or invent entries that are not in the source text.\n\n"
             "Extract everything into this exact JSON schema:\n"
             "{\n"
             "  \"personalInfo\": {\n"
@@ -199,12 +207,12 @@ class AdvancedAtsParsingAgent:
             "    \"email\": \"email address\",\n"
             "    \"phone\": \"phone number\",\n"
             "    \"location\": \"city, state or country\",\n"
-            "    \"website\": \"personal website URL\",\n"
-            "    \"linkedin\": \"full LinkedIn profile URL\",\n"
-            "    \"github\": \"full GitHub profile URL\"\n"
+            "    \"website\": \"personal website URL or empty string\",\n"
+            "    \"linkedin\": \"full LinkedIn profile URL or empty string\",\n"
+            "    \"github\": \"full GitHub profile URL or empty string\"\n"
             "  },\n"
             "  \"summary\": \"professional summary or profile paragraph\",\n"
-            "  \"skills\": [\"SEO\", \"Google Ads\", \"Excel\"],\n"
+            "  \"skills\": [\"SEO\", \"Google Ads\", \"Excel\", \"Power BI\"],\n"
             "  \"experience\": [\n"
             "    {\n"
             "      \"company\": \"Company Name\",\n"
@@ -212,13 +220,13 @@ class AdvancedAtsParsingAgent:
             "      \"location\": \"City, Country\",\n"
             "      \"startDate\": \"Jan 2024\",\n"
             "      \"endDate\": \"Present\",\n"
-            "      \"bullets\": [\"Bullet 1\", \"Bullet 2\"]\n"
+            "      \"bullets\": [\"Achieved X by doing Y\", \"Led team of Z people\"]\n"
             "    }\n"
             "  ],\n"
             "  \"education\": [\n"
             "    {\n"
-            "      \"school\": \"University / College name\",\n"
-            "      \"degree\": \"B.E. Computer Engineering\",\n"
+            "      \"school\": \"University Name\",\n"
+            "      \"degree\": \"MBA Marketing\",\n"
             "      \"location\": \"City\",\n"
             "      \"startDate\": \"2020\",\n"
             "      \"endDate\": \"2022\"\n"
@@ -228,25 +236,35 @@ class AdvancedAtsParsingAgent:
             "    {\n"
             "      \"name\": \"Project Name\",\n"
             "      \"link\": \"\",\n"
-            "      \"bullets\": [\"Bullet 1\"],\n"
+            "      \"bullets\": [\"Built X using Y\"],\n"
             "      \"techStack\": [\"Python\", \"React\"]\n"
             "    }\n"
             "  ],\n"
             "  \"certifications\": [\n"
             "    {\n"
-            "      \"name\": \"Certification Name\",\n"
-            "      \"issuer\": \"Issuing Organization\",\n"
-            "      \"date\": \"Month Year\"\n"
+            "      \"name\": \"Google Analytics Certified\",\n"
+            "      \"issuer\": \"Google\",\n"
+            "      \"date\": \"2023\",\n"
+            "      \"link\": \"https://credential-url-if-present-or-empty-string\"\n"
             "    }\n"
             "  ],\n"
             "  \"languages\": [\n"
             "    {\n"
             "      \"name\": \"English\",\n"
+            "      \"proficiency\": \"Fluent\"\n"
+            "    },\n"
+            "    {\n"
+            "      \"name\": \"Hindi\",\n"
             "      \"proficiency\": \"Native\"\n"
             "    }\n"
             "  ]\n"
             "}\n\n"
-            "Return ONLY valid JSON. No markdown. No explanation."
+            "ADDITIONAL RULES:\n"
+            "1. For GitHub URL: look for 'github.com/username' and construct full URL.\n"
+            "2. For LinkedIn URL: look for 'linkedin.com/in/slug' and construct full URL.\n"
+            "3. Skills must be a flat array of individual skill strings — NOT categories or objects.\n"
+            "4. Clean up experience bullets — remove leading symbols (▸, •, -, *).\n"
+            "5. Return ONLY valid JSON. No markdown. No explanation."
         )
 
         try:
@@ -272,11 +290,39 @@ class AdvancedAtsParsingAgent:
             parsed = json.loads(raw)
             normalized = self.normalize_parsed_content(parsed)
 
-            # If experience is empty but text has experience lines, run deterministic fallback as recovery
-            if not normalized.get("experience") and ("experience" in preprocessed.lower() or "employment" in preprocessed.lower()):
-                fallback = self._fallback_text_parse(text)
+            # Recovery: fill any missing sections from fallback parser
+            text_lower = preprocessed.lower()
+            fallback = None
+            
+            if not normalized.get("experience") and ("experience" in text_lower or "employment" in text_lower):
+                if not fallback:
+                    fallback = self._fallback_text_parse(text)
                 if fallback.get("experience"):
                     normalized["experience"] = fallback["experience"]
+
+            if not normalized.get("skills") and "skills" in text_lower:
+                if not fallback:
+                    fallback = self._fallback_text_parse(text)
+                if fallback.get("skills"):
+                    normalized["skills"] = fallback["skills"]
+
+            if not normalized.get("certifications") and ("certif" in text_lower or "certificate" in text_lower):
+                if not fallback:
+                    fallback = self._fallback_text_parse(text)
+                if fallback.get("certifications"):
+                    normalized["certifications"] = fallback["certifications"]
+
+            if not normalized.get("languages") and "language" in text_lower:
+                if not fallback:
+                    fallback = self._fallback_text_parse(text)
+                if fallback.get("languages"):
+                    normalized["languages"] = fallback["languages"]
+
+            if not normalized.get("education") and ("education" in text_lower or "academic" in text_lower):
+                if not fallback:
+                    fallback = self._fallback_text_parse(text)
+                if fallback.get("education"):
+                    normalized["education"] = fallback["education"]
 
             return normalized
 
@@ -285,7 +331,8 @@ class AdvancedAtsParsingAgent:
             return self._fallback_text_parse(text)
 
     def _fallback_text_parse(self, text: str) -> dict:
-        """Deterministic regex-based fallback parser when LLM response is incomplete or fails."""
+        """Deterministic regex-based fallback parser when LLM response is incomplete or fails.
+        Extracts: contact info, experience, skills, education, certifications, languages, projects."""
         res = self.get_empty_resume_dict()
         if not text:
             return res
@@ -299,66 +346,201 @@ class AdvancedAtsParsingAgent:
         if phone_re:
             res["personalInfo"]["phone"] = phone_re.group(0).strip()
 
-        # Simple section splitter
+        linkedin_re = re.search(r'(?:https?://)?(?:www\.)?linkedin\.com/in/[\w-]+', text, re.IGNORECASE)
+        if linkedin_re:
+            res["personalInfo"]["linkedin"] = self.clean_url(linkedin_re.group(0))
+
+        github_re = re.search(r'(?:https?://)?(?:www\.)?github\.com/[\w-]+', text, re.IGNORECASE)
+        if github_re:
+            res["personalInfo"]["github"] = self.clean_url(github_re.group(0))
+
         lines = [l.strip() for l in text.splitlines() if l.strip()]
         if lines:
             res["personalInfo"]["fullName"] = lines[0]
 
-        # Extract Experience entries by searching for dates pattern (e.g., "Jan 2024 - Present")
-        exp_entries = []
-        date_pattern = re.compile(r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}|\d{4})\s*[–\-\u2013—to]+\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}|\d{4}|Present|Current)', re.IGNORECASE)
-        
-        current_exp = None
-        in_experience = False
-        for line in lines:
-            lower = line.lower()
-            if "experience" in lower or "work history" in lower or "employment" in lower:
-                in_experience = True
+        # ---- Section-aware parser ----
+        # Identify section boundaries by detecting header-like lines
+        section_headers = {
+            "summary": ["summary", "profile", "objective", "about"],
+            "skills": ["skills", "technical skills", "core competencies", "expertise", "technologies"],
+            "experience": ["experience", "work experience", "work history", "employment", "professional experience", "internship"],
+            "education": ["education", "academic background", "academics", "qualification"],
+            "projects": ["projects", "personal projects", "academic projects"],
+            "certifications": ["certifications", "certificates", "certification", "professional certifications"],
+            "languages": ["languages", "language proficiency", "known languages"],
+        }
+
+        # Build ordered section map: [(section_name, start_line_index), ...]
+        section_map = []
+        for i, line in enumerate(lines):
+            clean_line = line.strip().strip(":-•▸*●◦").strip().lower()
+            if len(clean_line.split()) > 4:
                 continue
-            elif in_experience and any(sec in lower for sec in ["education", "skills", "projects", "certifications"]):
-                in_experience = False
+            for sec_name, keywords in section_headers.items():
+                if any(clean_line == kw or re.fullmatch(rf'{re.escape(kw)}s?', clean_line) for kw in keywords):
+                    section_map.append((sec_name, i))
+                    break
 
-            if in_experience:
-                m = date_pattern.search(line)
-                if m:
-                    if current_exp:
-                        exp_entries.append(current_exp)
-                    parts = line.split("|") if "|" in line else (line.split("—") if "—" in line else line.split("-"))
-                    role_comp = parts[0].strip() if parts else line
-                    current_exp = {
-                        "id": str(uuid.uuid4()),
-                        "company": role_comp,
-                        "title": role_comp,
-                        "location": "",
-                        "startDate": m.group(1),
-                        "endDate": m.group(2),
-                        "bullets": []
-                    }
-                elif current_exp and line.startswith(("•", "-", "▸", "*")):
-                    current_exp["bullets"].append(line.lstrip("•-▸* ").strip())
+        def _get_section_lines(sec_name):
+            """Get all lines belonging to a section."""
+            sec_lines = []
+            for idx, (name, start) in enumerate(section_map):
+                if name == sec_name:
+                    end = section_map[idx + 1][1] if idx + 1 < len(section_map) else len(lines)
+                    sec_lines.extend(lines[start + 1:end])
+            return sec_lines
 
+        # --- Experience ---
+        date_pattern = re.compile(
+            r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}|\d{4})'
+            r'\s*[–\-\u2013—to]+\s*'
+            r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}|\d{4}|Present|Current)',
+            re.IGNORECASE
+        )
+        exp_lines = _get_section_lines("experience")
+        exp_entries = []
+        current_exp = None
+        for line in exp_lines:
+            m = date_pattern.search(line)
+            if m:
+                if current_exp:
+                    exp_entries.append(current_exp)
+                role_part = date_pattern.sub('', line).strip().strip('|—–- ').strip()
+                current_exp = {
+                    "id": str(uuid.uuid4()),
+                    "company": role_part,
+                    "title": role_part,
+                    "location": "",
+                    "startDate": m.group(1),
+                    "endDate": m.group(2),
+                    "bullets": []
+                }
+            elif current_exp and line.startswith(("•", "-", "▸", "*", "●")):
+                current_exp["bullets"].append(line.lstrip("•-▸*● ").strip())
+            elif current_exp and not line.startswith(("•", "-", "▸", "*")) and len(line.split()) > 3:
+                current_exp["bullets"].append(line)
         if current_exp:
             exp_entries.append(current_exp)
         res["experience"] = exp_entries
 
-        # Extract Skills
+        # --- Skills ---
         skills_set = set()
-        in_skills = False
-        for line in lines:
-            lower = line.lower()
-            if "skills" in lower:
-                in_skills = True
-                continue
-            elif in_skills and any(sec in lower for sec in ["experience", "education", "projects"]):
-                in_skills = False
-            if in_skills:
-                # Strip category prefixes
-                cleaned_line = re.sub(r'^(Marketing|Analytics|Tools|Soft Skills|Technical Skills|Skills):\s*', '', line, flags=re.IGNORECASE)
-                for item in re.split(r'[,|•·]', cleaned_line):
-                    item_clean = item.strip()
-                    if item_clean and len(item_clean) < 40:
-                        skills_set.add(item_clean)
+        skill_lines = _get_section_lines("skills")
+        for line in skill_lines:
+            cleaned = re.sub(
+                r'^(Marketing|Analytics|Tools|Soft Skills|Technical Skills|Skills|Programming|'
+                r'Frameworks|Databases|Cloud|DevOps|Design|Other|Core):\s*',
+                '', line, flags=re.IGNORECASE
+            )
+            for item in re.split(r'[,|•·;]', cleaned):
+                item_clean = item.strip().strip('"\'')
+                if item_clean and 2 <= len(item_clean) < 50:
+                    skills_set.add(item_clean)
         res["skills"] = sorted(list(skills_set))
+
+        # --- Education ---
+        edu_lines = _get_section_lines("education")
+        edu_entries = []
+        current_edu = None
+        for line in edu_lines:
+            m = date_pattern.search(line)
+            if m or re.search(r'(university|institute|college|school|b\.|m\.|mba|bca|btech|mtech|b\.com|b\.sc)', line, re.IGNORECASE):
+                if current_edu:
+                    edu_entries.append(current_edu)
+                degree_part = date_pattern.sub('', line).strip().strip('|—–- ').strip()
+                current_edu = {
+                    "id": str(uuid.uuid4()),
+                    "school": degree_part,
+                    "degree": degree_part,
+                    "location": "",
+                    "startDate": m.group(1) if m else "",
+                    "endDate": m.group(2) if m else ""
+                }
+        if current_edu:
+            edu_entries.append(current_edu)
+        res["education"] = edu_entries
+
+        # --- Certifications ---
+        cert_lines = _get_section_lines("certifications")
+        cert_entries = []
+        for line in cert_lines:
+            if line and len(line) > 3:
+                cert_entries.append({
+                    "id": str(uuid.uuid4()),
+                    "name": line.strip().strip("•-▸*● "),
+                    "issuer": "",
+                    "date": ""
+                })
+        res["certifications"] = cert_entries
+
+        # --- Languages ---
+        lang_lines = _get_section_lines("languages")
+        lang_entries = []
+        known_languages = [
+            "english", "hindi", "gujarati", "marathi", "tamil", "telugu", "kannada", "bengali",
+            "punjabi", "urdu", "french", "german", "spanish", "chinese", "japanese", "korean",
+            "arabic", "portuguese", "russian", "italian", "dutch", "swedish", "malay", "thai"
+        ]
+        for line in lang_lines:
+            for item in re.split(r'[,|•·;]', line):
+                item_clean = item.strip()
+                if not item_clean:
+                    continue
+                # Check for proficiency in parentheses or after dash
+                prof_match = re.match(r'^(.+?)\s*[\(\-–:]+\s*(.+?)\s*\)?$', item_clean)
+                if prof_match:
+                    lang_entries.append({
+                        "id": str(uuid.uuid4()),
+                        "name": prof_match.group(1).strip(),
+                        "proficiency": prof_match.group(2).strip()
+                    })
+                elif item_clean.lower() in known_languages or len(item_clean.split()) <= 2:
+                    lang_entries.append({
+                        "id": str(uuid.uuid4()),
+                        "name": item_clean,
+                        "proficiency": ""
+                    })
+
+        # If no dedicated section found, search for inline "Languages: English, Hindi" pattern
+        if not lang_entries:
+            lang_inline = re.search(r'languages?\s*[:\-]\s*(.+)', text, re.IGNORECASE)
+            if lang_inline:
+                for item in re.split(r'[,|•·;]', lang_inline.group(1)):
+                    item_clean = item.strip()
+                    if item_clean and len(item_clean) < 30:
+                        lang_entries.append({
+                            "id": str(uuid.uuid4()),
+                            "name": item_clean,
+                            "proficiency": ""
+                        })
+        res["languages"] = lang_entries
+
+        # --- Projects ---
+        proj_lines = _get_section_lines("projects")
+        proj_entries = []
+        current_proj = None
+        for line in proj_lines:
+            if line and not line.startswith(("•", "-", "▸", "*", "●")) and len(line.split()) <= 8:
+                if current_proj:
+                    proj_entries.append(current_proj)
+                current_proj = {
+                    "id": str(uuid.uuid4()),
+                    "name": line.strip(),
+                    "link": "",
+                    "bullets": [],
+                    "description": "",
+                    "techStack": []
+                }
+            elif current_proj:
+                stripped = line.lstrip("•-▸*● ").strip()
+                tech_match = re.match(r'^(?:stack|tech|technologies|built with)\s*:\s*(.+)', stripped, re.IGNORECASE)
+                if tech_match:
+                    current_proj["techStack"] = [t.strip() for t in tech_match.group(1).split(",") if t.strip()]
+                else:
+                    current_proj["bullets"].append(stripped)
+        if current_proj:
+            proj_entries.append(current_proj)
+        res["projects"] = proj_entries
 
         return res
 
@@ -489,7 +671,8 @@ class AdvancedAtsParsingAgent:
                     "id": str(uuid.uuid4()),
                     "name": str(item.get("name") or "").strip(),
                     "issuer": str(item.get("issuer") or "").strip(),
-                    "date": str(item.get("date") or "").strip()
+                    "date": str(item.get("date") or "").strip(),
+                    "link": self.clean_url(str(item.get("link") or ""))
                 })
 
         # Languages

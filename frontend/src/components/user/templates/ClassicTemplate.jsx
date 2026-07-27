@@ -41,7 +41,9 @@ export function ClassicTemplate({ resume }) {
               <Section title="Certifications">
                 {resume.certifications.map((c) => (
                   <div key={c.id} style={{ marginBottom: "6px" }}>
-                    <div style={{ fontWeight: 700 }}>{c.name}</div>
+                    <div style={{ fontWeight: 700 }}>{c.link ? (
+                      <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>{c.name} ↗</a>
+                    ) : c.name}</div>
                     {c.issuer && <div style={{ fontStyle: "italic", color: "#555" }}>{c.issuer}</div>}
                     <div style={{ fontStyle: "italic", fontSize: "9pt", color: "#666" }}>{c.date}</div>
                   </div>
@@ -199,7 +201,9 @@ export function ClassicTemplate({ resume }) {
           {resume.certifications.map((c) => (
             <div key={c.id} style={{ marginBottom: "6px" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div style={{ fontWeight: 700 }}>{c.name}</div>
+                <div style={{ fontWeight: 700 }}>{c.link ? (
+                  <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>{c.name} ↗</a>
+                ) : c.name}</div>
                 <div style={{ fontStyle: "italic" }}>{c.date}</div>
               </div>
               {c.issuer && <div style={{ fontStyle: "italic", color: "#555" }}>{c.issuer}</div>}

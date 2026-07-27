@@ -34,6 +34,7 @@ import { usePortalAuthStore } from "../../stores/portalAuthStore";
 import { SocialTooltip } from "../../components/ui/social-media";
 import useDocumentTitle from "../../hooks/useDocumentTitle";
 import { DEVELOPER_PLANS } from "../../lib/constants";
+import ThemeToggle from "../../components/ThemeToggle";
 
 /* ═══════════════════ Framer Motion Animation System ═══════════════════ */
 const fadeInUpVariants = {

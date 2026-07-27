@@ -18,22 +18,26 @@ def notify_followers_of_new_job(session):
         session_id = str(session.id)
         cid_str = str(company.id)
         
+        # Avoid duplicate notifications if already notified for this session
+        crit = dict(session.criteria or {})
+        if crit.get("followers_notified"):
+            return
+            
         # 1. Find all seekers following this company
-        # We query the JSONField 'resume_data' where 'followed_companies' contains the company id.
+        seekers_list = []
         try:
             seekers = JobSeekerAccount.objects.filter(
                 resume_data__followed_companies__contains=cid_str
             )
-            # Fetch all to verify/iterate
             seekers_list = list(seekers)
-        except Exception as e:
-            # Fallback if DB doesn't support __contains JSON lookup properly
-            logger.warning("Fast query for followed companies failed, falling back to python filter: %s", e)
+        except Exception:
             seekers_list = []
+
+        if not seekers_list:
             for s in JobSeekerAccount.objects.all():
                 if s.resume_data and isinstance(s.resume_data, dict):
                     followed = s.resume_data.get("followed_companies", [])
-                    if isinstance(followed, list) and cid_str in followed:
+                    if isinstance(followed, list) and (cid_str in followed or str(company.id) in followed):
                         seekers_list.append(s)
                         
         if not seekers_list:
@@ -57,15 +61,21 @@ def notify_followers_of_new_job(session):
                 
             # 3. Send email notification
             try:
-                send_new_job_notification_to_follower(
-                    seeker_email=seeker.email,
-                    seeker_name=seeker.full_name,
-                    company_name=company.name,
-                    job_title=job_title,
-                    session_id=session_id
-                )
+                if send_new_job_notification_to_follower:
+                    send_new_job_notification_to_follower(
+                        seeker_email=seeker.email,
+                        seeker_name=seeker.full_name,
+                        company_name=company.name,
+                        job_title=job_title,
+                        session_id=session_id
+                    )
             except Exception as ee:
                 logger.error("Failed to send email notification to seeker %s: %s", seeker.email, ee)
                 
+        # Mark as notified to avoid duplicate notifications on session re-saves
+        crit["followers_notified"] = True
+        session.criteria = crit
+        session.save(update_fields=["criteria"])
+
     except Exception as e:
         logger.error("Error in notify_followers_of_new_job: %s", e)

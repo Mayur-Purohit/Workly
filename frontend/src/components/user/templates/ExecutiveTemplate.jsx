@@ -66,7 +66,11 @@ export function ExecutiveTemplate({ resume }) {
                 <SectionTitle color={ACCENT} underline>Certifications</SectionTitle>
                 {resume.certifications.map((c) => (
                   <div key={c.id} style={{ marginBottom: "6px" }}>
-                    <div style={{ fontWeight: 700 }}>{c.name}</div>
+                    <div style={{ fontWeight: 700 }}>
+                      {c.link ? (
+                        <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>{c.name} ↗</a>
+                      ) : c.name}
+                    </div>
                     <div style={{ fontSize: "9.5pt", color: "#444" }}>{c.issuer} ({c.date})</div>
                   </div>
                 ))}
@@ -263,7 +267,11 @@ export function ExecutiveTemplate({ resume }) {
             </SectionTitle>
             {resume.certifications.map((c) => (
               <div key={c.id} style={{ marginBottom: "6px" }}>
-                <div style={{ fontWeight: 700 }}>{c.name}</div>
+                <div style={{ fontWeight: 700 }}>
+                  {c.link ? (
+                    <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>{c.name} ↗</a>
+                  ) : c.name}
+                </div>
                 <div style={{ fontSize: "9.5pt", color: "#444" }}>{c.issuer} ({c.date})</div>
               </div>
             ))}

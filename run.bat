@@ -38,6 +38,9 @@ if %errorlevel% equ 0 (
     ) else if exist "C:\Program Files\Redis\redis-server.exe" (
         echo Found Redis in default installation directory. Starting...
         start "Redis Server" /d "C:\Program Files\Redis" cmd /k redis-server.exe
+    ) else if exist "%USERPROFILE%\Downloads\workly\Multi-Agent-Resume-Project\backend\redis_bin\redis-server.exe" (
+        echo Found Redis in sibling project directory. Starting...
+        start "Redis Server" cmd /k "%USERPROFILE%\Downloads\workly\Multi-Agent-Resume-Project\backend\redis_bin\redis-server.exe"
     ) else (
         echo WARNING: 'redis-server' command is not in your system PATH.
         echo Please ensure Redis is running manually or check your installation.

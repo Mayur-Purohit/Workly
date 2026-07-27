@@ -141,7 +141,11 @@ export function ModernTemplate({ resume }) {
             {resume.certifications.map((c) => (
               <div key={c.id} style={{ marginBottom: "10px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <div style={{ fontWeight: 600, fontSize: "10pt" }}>{c.name}</div>
+                  <div style={{ fontWeight: 600, fontSize: "10pt" }}>
+                    {c.link ? (
+                      <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: ACCENT, textDecoration: "none" }}>{c.name} ↗</a>
+                    ) : c.name}
+                  </div>
                   {c.date && <div style={{ fontSize: "9.5pt", color: "#666" }}>{c.date}</div>}
                 </div>
                 <div style={{ fontSize: "9.5pt" }}>{c.issuer}</div>
@@ -251,7 +255,11 @@ export function ModernTemplate({ resume }) {
             <SectionWrap title="Certifications" color={ACCENT}>
               {resume.certifications.map((c) => (
                 <div key={c.id} style={{ marginBottom: "10px" }}>
-                  <div style={{ fontWeight: 600, fontSize: "10pt" }}>{c.name}</div>
+                  <div style={{ fontWeight: 600, fontSize: "10pt" }}>
+                    {c.link ? (
+                      <a href={c.link} target="_blank" rel="noopener noreferrer" style={{ color: ACCENT, textDecoration: "none" }}>{c.name} ↗</a>
+                    ) : c.name}
+                  </div>
                   <div style={{ fontSize: "9.5pt" }}>{c.issuer}</div>
                   {c.date && <div style={{ fontSize: "9pt", color: "#666" }}>{c.date}</div>}
                 </div>

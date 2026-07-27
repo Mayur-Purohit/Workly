@@ -14,8 +14,9 @@ from api.decorators import require_api_key, check_rate_limit
 from models.schemas import success_response, error_response
 from agents.inference_agent import SkillInferenceAgent
 from agents.jd_generator_agent import JobDescriptionGeneratorAgent
-from workers.celery_worker import match_all_candidates
+from workers.celery_worker import match_all_candidates, safe_dispatch_task
 from api.constants import FALLBACK_COMPANY_NAME
+from api.services.notification_service import notify_followers_of_new_job
 
 def _verify_session_ownership(session, company):
     if str(session.company_id) != str(company.id):
@@ -71,6 +72,12 @@ def session_root(request):
                 rounds=rounds_data,
                 status=status_val
             )
+
+            if status_val == "active":
+                try:
+                    notify_followers_of_new_job(new_session)
+                except Exception as ne:
+                    pass
 
             return JsonResponse(success_response({
                 "id": str(new_session.id),
@@ -287,6 +294,12 @@ def session_detail(request, session_id):
             session.updated_at = timezone.now()
             session.save()
 
+            if session.status == "active":
+                try:
+                    notify_followers_of_new_job(session)
+                except Exception as ne:
+                    pass
+
             return JsonResponse(success_response({
                 "message": "Session updated",
                 "id": str(session.id),
@@ -369,7 +382,7 @@ def set_criteria(request, session_id):
                 total_files=candidate_count
             )
 
-            match_all_candidates.delay(str(session.id), str(job.id))
+            safe_dispatch_task(match_all_candidates, str(session.id), str(job.id))
 
             return JsonResponse(success_response({
                 "updated": True,
@@ -436,7 +449,7 @@ def trigger_match_all(request, session_id):
             status="pending"
         )
 
-        match_all_candidates.delay(str(session.id), str(job.id))
+        safe_dispatch_task(match_all_candidates, str(session.id), str(job.id))
 
         return JsonResponse(success_response({"job_id": str(job.id), "status": "pending"}))
     except Exception as e:

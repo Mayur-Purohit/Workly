@@ -13,7 +13,7 @@ from google_auth_oauthlib.flow import Flow
 from api.models import Session, IngestJob, Candidate
 from api.decorators import require_api_key, check_rate_limit
 from models.schemas import success_response, error_response
-from workers.celery_worker import process_resume_batch, sync_gmail_resumes, sync_gdrive_resumes, sync_google_form_resumes
+from workers.celery_worker import process_resume_batch, sync_gmail_resumes, sync_gdrive_resumes, sync_google_form_resumes, safe_dispatch_task
 from agents.normalization_agent import SkillNormalizationAgent
 
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
@@ -99,7 +99,7 @@ def upload_resumes(request):
             failed_files=0
         )
 
-        process_resume_batch.delay(str(job.id), saved_paths, session_id, "upload", use_llm)
+        safe_dispatch_task(process_resume_batch, str(job.id), saved_paths, session_id, "upload", use_llm)
 
         return JsonResponse(success_response({
             "job_id": str(job.id),
@@ -180,7 +180,7 @@ def upload_zip(request):
             failed_files=0
         )
 
-        process_resume_batch.delay(str(job.id), extracted, session_id, "upload", use_llm)
+        safe_dispatch_task(process_resume_batch, str(job.id), extracted, session_id, "upload", use_llm)
 
         return JsonResponse(success_response({
             "job_id": str(job.id),

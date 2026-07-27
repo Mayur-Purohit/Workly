@@ -636,15 +636,16 @@ def get_mcq_questions(request):
         count = sr.mcq_question_count or 10
         # Check if session-specific custom questions exist
         session_id = str(sr.session.id)
-        session_questions = list(MCQQuestion.objects.filter(tags__contains=session_id))
+        all_mcqs = list(MCQQuestion.objects.all())
+        session_questions = [q for q in all_mcqs if isinstance(q.tags, list) and session_id in q.tags]
         
         if session_questions:
             questions = session_questions
         else:
             # Fallback to general pool questions
-            questions = list(MCQQuestion.objects.exclude(tags__contains=session_id))
+            questions = [q for q in all_mcqs if not (isinstance(q.tags, list) and session_id in q.tags)]
             if not questions:
-                questions = list(MCQQuestion.objects.all())
+                questions = all_mcqs
 
         import random
         # Seed shuffle if seed is set
