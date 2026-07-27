@@ -296,6 +296,7 @@ urlpatterns = [
     # Seeker Mock Practice Portal
     path('api/v1/seeker/mock-interview/create', round_views.create_mock_attempt),
     path('api/v1/seeker/mock-interview/list', round_views.list_mock_attempts),
+    path('api/v1/seeker/mock-interview/run-code', round_views.seeker_run_code),
     path('api/v1/seeker/mock-interview/<str:attempt_id>', round_views.get_mock_attempt),
     path('api/v1/seeker/mock-interview/<str:attempt_id>/submit', round_views.submit_mock_attempt),
     path('api/v1/seeker/mock-interview/transcribe-audio', round_views.seeker_transcribe_audio),

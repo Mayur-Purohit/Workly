@@ -145,6 +145,13 @@ export default function MockInterviewPage() {
     }
   };
 
+  // Handle mute changes immediately
+  useEffect(() => {
+    if (isMuted && typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, [isMuted]);
+
   // Web Speech synthesis
   const speakAIHost = (text) => {
     if (isMuted || typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -153,6 +160,16 @@ export default function MockInterviewPage() {
     utterance.rate = 0.90;
     utterance.pitch = 1.05;
     window.speechSynthesis.speak(utterance);
+  };
+
+  const toggleMuteAI = () => {
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    if (nextMuted && typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    } else if (!nextMuted && activeAttempt?.attempt_type === "interview" && activeAttempt?.questions?.[currentQIndex]) {
+      speakAIHost(activeAttempt.questions[currentQIndex].q);
+    }
   };
 
   // Voice recording & transcription
@@ -225,40 +242,59 @@ export default function MockInterviewPage() {
     }
   };
 
-  const handleRunCodingTest = () => {
+  const handleRunCodingTest = async () => {
+    if (compiling) return;
     setCompiling(true);
     setCodingTab("output");
     setCompileOutput("Compiling and executing test cases...\n");
 
-    const currentSlug = activeAttempt.questions[currentQIndex].slug;
-    const startCode = activeAttempt.questions[currentQIndex]?.starter_code;
-    const codeText = typeof startCode === "object" ? (startCode?.python || startCode?.javascript || "") : (startCode || "");
-    
-    // Check if code has actually been modified from the starter template
-    const isCodeUnimplemented = codeContent.trim() === codeText.trim() || codeContent.includes("pass") || codeContent.trim().length < 30;
+    const currentQ = activeAttempt.questions[currentQIndex];
+    const currentSlug = currentQ?.slug;
 
-    setTimeout(() => {
-      setCompiling(false);
-      if (isCodeUnimplemented) {
-        setCompileOutput(
-          "✗ Compilation Failed / Testcases Failed\n" +
-          "Error: Solution not implemented or contains 'pass'. Please modify the starter code.\n" +
-          "Testcase 1: Failed (Execution timed out or returned no output)\n" +
-          "Testcase 2: Failed\n" +
-          "Testcase 3: Failed"
-        );
-        setRunStatus(prev => ({ ...prev, [currentSlug]: false }));
-      } else {
-        setCompileOutput(
-          "✓ Compilation Successful\n" +
-          "✓ Testcase 1: Passed\n" +
-          "✓ Testcase 2: Passed\n" +
-          "✓ Testcase 3: Passed\n\n" +
-          "All testcases executed in 42ms."
-        );
-        setRunStatus(prev => ({ ...prev, [currentSlug]: true }));
+    try {
+      const res = await seekerAPI.runMockCode(codeContent, "python", currentSlug);
+      
+      setRunStatus(prev => ({ ...prev, [currentSlug]: res.all_passed }));
+
+      let outputText = "";
+      if (res.execution_time_sec !== undefined) {
+        outputText += `Execution Time: ${res.execution_time_sec}s | Memory: ${res.memory_usage_kb || 0} KB\n\n`;
       }
-    }, 1500);
+
+      if (res.all_passed) {
+        outputText += "✓ Compilation & Execution Successful\n";
+      } else {
+        outputText += "✗ Testcase Failures / Execution Error\n";
+      }
+
+      if (res.user_stderr && res.user_stderr.trim()) {
+        outputText += `\nErrors / Stderr:\n${res.user_stderr}\n`;
+      }
+
+      if (res.results && Array.isArray(res.results)) {
+        res.results.forEach((r, i) => {
+          if (r.passed) {
+            outputText += `✓ Testcase ${i + 1}: Passed\n`;
+          } else if (r.error) {
+            outputText += `✗ Testcase ${i + 1}: Failed (${r.error})\n`;
+          } else {
+            outputText += `✗ Testcase ${i + 1}: Failed\n  Input: ${JSON.stringify(r.input)}\n  Expected: ${JSON.stringify(r.expected)}\n  Actual: ${JSON.stringify(r.actual)}\n`;
+          }
+        });
+      }
+
+      if (res.user_stdout && res.user_stdout.trim()) {
+        outputText += `\nOutput (stdout):\n${res.user_stdout}\n`;
+      }
+
+      setCompileOutput(outputText);
+    } catch (err) {
+      console.error(err);
+      setCompileOutput(`✗ Compilation Error: ${err.message || "Failed to execute code"}`);
+      setRunStatus(prev => ({ ...prev, [currentSlug]: false }));
+    } finally {
+      setCompiling(false);
+    }
   };
 
   const handleNextCodingQuestion = () => {
@@ -799,8 +835,9 @@ export default function MockInterviewPage() {
                       )}
 
                       {/* Mute button */}
+                      {/* Mute button */}
                       <button
-                        onClick={() => setIsMuted(!isMuted)}
+                        onClick={toggleMuteAI}
                         className="mt-8 p-3 rounded-full border border-border bg-muted hover:bg-muted/80 transition flex items-center gap-2 text-xs font-semibold text-foreground"
                       >
                         {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}

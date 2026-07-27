@@ -431,6 +431,8 @@ export const seekerAPI = {
   listMockAttempts: () => seekerReq('GET', '/api/v1/seeker/mock-interview/list'),
   getMockAttempt: (id) => seekerReq('GET', `/api/v1/seeker/mock-interview/${id}`),
   submitMockAttempt: (id, payload) => seekerReq('POST', `/api/v1/seeker/mock-interview/${id}/submit`, payload),
+  runMockCode: (code, language, slug, customInput = "") =>
+    seekerReq("POST", "/api/v1/seeker/mock-interview/run-code", { code, language, slug, custom_input: customInput }),
   transcribeAudio: (audioBlob) => {
     const fd = new FormData();
     fd.append("audio", audioBlob, "audio.webm");
