@@ -14,11 +14,10 @@ PLAN_DETAILS = {
     "free": {
         "price_monthly": 0,
         "currency": "INR",
-        "limits": {"parse": 100, "match": 50, "chat": 20, "scan": 0, "keys": 2},
+        "limits": {"parse": 100, "match": 50, "chat": 20, "keys": 2},
         "features": [
             "100 parses/month",
             "50 matches/month",
-            "0 Safety scans/month",
             "2 API keys",
             "Community support",
             "Direct upload only"
@@ -27,11 +26,10 @@ PLAN_DETAILS = {
     "starter": {
         "price_monthly": 2999,
         "currency": "INR",
-        "limits": {"parse": 1000, "match": 500, "chat": 200, "scan": 100, "keys": 5},
+        "limits": {"parse": 1000, "match": 500, "chat": 200, "keys": 5},
         "features": [
             "1,000 parses/month",
             "500 matches/month",
-            "100 Safety scans/month",
             "5 API keys",
             "Webhooks",
             "All upload methods",
@@ -42,11 +40,10 @@ PLAN_DETAILS = {
     "business": {
         "price_monthly": 9999,
         "currency": "INR",
-        "limits": {"parse": 10000, "match": -1, "chat": -1, "scan": 1000, "keys": -1},
+        "limits": {"parse": 10000, "match": -1, "chat": -1, "keys": -1},
         "features": [
             "10,000 parses/month",
             "Unlimited matching",
-            "1,000 Safety scans/month",
             "Unlimited API keys",
             "Embed widget",
             "Priority support",

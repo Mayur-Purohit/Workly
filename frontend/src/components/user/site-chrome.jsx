@@ -34,7 +34,7 @@ const SEEKER_TOUR_STEPS = [
   {
     id: 'career-tools',
     title: 'Career Tools',
-    content: 'Access powerful career utilities like the AI Resume Builder, Hiring Safety Checker, Market Trends, and Companies list from this menu.',
+    content: 'Access powerful career utilities like the AI Resume Builder, Market Trends, and Companies list from this menu.',
     icon: Sparkles,
     target: '[data-tour="seeker-nav-career-tools"]',
     placement: 'bottom',
@@ -63,7 +63,6 @@ const links = [
   { to: "/jobs/companies", label: "Companies", icon: Building2 },
   { to: "/jobs/following", label: "Following", icon: Heart },
   { to: "/resume-builder", label: "Resume Builder", icon: FileText },
-  { to: "/jobs/safety-checker", label: "Hiring Safety", icon: Shield },
   { to: "/jobs/trends", label: "Market Trends", icon: TrendingUp },
   { to: "/jobs/applications", label: "Applications", icon: Briefcase },
   { to: "/jobs/mock-interview", label: "Mock Interview", icon: Sparkles },
@@ -167,7 +166,7 @@ export function Header() {
   });
 
   const filteredPrimary = filteredLinks.filter(l => l.to === "/jobs" || l.to === "/jobs/search" || l.to === "/jobs/applications");
-  const filteredTools = filteredLinks.filter(l => l.to === "/resume-builder" || l.to === "/jobs/safety-checker" || l.to === "/jobs/trends" || l.to === "/jobs/companies" || l.to === "/jobs/following" || l.to === "/jobs/mock-interview");
+  const filteredTools = filteredLinks.filter(l => l.to === "/resume-builder" || l.to === "/jobs/trends" || l.to === "/jobs/companies" || l.to === "/jobs/following" || l.to === "/jobs/mock-interview");
 
   return (
     <div className="sticky top-0 z-40 w-full transition-all duration-300 p-0 pointer-events-none">

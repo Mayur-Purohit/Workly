@@ -45,8 +45,6 @@ class UsageLoggerMiddleware:
             return "chat"
         elif "export" in path:
             return "export"
-        elif "scan" in path or "protection" in path:
-            return "scan"
         else:
             return "other"
 

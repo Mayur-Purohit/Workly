@@ -954,16 +954,14 @@ def dynamic_data(request):
     
     seeker_plans = {
         "free": {
-            "name": "Free Forever",
+            "name": "Free Tier",
             "price": "0",
             "period": "forever",
             "features": [
                 "1 dynamic AI resume builder resume",
-                "Basic resume safety analysis",
-                "Up to 5 job applications per month",
-                "Keystroke telemetry protection (1 profile)"
+                "Up to 5 job applications per month"
             ],
-            "quota_description": "Perfect for casual seekers looking to secure their identity."
+            "quota_description": "Perfect for casual seekers."
         },
         "pro_monthly": {
             "name": "Pro Monthly",
@@ -971,10 +969,8 @@ def dynamic_data(request):
             "period": "month",
             "features": [
                 "Unlimited dynamic AI resumes",
-                "Deep safety analysis & fraud alerts",
                 "Unlimited job applications",
-                "Priority matching bypass queue",
-                "Comprehensive keystroke telemetry profiling (unlimited)"
+                "Priority matching bypass queue"
             ],
             "quota_description": "For serious candidates searching actively."
         },
@@ -985,10 +981,9 @@ def dynamic_data(request):
             "features": [
                 "Everything in Pro Monthly",
                 "Save 32% compared to monthly plan",
-                "Direct API access to portfolio protection scanner",
                 "VIP email support & resume audit checks"
             ],
-            "quota_description": "Best value for long-term career safety."
+            "quota_description": "Best value for long-term career growth."
         }
     }
     
@@ -999,14 +994,12 @@ def dynamic_data(request):
             "features": [
                 "100 resume parses/mo",
                 "500 candidate matching operations/mo",
-                "100 AI chatbot queries/mo",
-                "0 safety scans/mo (upgrade required)"
+                "100 AI chatbot queries/mo"
             ],
             "limits": {
                 "parses": 100,
                 "matches": 500,
-                "chat": 100,
-                "safety": 0
+                "chat": 100
             }
         },
         "starter": {
@@ -1015,14 +1008,12 @@ def dynamic_data(request):
             "features": [
                 "1,000 resume parses/mo",
                 "10,000 candidate matching operations/mo",
-                "2,000 AI chatbot queries/mo",
-                "100 safety scans/mo included"
+                "2,000 AI chatbot queries/mo"
             ],
             "limits": {
                 "parses": 1000,
                 "matches": 10000,
-                "chat": 2000,
-                "safety": 100
+                "chat": 2000
             }
         },
         "business": {
@@ -1031,14 +1022,12 @@ def dynamic_data(request):
             "features": [
                 "10,000 resume parses/mo",
                 "Unlimited candidate matching operations/mo",
-                "Unlimited AI chatbot queries/mo",
-                "1,000 safety scans/mo included"
+                "Unlimited AI chatbot queries/mo"
             ],
             "limits": {
                 "parses": 10000,
                 "matches": -1,
-                "chat": -1,
-                "safety": 1000
+                "chat": -1
             }
         }
     }

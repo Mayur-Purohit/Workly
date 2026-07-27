@@ -13,7 +13,6 @@ from api.views import (
     ingest,
     apikey_auth,
     jobs,
-    protection,
     seeker_auth,
     seeker_resume,
     seeker_jobs,
@@ -194,18 +193,14 @@ urlpatterns = [
 
     # ── Public Job Seeker Portal ───────────────────────────────────────────────
     path('api/v1/public/jobs', jobs.list_public_jobs, name='public-jobs-list'),
-    path('api/v1/public/jobs/scan-safety', jobs.scan_safety_arbitrary_public, name='public-jobs-scan-safety'),
     path('api/v1/public/jobs/<str:session_id>', jobs.get_public_job, name='public-jobs-detail'),
     path('api/v1/public/jobs/<str:session_id>/apply', jobs.apply_public_job, name='public-jobs-apply'),
-    path('api/v1/public/jobs/<str:session_id>/safety-check', jobs.scan_job_safety_public, name='public-jobs-safety-check'),
     path('api/v1/public/parse-resume', parse.public_parse_resume, name='public-parse-resume'),
 
-    # ── Protection & Fraud Detection ──────────────────────────────────────────
+    # ── Parsing & Endpoints ───────────────────────────────────────────────────
     path('api/v1/parse', parse.parse_resume, name='api-parse'),
     path('api/v1/match', parse.global_match, name='api-global-match'),
     path('api/v1/chat', parse.global_chat, name='api-global-chat'),
-    path('api/v1/protection/scan', protection.scan_portfolio, name='protection-scan'),
-    path('api/v1/protection/history', protection.get_scan_history, name='protection-history'),
 
     # ── Job Seeker Auth ────────────────────────────────────────────────────────
     path('api/v1/seeker/auth/register', seeker_auth.register, name='seeker-auth-register'),
