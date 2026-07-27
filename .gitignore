@@ -85,3 +85,5 @@ OLD ONES/
 
 # Ignore markdown files per user request
 *.md
+
+testsprite_tests\tmp\config.json

@@ -11,7 +11,7 @@ export default function BrevoTracker() {
   const developer = usePortalAuthStore((state) => state.developer);
 
   useEffect(() => {
-    const brevoKey = import.meta.env.VITE_BREVO_MA_KEY || 'gqq4aaawytrk7xx4oyj4s62z';
+    const brevoKey = import.meta.env.VITE_BREVO_MA_KEY;
     if (!brevoKey) return;
 
     // Load Brevo SDK 2.0 tracker script
@@ -28,6 +28,9 @@ export default function BrevoTracker() {
       script.type = 'text/javascript';
       script.async = true;
       script.src = 'https://cdn.brevo.com/js/sdk-loader.js';
+      script.onerror = () => {
+        console.debug("Brevo tracker script blocked or unreachable.");
+      };
       
       const firstScript = document.getElementsByTagName('script')[0];
       if (firstScript && firstScript.parentNode) {
