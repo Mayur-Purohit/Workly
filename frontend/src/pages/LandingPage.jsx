@@ -1352,7 +1352,7 @@ export default function LandingPage() {
     if (video) {
       const playVideo = () => {
         video.play().catch(err => {
-          console.debug("Autoplay deferred or blocked:", err);
+          console.log("Autoplay deferred or blocked:", err);
         });
       };
       video.addEventListener('canplay', playVideo);

@@ -12,7 +12,7 @@ export default function BrevoConversations() {
     // Read the Conversations ID from environment variables
     const conversationsId = import.meta.env.VITE_BREVO_CONVERSATIONS_ID;
     if (!conversationsId) {
-      console.debug("Brevo Conversations: VITE_BREVO_CONVERSATIONS_ID is not configured. Live chat widget is disabled.");
+      console.log("Brevo Conversations: VITE_BREVO_CONVERSATIONS_ID is not configured. Live chat widget is disabled.");
       return;
     }
 

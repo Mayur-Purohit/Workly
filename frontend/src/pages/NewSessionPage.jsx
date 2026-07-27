@@ -745,14 +745,14 @@ export default function NewSessionPage() {
             <p className="text-xs text-gray-500 mb-6">The last round will have "Hire" option instead of "Forward".</p>
 
             {/* AI Smart recommendations UI toggles */}
-            <div className="mb-6 p-4 rounded-xl border border-blue-100 bg-blue-50/20">
-              <div className="flex items-center gap-1.5 text-blue-800 font-bold text-sm mb-2">
-                <Sparkles size={16} />
+            <div className="mb-6 p-5 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/50 to-blue-50/20 shadow-sm">
+              <div className="flex items-center gap-2 text-blue-900 font-bold text-sm mb-1">
+                <Sparkles size={16} className="text-[#2563EB]" />
                 <span>AI Smart Recommendations</span>
               </div>
               <p className="text-xs text-gray-500 mb-4">Based on the Job Description, AI recommends these online assessment rounds:</p>
               
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -760,15 +760,17 @@ export default function NewSessionPage() {
                     setMcqEnabled(nextVal);
                     toggleRoundInList("Aptitude Assessment Round", nextVal);
                   }}
-                  className={`p-3 rounded-xl border text-left flex flex-col justify-between transition ${
-                    mcqEnabled ? "border-blue-500 bg-blue-50/50" : "border-gray-200 bg-white"
+                  className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 shadow-sm ${
+                    mcqEnabled ? "border-[#2563EB] bg-white ring-1 ring-[#2563EB]" : "border-gray-200 bg-white/80 hover:bg-white hover:border-gray-300"
                   }`}
                 >
-                  <div className="flex justify-between items-center w-full">
-                    <span className="text-xs font-bold text-gray-700">Aptitude (MCQ)</span>
-                    <input type="checkbox" checked={mcqEnabled} readOnly className="h-3.5 w-3.5 accent-blue-600" />
+                  <div className="flex justify-between items-center w-full gap-2 mb-2">
+                    <span className="text-xs font-bold text-charcoal">Aptitude (MCQ)</span>
+                    <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors shrink-0 ${mcqEnabled ? 'bg-[#2563EB] text-white' : 'border border-gray-300 bg-white'}`}>
+                      {mcqEnabled && <Check size={11} strokeWidth={3} />}
+                    </div>
                   </div>
-                  <span className="text-[10px] text-gray-400 mt-2">Logical reasoning & quantitative test</span>
+                  <span className="text-[11px] text-gray-500 leading-normal">Logical reasoning & quantitative test</span>
                 </button>
 
                 <button
@@ -778,15 +780,17 @@ export default function NewSessionPage() {
                     setCodingEnabled(nextVal);
                     toggleRoundInList("Technical Coding Round", nextVal);
                   }}
-                  className={`p-3 rounded-xl border text-left flex flex-col justify-between transition ${
-                    codingEnabled ? "border-blue-500 bg-blue-50/50" : "border-gray-200 bg-white"
+                  className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 shadow-sm ${
+                    codingEnabled ? "border-[#2563EB] bg-white ring-1 ring-[#2563EB]" : "border-gray-200 bg-white/80 hover:bg-white hover:border-gray-300"
                   }`}
                 >
-                  <div className="flex justify-between items-center w-full">
-                    <span className="text-xs font-bold text-gray-700">Coding Test</span>
-                    <input type="checkbox" checked={codingEnabled} readOnly className="h-3.5 w-3.5 accent-blue-600" />
+                  <div className="flex justify-between items-center w-full gap-2 mb-2">
+                    <span className="text-xs font-bold text-charcoal">Coding Test</span>
+                    <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors shrink-0 ${codingEnabled ? 'bg-[#2563EB] text-white' : 'border border-gray-300 bg-white'}`}>
+                      {codingEnabled && <Check size={11} strokeWidth={3} />}
+                    </div>
                   </div>
-                  <span className="text-[10px] text-gray-400 mt-2">DSA problem-solving test</span>
+                  <span className="text-[11px] text-gray-500 leading-normal">DSA problem-solving test</span>
                 </button>
 
                 <button
@@ -796,64 +800,84 @@ export default function NewSessionPage() {
                     setInterviewEnabled(nextVal);
                     toggleRoundInList("AI Interview Round", nextVal);
                   }}
-                  className={`p-3 rounded-xl border text-left flex flex-col justify-between transition ${
-                    interviewEnabled ? "border-blue-500 bg-blue-50/50" : "border-gray-200 bg-white"
+                  className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 shadow-sm ${
+                    interviewEnabled ? "border-[#2563EB] bg-white ring-1 ring-[#2563EB]" : "border-gray-200 bg-white/80 hover:bg-white hover:border-gray-300"
                   }`}
                 >
-                  <div className="flex justify-between items-center w-full">
-                    <span className="text-xs font-bold text-gray-700">AI Interview</span>
-                    <input type="checkbox" checked={interviewEnabled} readOnly className="h-3.5 w-3.5 accent-blue-600" />
+                  <div className="flex justify-between items-center w-full gap-2 mb-2">
+                    <span className="text-xs font-bold text-charcoal">AI Interview</span>
+                    <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors shrink-0 ${interviewEnabled ? 'bg-[#2563EB] text-white' : 'border border-gray-300 bg-white'}`}>
+                      {interviewEnabled && <Check size={11} strokeWidth={3} />}
+                    </div>
                   </div>
-                  <span className="text-[10px] text-gray-400 mt-2">Real-time voice behavioral & tech</span>
+                  <span className="text-[11px] text-gray-500 leading-normal">Real-time voice behavioral & tech</span>
                 </button>
               </div>
             </div>
             
-            <div className="space-y-3 mb-6">
+            <div className="space-y-4 mb-6">
               {formData.rounds.map((round, idx) => {
                 const isLast = idx === formData.rounds.length - 1;
                 return (
-                  <div key={round.id} className={`flex flex-col gap-3 p-4 bg-white border ${isLast ? 'border-[#2563EB] shadow-sm' : 'border-gray-200'} rounded-xl relative transition-all`}>
-                    <div className="flex items-center gap-3">
-                      <div className="text-gray-400 cursor-move"><GripVertical size={18} /></div>
-                      
-                      <input 
-                        type="text" value={round.name}
-                        onChange={(e) => {
-                          const newRounds = [...formData.rounds];
-                          newRounds[idx].name = e.target.value;
-                          setFormData({...formData, rounds: newRounds});
-                        }}
-                        className="flex-[2] p-2 bg-transparent border-b border-gray-200 focus:border-[#2563EB] focus:outline-none text-sm text-charcoal font-medium"
-                        placeholder="Round Name"
-                      />
-                      
-                      <input 
-                        type="text" value={round.interviewer}
-                        onChange={(e) => {
-                          const newRounds = [...formData.rounds];
-                          newRounds[idx].interviewer = e.target.value;
-                          setFormData({...formData, rounds: newRounds});
-                        }}
-                        className="flex-1 p-2 bg-transparent border-b border-gray-200 focus:border-[#2563EB] focus:outline-none text-sm text-gray-600"
-                        placeholder="Interviewer (optional)"
-                      />
-                      
+                  <div key={round.id} className={`flex flex-col gap-4 p-5 bg-white border ${isLast ? 'border-[#2563EB] ring-1 ring-blue-100 shadow-md' : 'border-gray-200 shadow-sm'} rounded-2xl relative transition-all`}>
+                    {/* Header bar of round card */}
+                    <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="text-gray-400 cursor-move hover:text-gray-600 transition-colors p-1 -ml-1"><GripVertical size={16} /></div>
+                        <span className="text-xs font-bold text-[#2563EB] bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
+                          Round {idx + 1}
+                        </span>
+                        {isLast && (
+                          <span className="text-[10px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 uppercase tracking-wider ml-1">
+                            Final Round (Hire)
+                          </span>
+                        )}
+                      </div>
                       <button 
                         onClick={() => {
                           if (formData.rounds.length <= 1) return;
                           setFormData({...formData, rounds: formData.rounds.filter((_, i) => i !== idx)});
                         }}
-                        className="text-gray-400 hover:text-red-500 p-1 bg-white"
+                        className="text-gray-400 hover:text-red-500 p-1 rounded-lg hover:bg-red-50 transition-colors"
                         disabled={formData.rounds.length <= 1}
+                        title="Remove round"
                       >
-                        <X size={18} />
+                        <X size={16} />
                       </button>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 pl-7 mt-1">
-                      <div className="flex items-center gap-2 flex-1">
-                        <label className="text-xs font-semibold text-gray-500 whitespace-nowrap">Result Declaration Time (optional):</label>
+                    {/* Standardized 2x2 Grid of Inputs */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Round Name*</label>
+                        <input 
+                          type="text" value={round.name}
+                          onChange={(e) => {
+                            const newRounds = [...formData.rounds];
+                            newRounds[idx].name = e.target.value;
+                            setFormData({...formData, rounds: newRounds});
+                          }}
+                          className="w-full p-2.5 border-[1.5px] border-gray-200 rounded-lg text-sm font-medium text-charcoal focus:border-[#2563EB] focus:outline-none bg-white transition-colors"
+                          placeholder="e.g. Technical Coding Round"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Interviewer (optional)</label>
+                        <input 
+                          type="text" value={round.interviewer}
+                          onChange={(e) => {
+                            const newRounds = [...formData.rounds];
+                            newRounds[idx].interviewer = e.target.value;
+                            setFormData({...formData, rounds: newRounds});
+                          }}
+                          className="w-full p-2.5 border-[1.5px] border-gray-200 rounded-lg text-sm text-gray-600 focus:border-[#2563EB] focus:outline-none bg-white transition-colors"
+                          placeholder="e.g. John Doe"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Result Declaration Time</label>
                         <input
                           type="datetime-local"
                           min={(() => {
@@ -871,22 +895,25 @@ export default function NewSessionPage() {
                             newRounds[idx].result_announcement_date = e.target.value;
                             setFormData({...formData, rounds: newRounds});
                           }}
-                          className="p-1.5 border border-gray-200 rounded-lg text-xs text-charcoal focus:border-[#2563EB] focus:outline-none w-full"
+                          className="w-full p-2.5 border-[1.5px] border-gray-200 rounded-lg text-sm text-charcoal focus:border-[#2563EB] focus:outline-none bg-white transition-colors"
                         />
                       </div>
                       
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs font-semibold text-gray-500 whitespace-nowrap">Min Passing Score (%):</label>
-                        <input
-                          type="number" min="0" max="100"
-                          value={round.passing_score !== undefined ? round.passing_score : 50}
-                          onChange={(e) => {
-                            const newRounds = [...formData.rounds];
-                            newRounds[idx].passing_score = parseInt(e.target.value) || 0;
-                            setFormData({...formData, rounds: newRounds});
-                          }}
-                          className="w-16 p-1.5 border border-gray-200 rounded-lg text-xs text-charcoal focus:border-[#2563EB] focus:outline-none text-center"
-                        />
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1.5">Min Passing Score (%)</label>
+                        <div className="relative flex items-center">
+                          <input
+                            type="number" min="0" max="100"
+                            value={round.passing_score !== undefined ? round.passing_score : 50}
+                            onChange={(e) => {
+                              const newRounds = [...formData.rounds];
+                              newRounds[idx].passing_score = parseInt(e.target.value) || 0;
+                              setFormData({...formData, rounds: newRounds});
+                            }}
+                            className="w-full p-2.5 border-[1.5px] border-gray-200 rounded-lg text-sm font-medium text-charcoal focus:border-[#2563EB] focus:outline-none bg-white pr-8 transition-colors"
+                          />
+                          <span className="absolute right-3 text-sm font-bold text-gray-400 pointer-events-none">%</span>
+                        </div>
                       </div>
                     </div>
 
@@ -899,12 +926,12 @@ export default function NewSessionPage() {
                       if (!isMcq && !isCoding) return null;
 
                       return (
-                        <div className="pl-7 mt-2">
-                          <div className="p-3 rounded-xl border border-dashed border-gray-300 bg-gray-50/50">
-                            <label className="text-xs font-semibold text-gray-500 block mb-1.5">
+                        <div className="mt-1 pt-3 border-t border-gray-100">
+                          <div className="p-3.5 rounded-xl border border-dashed border-gray-300 bg-gray-50/60">
+                            <label className="text-xs font-bold text-gray-700 block mb-2">
                               Upload Custom {isCoding ? 'Coding Problems' : 'Question Paper'} (optional)
                             </label>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                               <input
                                 type="file"
                                 accept=".pdf,.docx,.txt"
@@ -913,7 +940,7 @@ export default function NewSessionPage() {
                                   newRounds[idx].questionFile = e.target.files[0] || null;
                                   setFormData({...formData, rounds: newRounds});
                                 }}
-                                className="text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 flex-1"
+                                className="text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#2563EB] hover:file:bg-blue-100 flex-1 transition"
                               />
                               {round.questionFile && (
                                 <button
@@ -938,31 +965,25 @@ export default function NewSessionPage() {
                                       toast.error(err.message || 'Failed to parse file', { id: toastId });
                                     }
                                   }}
-                                  className="text-[10px] font-bold px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition whitespace-nowrap"
+                                  className="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm transition whitespace-nowrap"
                                 >
                                   Extract Questions
                                 </button>
                               )}
                             </div>
                             {round.uploadResult ? (
-                              <p className="text-[10px] text-emerald-600 font-semibold mt-1.5">
-                                ✓ {round.uploadResult.questions_extracted} {isCoding ? 'problems' : 'questions'} extracted successfully.
+                              <p className="text-xs text-emerald-600 font-semibold mt-2 flex items-center gap-1">
+                                <Check size={14} /> {round.uploadResult.questions_extracted} {isCoding ? 'problems' : 'questions'} extracted successfully.
                               </p>
                             ) : (
-                              <p className="text-[10px] text-gray-400 mt-1.5">
-                                No file uploaded — default {isCoding ? 'problem templates' : 'question bank'} will be used
+                              <p className="text-xs text-gray-400 mt-2">
+                                No file uploaded — default {isCoding ? 'problem templates' : 'question bank'} will be used.
                               </p>
                             )}
                           </div>
                         </div>
                       );
                     })()}
-                    
-                    {isLast && (
-                      <div className="absolute -top-2.5 right-4 bg-blue-100 text-[#2563EB] text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider border border-amber-200">
-                        Final Round
-                      </div>
-                    )}
                   </div>
                 );
               })}

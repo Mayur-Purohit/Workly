@@ -2,7 +2,7 @@
 title Developer Workspace Manager - CareerEngine / Vishleshan
 
 :: Ensure standard system paths are in the environment PATH
-set PATH=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;C:\Program Files\nodejs;C:\Program Files\Redis;%PATH%
+set PATH=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%PATH%
 
 :: Always switch to the directory where this script is located
 cd /d "%~dp0"
@@ -32,16 +32,15 @@ if %errorlevel% equ 0 (
     echo Redis is already running on port 6379.
 ) else (
     echo Redis is NOT running. Attempting to start redis-server...
-    if exist "C:\Program Files\Redis\redis-server.exe" (
-        echo Found Redis in C:\Program Files\Redis. Starting...
+    where redis-server >nul 2>nul
+    if %errorlevel% equ 0 (
+        start "Redis Server" cmd /k "redis-server"
+    ) else if exist "C:\Program Files\Redis\redis-server.exe" (
+        echo Found Redis in default installation directory. Starting...
         start "Redis Server" /d "C:\Program Files\Redis" cmd /k redis-server.exe
     ) else (
-        where redis-server >nul 2>nul
-        if %errorlevel% equ 0 (
-            start "Redis Server" cmd /k "redis-server"
-        ) else (
-            echo WARNING: 'redis-server' not found. Please start Redis manually if required.
-        )
+        echo WARNING: 'redis-server' command is not in your system PATH.
+        echo Please ensure Redis is running manually or check your installation.
     )
 )
 
@@ -50,7 +49,7 @@ echo ===================================================
 echo [3/6] Verifying Database and Running Migrations...
 echo ===================================================
 cd /d "%~dp0backend"
-if not exist "venv\Scripts\python.exe" (
+if not exist "venv\Scripts\activate.bat" (
     echo Virtual environment 'venv' not found in backend/ directory.
     echo Creating virtual environment...
     python -m venv venv
@@ -60,17 +59,19 @@ if not exist "venv\Scripts\python.exe" (
         exit /b 1
     )
     echo Installing dependencies from requirements.txt...
-    "%~dp0backend\venv\Scripts\python.exe" -m pip install -r requirements.txt
+    call venv\Scripts\activate
+    pip install -r requirements.txt
 )
 
-echo Running database migrations...
-"%~dp0backend\venv\Scripts\python.exe" manage.py migrate
+echo Activating environment and running database migrations...
+call venv\Scripts\activate
+python manage.py migrate
 if %errorlevel% neq 0 (
     echo.
     echo WARNING: Database migrations failed!
     echo Please make sure PostgreSQL is running and credentials in backend/.env are correct.
     echo.
-    echo Press any key to continue launching services anyway...
+    echo Press any key to continue launching services anyway, or close this window to abort...
     pause >nul
 )
 
@@ -78,7 +79,8 @@ echo.
 echo ===================================================
 echo [4/6] Starting Django Backend on port 8000...
 echo ===================================================
-start "Django Backend (Port 8000)" /d "%~dp0backend" cmd /k ""%~dp0backend\venv\Scripts\python.exe" manage.py runserver 0.0.0.0:8000"
+cd /d "%~dp0backend"
+start "Django Backend (Port 8000)" cmd /k "call venv\Scripts\activate && python manage.py runserver 0.0.0.0:8000"
 
 echo.
 echo ===================================================
@@ -87,15 +89,16 @@ echo ===================================================
 cd /d "%~dp0frontend"
 if not exist "node_modules" (
     echo Frontend dependencies 'node_modules' not found. Installing...
-    call npm.cmd install
+    call npm install
 )
-start "Vite Frontend (Port 5173)" /d "%~dp0frontend" cmd /k "npm.cmd run dev"
+start "Vite Frontend (Port 5173)" cmd /k "npm run dev"
 
 echo.
 echo ===================================================
 echo [6/6] Starting Celery Worker...
 echo ===================================================
-start "Celery Worker" /d "%~dp0backend" cmd /k ""%~dp0backend\venv\Scripts\python.exe" -m celery -A workers.celery_worker worker --loglevel=info --pool=threads --concurrency=4"
+cd /d "%~dp0backend"
+start "Celery Worker" cmd /k "call venv\Scripts\activate && celery -A workers.celery_worker worker --loglevel=info --pool=threads --concurrency=4"
 
 echo.
 echo ===================================================
@@ -112,3 +115,4 @@ echo All services launched!
 echo - Frontend: http://localhost:5173
 echo - Backend: http://127.0.0.1:8000
 echo ===================================================
+

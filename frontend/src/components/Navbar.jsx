@@ -10,13 +10,14 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
   const [appsOpen, setAppsOpen] = useState(false);
   const appsDropdownRef = useRef(null);
-  const { scrollY } = useScroll();
-
   useEffect(() => {
-    return scrollY.on("change", (latest) => {
-      setScrolled(latest > 50);
-    });
-  }, [scrollY]);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
