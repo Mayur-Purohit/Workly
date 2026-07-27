@@ -112,6 +112,7 @@ def _session_to_job(session: Session, match_score=None, applied=False, is_saved=
     meta = _parse_job_description_meta(session.job_description)
     return {
         "id": str(session.id),
+        "company_id": str(session.company_id) if session.company_id else None,
         "job_title": session.job_title,
         "company_name": session.company.name if session.company else FALLBACK_COMPANY_NAME,
         "company_logo_path": session.company.logo_path if session.company else None,

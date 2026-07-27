@@ -131,6 +131,7 @@ def list_public_jobs(request):
             
             jobs.append({
                 "id": str(s.id),
+                "company_id": str(s.company_id) if s.company_id else None,
                 "job_title": s.job_title,
                 "job_description": s.job_description,
                 "company_name": company_name,
@@ -185,9 +186,11 @@ def get_public_job(request, session_id):
         
         return JsonResponse(success_response({
             "id": str(s.id),
+            "company_id": str(s.company_id) if s.company_id else None,
+            "company_name": company_name,
+            "company_logo_path": s.company.logo_path if s.company else None,
             "job_title": s.job_title,
             "job_description": s.job_description,
-            "company_name": company_name,
             "required_skills": criteria.get("required_skills", []),
             "nice_to_have": criteria.get("nice_to_have", []),
             "preferred_locations": criteria.get("preferred_locations", []),

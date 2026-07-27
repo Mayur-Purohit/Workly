@@ -168,7 +168,7 @@ export default function UserJobDetail() {
             <div className="flex items-start gap-5 sm:items-center">
               <CompanyLogo name={job.company} logoPath={job.logoPath} color={job.logoColor} size={72} />
               <div className="min-w-0">
-                <Link to={`/jobs/companies/${job.companyId}`} className="text-sm font-medium text-muted-foreground hover:text-foreground">
+                <Link to={job.companyId ? `/jobs/companies/${job.companyId}` : "/jobs/companies"} className="text-sm font-medium text-muted-foreground hover:text-foreground">
                   {job.company}
                 </Link>
                 <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight sm:text-4xl">{job.title}</h1>
@@ -376,7 +376,7 @@ export default function UserJobDetail() {
             )}
 
             <Link
-              to={`/jobs/companies/${job.companyId}`}
+              to={job.companyId ? `/jobs/companies/${job.companyId}` : "/jobs/companies"}
               className="block rounded-3xl border border-border bg-card p-6 transition hover:google-shadow"
             >
               <div className="flex items-center gap-3">
