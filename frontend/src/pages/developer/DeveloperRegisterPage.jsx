@@ -37,14 +37,11 @@ export default function DeveloperRegisterPage() {
     document.body.appendChild(script);
 
     // Dynamically load Google client
-    const googleScript = document.createElement("script");
-    googleScript.src = "https://accounts.google.com/gsi/client";
-    googleScript.async = true;
-    googleScript.defer = true;
-    googleScript.onload = () => {
-      if (window.google) {
+    const initGoogle = () => {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (window.google && clientId) {
         googleClientRef.current = window.google.accounts.oauth2.initTokenClient({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          client_id: clientId,
           scope: "openid email profile",
           callback: async (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
@@ -72,7 +69,7 @@ export default function DeveloperRegisterPage() {
                   navigate("/developer/portal/dashboard");
                 }
               } catch (err) {
-                toast.error(err.message || "Google registration failed");
+                toast.error(err.message || "Google signup failed");
               } finally {
                 setLoading(false);
               }
@@ -81,7 +78,17 @@ export default function DeveloperRegisterPage() {
         });
       }
     };
-    document.body.appendChild(googleScript);
+
+    if (window.google) {
+      initGoogle();
+    } else {
+      const googleScript = document.createElement("script");
+      googleScript.src = "https://accounts.google.com/gsi/client";
+      googleScript.async = true;
+      googleScript.defer = true;
+      googleScript.onload = initGoogle;
+      document.body.appendChild(googleScript);
+    }
 
     portalBilling.plans()
       .then(d => { if (d && d.length > 0) setPlans(d); })

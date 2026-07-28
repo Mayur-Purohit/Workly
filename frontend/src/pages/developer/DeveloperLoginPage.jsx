@@ -15,14 +15,11 @@ export default function DeveloperLoginPage() {
   const googleClientRef = useRef(null);
 
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      if (window.google) {
+    const initGoogle = () => {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (window.google && clientId) {
         googleClientRef.current = window.google.accounts.oauth2.initTokenClient({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          client_id: clientId,
           scope: "openid email profile",
           callback: async (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
@@ -49,7 +46,17 @@ export default function DeveloperLoginPage() {
         });
       }
     };
-    document.body.appendChild(script);
+
+    if (window.google) {
+      initGoogle();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = initGoogle;
+      document.body.appendChild(script);
+    }
 
     initFromStorage();
     if (usePortalAuthStore.getState().jwt) {
