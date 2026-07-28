@@ -482,6 +482,57 @@ export const publicAPI = {
   },
 };
 
+// ── Reviews API (sends multi-role auth for list/create/update/delete) ────────
+
+function getActiveAuthToken() {
+  const path = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
+  const seekerToken = localStorage.getItem('vish_seeker_token');
+  const recruiterToken = localStorage.getItem('vish_jwt');
+  const developerToken = localStorage.getItem('portal_jwt');
+
+  // Developer portal pages
+  if (path.includes('/developer') || path.includes('/portal')) {
+    return developerToken || recruiterToken || seekerToken || '';
+  }
+
+  // Recruiter / Employer / Dashboard pages
+  if (path.includes('/dashboard') || path.includes('/recruiter') || path.includes('/company') || path === '/' || path === '') {
+    return recruiterToken || seekerToken || developerToken || '';
+  }
+
+  // Job Seeker pages
+  return seekerToken || recruiterToken || developerToken || '';
+}
+
+async function reviewsReq(method, path, body = null) {
+  const token = getActiveAuthToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token && token !== 'undefined' && token !== 'null') {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const opts = {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  };
+  const res = await fetch(`${API_HOST}${path}`, opts);
+  const data = await safeParseJson(res);
+  if (!data?.success && !res.ok) throw new Error(data?.error || `Request failed with status ${res.status}`);
+  if (data?.success === false) throw new Error(data.error || 'Request failed');
+  return data?.data !== undefined ? data.data : data;
+}
+
+export const reviewsAPI = {
+  list: (params = {}) => {
+    params._t = Date.now(); // Cache buster to fix the 'requires manual refresh' bug
+    const qs = new URLSearchParams(params).toString();
+    return reviewsReq('GET', `/api/v1/reviews${qs ? '?' + qs : ''}`);
+  },
+  create: (body) => reviewsReq('POST', '/api/v1/reviews', body),
+  update: (id, body) => reviewsReq('PATCH', `/api/v1/reviews/${id}`, body),
+  remove: (id) => reviewsReq('DELETE', `/api/v1/reviews/${id}`),
+};
+
 export const roundsAPI = {
   recommendRounds: (sessionId) => req("POST", `/sessions/${sessionId}/recommend-rounds`),
   createSessionRounds: (sessionId, rounds) => req("POST", `/sessions/${sessionId}/rounds`, { rounds }),

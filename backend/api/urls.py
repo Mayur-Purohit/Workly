@@ -27,6 +27,7 @@ from api.views import (
     round_views,
     ml_views,
     verification,
+    reviews,
 )
 from api.views.developer import (
     auth as dev_auth,
@@ -42,6 +43,12 @@ urlpatterns = [
     path('health', recruiter_auth.health_check, name='health-check'),
     path('api/v1/dynamic-data', recruiter_auth.dynamic_data, name='dynamic-data'),
     path('api/v1/public/stats', recruiter_auth.public_stats, name='public-stats'),
+
+    # ── Reviews ──────────────────────────────────────────────────────────────
+    path('api/v1/reviews', reviews.reviews_root, name='reviews-root'),
+    path('api/v1/reviews/', reviews.reviews_root, name='reviews-root-slash'),
+    path('api/v1/reviews/<str:review_id>', reviews.review_detail, name='reviews-detail'),
+    path('api/v1/reviews/<str:review_id>/', reviews.review_detail, name='reviews-detail-slash'),
 
     # ── Recruiter Auth ─────────────────────────────────────────────────────────
     path('api/v1/auth/register', recruiter_auth.register, name='auth-register'),

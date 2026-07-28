@@ -278,9 +278,13 @@ export default function UserApply() {
                       type="button"
                       onClick={handleGenerateLetter}
                       disabled={generatingLetter}
-                      className="text-xs text-accent hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                     >
-                      {generatingLetter ? <Loader2 className="animate-spin h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      {generatingLetter ? (
+                        <Loader2 className="animate-spin h-3.5 w-3.5 text-primary" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      )}
                       <span>Write with AI</span>
                     </button>
                   </div>

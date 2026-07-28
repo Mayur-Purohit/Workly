@@ -952,6 +952,13 @@ def dynamic_data(request):
         }
     }
     
+    from api.views import seeker_billing
+    from api.views.developer import billing as dev_billing
+
+    seeker_premium_price = str(seeker_billing.PLAN_DETAILS.get("premium", {}).get("price_monthly", 199))
+    dev_starter_price = str(dev_billing.PLAN_DETAILS.get("starter", {}).get("price_monthly", 2999))
+    dev_business_price = str(dev_billing.PLAN_DETAILS.get("business", {}).get("price_monthly", 9999))
+
     seeker_plans = {
         "free": {
             "name": "Free Tier",
@@ -965,7 +972,7 @@ def dynamic_data(request):
         },
         "pro_monthly": {
             "name": "Pro Monthly",
-            "price": "49",
+            "price": seeker_premium_price,
             "period": "month",
             "features": [
                 "Unlimited dynamic AI resumes",
@@ -1004,7 +1011,7 @@ def dynamic_data(request):
         },
         "starter": {
             "name": "Starter",
-            "price": "79",
+            "price": dev_starter_price,
             "features": [
                 "1,000 resume parses/mo",
                 "10,000 candidate matching operations/mo",
@@ -1018,7 +1025,7 @@ def dynamic_data(request):
         },
         "business": {
             "name": "Business",
-            "price": "299",
+            "price": dev_business_price,
             "features": [
                 "10,000 resume parses/mo",
                 "Unlimited candidate matching operations/mo",

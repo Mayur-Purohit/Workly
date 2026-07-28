@@ -37,6 +37,17 @@ def extract_text_from_file(file_path):
         return ""
 
 
+def is_effectively_empty_content(c):
+    if not c or not isinstance(c, dict):
+        return True
+    p_info = c.get("personalInfo", {}) or {}
+    has_name = bool(p_info.get("fullName") or p_info.get("name") or c.get("name") or c.get("fullName"))
+    has_exp = bool(c.get("experience"))
+    has_edu = bool(c.get("education"))
+    has_skills = bool(c.get("skills"))
+    has_summary = bool(c.get("summary") or c.get("professional_summary"))
+    return not (has_name or has_exp or has_edu or has_skills or has_summary)
+
 
 def expand_job_description_if_short(jd_text):
     if not jd_text or not jd_text.strip():
@@ -144,20 +155,43 @@ def ats_check(request):
         elif uploaded_resume_id or (not content and request.seeker.resume_data):
             # Case A (existing profile resume): Ensure high-fidelity column-aware parsed data
             seeker = request.seeker
-            if seeker.resume_file_path and os.path.exists(seeker.resume_file_path):
-                try:
-                    from asgiref.sync import async_to_sync
-                    from agents.advanced_ats_parsing_agent import AdvancedAtsParsingAgent
-                    parser = AdvancedAtsParsingAgent()
-                    resume_text = AdvancedAtsParsingAgent.extract_text_column_aware(seeker.resume_file_path)
-                    parsed_data = async_to_sync(parser.parse)(resume_text)
-                    # Sync updated high-fidelity data back to seeker account
-                    seeker.resume_data = parsed_data
-                    seeker.save(update_fields=["resume_data"])
-                except Exception as parse_err:
-                    logger.warning("Failed to re-parse active profile resume: %s", parse_err)
-                    parsed_data = seeker.resume_data or {}
-            else:
+            parsed_data = {}
+
+            # Priority 1: Active Resume Draft content (100% loss-free, exact user draft)
+            if seeker.active_resume_draft and seeker.active_resume_draft.content:
+                active_content = seeker.active_resume_draft.content
+                if isinstance(active_content, dict) and not is_effectively_empty_content(active_content):
+                    parsed_data = active_content
+                    draft = seeker.active_resume_draft
+
+            # Priority 2: Structured seeker.resume_data
+            if not parsed_data and seeker.resume_data:
+                r_data = seeker.resume_data
+                if isinstance(r_data, str):
+                    try:
+                        r_data = json.loads(r_data)
+                    except Exception:
+                        r_data = {}
+                if isinstance(r_data, dict) and not is_effectively_empty_content(r_data):
+                    parsed_data = r_data
+
+            # Priority 3: Re-parse uploaded physical resume file if it is NOT a generated draft PDF (_active_resume.pdf)
+            if not parsed_data and seeker.resume_file_path and os.path.exists(seeker.resume_file_path):
+                if not seeker.resume_file_path.endswith("_active_resume.pdf"):
+                    try:
+                        from asgiref.sync import async_to_sync
+                        from agents.advanced_ats_parsing_agent import AdvancedAtsParsingAgent
+                        parser = AdvancedAtsParsingAgent()
+                        resume_text = AdvancedAtsParsingAgent.extract_text_column_aware(seeker.resume_file_path)
+                        res_p = async_to_sync(parser.parse)(resume_text)
+                        if res_p and isinstance(res_p, dict) and not is_effectively_empty_content(res_p):
+                            parsed_data = res_p
+                            seeker.resume_data = parsed_data
+                            seeker.save(update_fields=["resume_data"])
+                    except Exception as parse_err:
+                        logger.warning("Failed to re-parse profile resume file: %s", parse_err)
+
+            if not parsed_data:
                 parsed_data = seeker.resume_data or {}
 
         elif content:
@@ -200,6 +234,11 @@ def ats_check(request):
             draft.ats_score = report.get("overallScore")
             draft.ats_report = report
             draft.save(update_fields=["ats_score", "ats_report"])
+
+        seeker = request.seeker
+        if seeker:
+            seeker.last_ats_score = report.get("overallScore")
+            seeker.save(update_fields=["last_ats_score"])
             
         return JsonResponse(success_response(report))
         
@@ -255,19 +294,14 @@ def manage_drafts(request):
                 seeker = request.seeker
                 content = None
 
-                # 1. Primary path: If seeker uploaded a physical resume file, re-extract column-aware for 100% parity
-                if seeker.resume_file_path and os.path.exists(seeker.resume_file_path):
-                    try:
-                        from asgiref.sync import async_to_sync
-                        from agents.advanced_ats_parsing_agent import AdvancedAtsParsingAgent
-                        parser = AdvancedAtsParsingAgent()
-                        text = AdvancedAtsParsingAgent.extract_text_column_aware(seeker.resume_file_path)
-                        content = async_to_sync(parser.parse)(text)
-                    except Exception as parse_err:
-                        logger.warning("Failed to re-parse profile resume file directly: %s", parse_err)
+                # 1. Primary path: If active_resume_draft exists, use its content directly (100% loss-free)
+                if seeker.active_resume_draft and seeker.active_resume_draft.content:
+                    active_content = seeker.active_resume_draft.content
+                    if isinstance(active_content, dict) and not is_effectively_empty_content(active_content):
+                        content = active_content
 
-                # 2. Secondary path: Perform robust, lossless mapping from seeker.resume_data
-                if not content or not isinstance(content, dict):
+                # 2. Secondary path: Build content from seeker.resume_data + seeker profile fields
+                if not content or not isinstance(content, dict) or is_effectively_empty_content(content):
                     resume_data = seeker.resume_data or {}
                     if isinstance(resume_data, str):
                         try:
@@ -281,14 +315,14 @@ def manage_drafts(request):
                     if not isinstance(p_info, dict): p_info = {}
 
                     personal_info = {
-                        "fullName": p_info.get("fullName") or resume_data.get("name") or seeker.full_name or "",
-                        "title": p_info.get("title") or resume_data.get("headline") or seeker.headline or "",
+                        "fullName": p_info.get("fullName") or p_info.get("full_name") or p_info.get("name") or resume_data.get("name") or seeker.full_name or "",
+                        "title": p_info.get("title") or p_info.get("headline") or p_info.get("current_role") or resume_data.get("headline") or seeker.headline or "",
                         "email": p_info.get("email") or resume_data.get("email") or seeker.email or "",
                         "phone": p_info.get("phone") or resume_data.get("phone") or seeker.phone or "",
                         "location": p_info.get("location") or resume_data.get("location") or seeker.location or "",
-                        "website": p_info.get("website") or resume_data.get("website_url") or "",
-                        "linkedin": p_info.get("linkedin") or resume_data.get("linkedin_url") or "",
-                        "github": p_info.get("github") or resume_data.get("github_url") or ""
+                        "website": p_info.get("website") or p_info.get("website_url") or resume_data.get("website_url") or "",
+                        "linkedin": p_info.get("linkedin") or p_info.get("linkedin_url") or resume_data.get("linkedin_url") or "",
+                        "github": p_info.get("github") or p_info.get("github_url") or resume_data.get("github_url") or ""
                     }
 
                     summary = (
@@ -633,38 +667,66 @@ def activate_draft(request, draft_id):
 
         # Update Seeker Account details
         seeker = request.seeker
+
+        full_name_val = content_personal.get("fullName") or content_personal.get("full_name") or seeker.full_name or ""
+        title_val = content_personal.get("title") or content_personal.get("headline") or seeker.headline or ""
+        email_val = content_personal.get("email") or seeker.email or ""
+        phone_val = content_personal.get("phone") or seeker.phone or ""
+        location_val = content_personal.get("location") or seeker.location or ""
+        website_val = content_personal.get("website") or content_personal.get("website_url") or parsed.get("website_url") or ""
+        linkedin_val = content_personal.get("linkedin") or content_personal.get("linkedin_url") or parsed.get("linkedin_url") or ""
+        github_val = content_personal.get("github") or content_personal.get("github_url") or parsed.get("github_url") or ""
+        summary_val = draft.content.get("summary") or parsed.get("summary") or parsed.get("professional_summary") or ""
+
+        personal_info_dict = {
+            "fullName": full_name_val,
+            "title": title_val,
+            "email": email_val,
+            "phone": phone_val,
+            "location": location_val,
+            "website": website_val,
+            "linkedin": linkedin_val,
+            "github": github_val
+        }
         
         resume_data = {
+            "personalInfo": personal_info_dict,
+            "name": full_name_val,
+            "headline": title_val,
+            "email": email_val,
+            "phone": phone_val,
+            "location": location_val,
+            "summary": summary_val,
+            "professional_summary": summary_val,
+            "skills": normalized_skills,
             "experience": experience_data,
             "education": education_data,
+            "projects": projects_data,
+            "certifications": certifications_data,
+            "languages": languages_data,
             "total_experience_years": estimate_experience_years(experience_data) if experience_data else 0,
             "open_to": seeker.resume_data.get("open_to", {}) if (seeker.resume_data and isinstance(seeker.resume_data, dict)) else {},
             "resume_file_name": f"{draft.title}.pdf",
             "resume_updated_at": timezone.now().isoformat() + "Z",
             "resume_size": round(file.size / 1024, 2),
-            "linkedin_url": content_personal.get("linkedin") or parsed.get("linkedin_url") or "",
-            "github_url": content_personal.get("github") or parsed.get("github_url") or "",
-            "website_url": content_personal.get("website") or parsed.get("website_url") or "",
-            "professional_summary": draft.content.get("summary") or parsed.get("professional_summary") or "",
-            "certifications": certifications_data,
-            "languages": languages_data,
-            "projects": projects_data
+            "linkedin_url": linkedin_val,
+            "github_url": github_val,
+            "website_url": website_val,
         }
         
         seeker.resume_file_path = file_path
         seeker.resume_data = resume_data
         seeker.skills = normalized_skills
         
-        # Sync core profile fields if not already populated or if matching draft name
-        personal = draft.content.get("personalInfo", {})
-        if personal.get("fullName"):
-            seeker.full_name = personal["fullName"].strip()
-        if personal.get("phone"):
-            seeker.phone = personal["phone"].strip()
-        if personal.get("location"):
-            seeker.location = personal["location"].strip()
-        if personal.get("title"):
-            seeker.headline = personal["title"].strip()
+        # Sync core profile fields if provided in draft personalInfo
+        if full_name_val:
+            seeker.full_name = full_name_val
+        if phone_val:
+            seeker.phone = phone_val
+        if location_val:
+            seeker.location = location_val
+        if title_val:
+            seeker.headline = title_val
             
         # Deactivate all other drafts of the same seeker
         ResumeDraft.objects.filter(seeker=seeker).update(is_active=False)

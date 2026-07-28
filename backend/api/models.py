@@ -523,3 +523,40 @@ class SeekerMockAttempt(models.Model):
         db_table = "seeker_mock_attempts"
 
 
+class Review(models.Model):
+    USER_TYPE_CHOICES = [
+        ("job_seeker", "Job Seeker"),
+        ("developer", "Developer"),
+        ("recruiter", "Recruiter / Company"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user_type = models.CharField(max_length=50, choices=USER_TYPE_CHOICES, db_index=True)
+    seeker = models.ForeignKey(JobSeekerAccount, on_delete=models.CASCADE, null=True, blank=True, db_column="seeker_id", related_name="reviews")
+    developer = models.ForeignKey(DeveloperAccount, on_delete=models.CASCADE, null=True, blank=True, db_column="developer_id", related_name="reviews")
+    recruiter = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True, db_column="recruiter_id", related_name="authored_reviews")
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True, db_column="company_id", related_name="received_reviews")
+
+    rating = models.IntegerField(default=5)
+    title = models.CharField(max_length=255, null=True, blank=True)
+    content = models.TextField()
+    role_title = models.CharField(max_length=255, null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "reviews"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        try:
+            author = "Anonymous"
+            if self.seeker:
+                author = getattr(self.seeker, 'full_name', None) or getattr(self.seeker, 'email', 'Job Seeker')
+            elif self.developer:
+                author = getattr(self.developer, 'company_name', None) or getattr(self.developer, 'email', 'Developer')
+            elif self.recruiter:
+                author = getattr(self.recruiter, 'name', None) or getattr(self.recruiter, 'email', 'Recruiter')
+            return f"Review by {author} (Rating: {self.rating}/5)"
+        except Exception:
+            return f"Review #{self.id}"

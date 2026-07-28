@@ -548,7 +548,6 @@ export function Footer() {
               items: [
                 { label: "Browse jobs", to: "/jobs/search" },
                 { label: "Companies", to: "/jobs/companies" },
-                { label: "Resume", to: "/jobs/resume" },
                 { label: "Billing Plans", to: "/jobs/billing" }
               ] 
             },

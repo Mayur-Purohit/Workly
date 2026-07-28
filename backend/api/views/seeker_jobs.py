@@ -204,10 +204,10 @@ def list_jobs(request):
         if location:
             sessions = sessions.filter(job_description__icontains=location)
 
-        # Get seeker's applied session IDs
+        # Get seeker's applied session IDs (excluding rejected applications so candidate can reapply)
         applied_ids = set(
             str(sid) for sid in
-            JobApplication.objects.filter(seeker=seeker).values_list("session_id", flat=True)
+            JobApplication.objects.filter(seeker=seeker).exclude(status="rejected").values_list("session_id", flat=True)
         )
 
         # Get seeker's saved session IDs
@@ -262,7 +262,20 @@ def job_detail(request, session_id):
             return JsonResponse(error_response("Job not found"), status=404)
 
         score = _compute_match_score(seeker.skills, session.inferred_skills)
-        applied = JobApplication.objects.filter(seeker=seeker, session=session).exists()
+        existing_app = JobApplication.objects.filter(seeker=seeker, session=session).first()
+        applied = False
+        can_reapply = False
+        app_status = None
+
+        if existing_app:
+            app_status = existing_app.status
+            cand_status = existing_app.candidate.status if existing_app.candidate else None
+            if existing_app.status == "rejected" or cand_status == "rejected":
+                applied = False
+                can_reapply = True
+            else:
+                applied = True
+
         is_saved = SavedJob.objects.filter(seeker=seeker, session=session).exists()
 
         # Compute skill alignment
@@ -274,6 +287,8 @@ def job_detail(request, session_id):
         missing_skills = [s for s in job_skills if s.lower() not in seeker_lower]
 
         job = _session_to_job(session, match_score=score, applied=applied, is_saved=is_saved)
+        job["application_status"] = app_status
+        job["can_reapply"] = can_reapply
         job["skill_alignment"] = {
             "matched": matched_skills,
             "missing": missing_skills,
@@ -325,9 +340,14 @@ def apply_job(request, session_id):
         if not session:
             return JsonResponse(error_response("Job posting not found or no longer active"), status=404)
 
-        # Duplicate check
-        if JobApplication.objects.filter(seeker=seeker, session=session).exists():
-            return JsonResponse(error_response("You have already applied to this job"), status=400)
+        # Check existing application & duplicate status
+        existing_app = JobApplication.objects.filter(seeker=seeker, session=session).first()
+        if existing_app:
+            cand_status = existing_app.candidate.status if existing_app.candidate else existing_app.status
+            if existing_app.status == "hired" or cand_status == "hired":
+                return JsonResponse(error_response("You have already been hired for this position!"), status=400)
+            elif existing_app.status != "rejected" and cand_status != "rejected":
+                return JsonResponse(error_response("You have already applied to this job and your application is currently under review."), status=400)
 
         body = {}
         if request.body:
@@ -349,34 +369,76 @@ def apply_job(request, session_id):
         except (ValueError, TypeError):
             total_exp = 0.0
 
-        # Create Candidate in the ATS session
-        candidate = Candidate.objects.create(
-            session=session,
-            name=seeker.full_name,
-            email=seeker.email,
-            phone=seeker.phone or resume.get("phone"),
-            location=seeker.location or resume.get("location"),
-            resume_file_path=seeker.resume_file_path,
-            raw_resume_data=resume,
-            normalized_skills=seeker.skills,
-            total_experience_years=total_exp,
-            status="new",
-            source="platform_apply",
-            current_round_index=session.rounds[0]["order"] if session.rounds else 0,
-        )
+        first_round_order = session.rounds[0]["order"] if session.rounds else 0
 
-        # Calculate match details using jobs module helper
-        from api.views.jobs import _calculate_match_score
-        _calculate_match_score(candidate, session)
+        if existing_app and (existing_app.status == "rejected" or (existing_app.candidate and existing_app.candidate.status == "rejected")):
+            # --- RE-APPLICATION FLOW FOR REJECTED CANDIDATE ---
+            candidate = existing_app.candidate
+            if candidate:
+                candidate.name = seeker.full_name
+                candidate.email = seeker.email
+                candidate.phone = seeker.phone or resume.get("phone")
+                candidate.location = seeker.location or resume.get("location")
+                candidate.resume_file_path = seeker.resume_file_path
+                candidate.raw_resume_data = resume
+                candidate.normalized_skills = seeker.skills
+                candidate.total_experience_years = total_exp
+                candidate.status = "new"
+                candidate.current_round_index = first_round_order
+                candidate.save()
+            else:
+                candidate = Candidate.objects.create(
+                    session=session,
+                    name=seeker.full_name,
+                    email=seeker.email,
+                    phone=seeker.phone or resume.get("phone"),
+                    location=seeker.location or resume.get("location"),
+                    resume_file_path=seeker.resume_file_path,
+                    raw_resume_data=resume,
+                    normalized_skills=seeker.skills,
+                    total_experience_years=total_exp,
+                    status="new",
+                    source="platform_apply",
+                    current_round_index=first_round_order,
+                )
 
-        # Create JobApplication record
-        application = JobApplication.objects.create(
-            seeker=seeker,
-            session=session,
-            candidate=candidate,
-            cover_note=cover_note,
-            status="applied",
-        )
+            from api.views.jobs import _calculate_match_score
+            _calculate_match_score(candidate, session)
+
+            existing_app.candidate = candidate
+            existing_app.cover_note = cover_note
+            existing_app.status = "applied"
+            existing_app.applied_at = timezone.now()
+            existing_app.save()
+            application = existing_app
+        else:
+            # --- NEW APPLICATION FLOW ---
+            candidate = Candidate.objects.create(
+                session=session,
+                name=seeker.full_name,
+                email=seeker.email,
+                phone=seeker.phone or resume.get("phone"),
+                location=seeker.location or resume.get("location"),
+                resume_file_path=seeker.resume_file_path,
+                raw_resume_data=resume,
+                normalized_skills=seeker.skills,
+                total_experience_years=total_exp,
+                status="new",
+                source="platform_apply",
+                current_round_index=first_round_order,
+            )
+
+            from api.views.jobs import _calculate_match_score
+            _calculate_match_score(candidate, session)
+
+            # Create JobApplication record
+            application = JobApplication.objects.create(
+                seeker=seeker,
+                session=session,
+                candidate=candidate,
+                cover_note=cover_note,
+                status="applied",
+            )
 
         # Notification for seeker
         Notification.objects.create(

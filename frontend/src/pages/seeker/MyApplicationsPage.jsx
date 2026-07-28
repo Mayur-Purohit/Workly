@@ -84,6 +84,15 @@ export default function MyApplicationsPage() {
               </div>
               <div style={styles.cardRight}>
                 <ApplicationStatusChip status={app.status} />
+                {app.status === 'rejected' && (
+                  <a
+                    href={`/jobs/apply/${app.job_id}`}
+                    className="mt-2 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow hover:opacity-90 transition"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    Re-apply →
+                  </a>
+                )}
                 {app.updated_at !== app.applied_at && (
                   <div style={styles.updatedAt}>Updated {timeAgo(app.updated_at)}</div>
                 )}

@@ -86,10 +86,21 @@ function isEffectivelyEmptyContent(content) {
 }
 
 /** Normalize API/import payloads into the editor schema (camelCase). */
-function normalizeResumeContent(raw, fallbackColumns = 1) {
+function normalizeResumeContent(raw, fallbackColumns = 1, profile = null) {
   let data = parseMaybeJson(raw);
   if (!data || typeof data !== "object" || Array.isArray(data)) {
-    return { ...emptyResume, personalInfo: { ...emptyResume.personalInfo }, columns: fallbackColumns };
+    return {
+      ...emptyResume,
+      personalInfo: {
+        ...emptyResume.personalInfo,
+        fullName: profile?.full_name || "",
+        title: profile?.headline || "",
+        email: profile?.email || "",
+        phone: profile?.phone || "",
+        location: profile?.location || ""
+      },
+      columns: fallbackColumns
+    };
   }
 
   // Unwrap common nested envelopes without losing the inner resume object
@@ -116,11 +127,11 @@ function normalizeResumeContent(raw, fallbackColumns = 1) {
 
   const srcPersonal = parseMaybeJson(data.personalInfo || data.personal_info || {}) || {};
   const personalInfo = {
-    fullName: pickString(srcPersonal.fullName, srcPersonal.full_name, srcPersonal.name, data.fullName, data.full_name, data.name),
-    title: pickString(srcPersonal.title, srcPersonal.headline, srcPersonal.current_role, data.title, data.headline, data.current_role),
-    email: pickString(srcPersonal.email, data.email),
-    phone: pickString(srcPersonal.phone, data.phone),
-    location: pickString(srcPersonal.location, data.location),
+    fullName: pickString(srcPersonal.fullName, srcPersonal.full_name, srcPersonal.name, data.fullName, data.full_name, data.name, profile?.full_name),
+    title: pickString(srcPersonal.title, srcPersonal.headline, srcPersonal.current_role, data.title, data.headline, data.current_role, profile?.headline),
+    email: pickString(srcPersonal.email, data.email, profile?.email),
+    phone: pickString(srcPersonal.phone, data.phone, profile?.phone),
+    location: pickString(srcPersonal.location, data.location, profile?.location),
     website: pickString(srcPersonal.website, srcPersonal.website_url, data.website, data.website_url),
     linkedin: pickString(srcPersonal.linkedin, srcPersonal.linkedin_url, data.linkedin, data.linkedin_url),
     github: pickString(srcPersonal.github, srcPersonal.github_url, data.github, data.github_url)
@@ -454,7 +465,7 @@ export default function ResumeEditor() {
           rawContent = seedFromNav.seedContent;
         }
 
-        const loadedContent = normalizeResumeContent(rawContent, emptyResume.columns);
+        const loadedContent = normalizeResumeContent(rawContent, emptyResume.columns, profile);
         setContent(loadedContent);
 
         // If server draft was empty/malformed but we recovered seed content, persist it once
@@ -1337,19 +1348,30 @@ export default function ResumeEditor() {
               title="Personal info"
               open={open.personal}
               onToggle={() => toggle("personal")}
-              hasWarning={hasFormattingIssues}
+              hasWarning={
+                hasFormattingIssues ||
+                Boolean(
+                  validateFullName(content.personalInfo?.fullName) ||
+                  validateTextTitle(content.personalInfo?.title, "Title") ||
+                  validateEmail(content.personalInfo?.email) ||
+                  validatePhone(content.personalInfo?.phone) ||
+                  validateUrl(content.personalInfo?.website, "Website") ||
+                  validateUrl(content.personalInfo?.linkedin, "LinkedIn") ||
+                  validateUrl(content.personalInfo?.github, "GitHub")
+                )
+              }
             >
-              <Field label="Full name" value={content.personalInfo?.fullName || ""} onChange={(v) => handlePatchPersonalInfo("fullName", v)} />
-              <Field label="Title" value={content.personalInfo?.title || ""} onChange={(v) => handlePatchPersonalInfo("title", v)} />
+              <Field label="Full name" value={content.personalInfo?.fullName || ""} error={validateFullName(content.personalInfo?.fullName)} onChange={(v) => handlePatchPersonalInfo("fullName", v)} />
+              <Field label="Title" value={content.personalInfo?.title || ""} error={validateTextTitle(content.personalInfo?.title, "Title")} onChange={(v) => handlePatchPersonalInfo("title", v)} />
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Email" value={content.personalInfo?.email || ""} onChange={(v) => handlePatchPersonalInfo("email", v)} />
-                <Field label="Phone" value={content.personalInfo?.phone || ""} onChange={(v) => handlePatchPersonalInfo("phone", v)} />
+                <Field label="Email" type="email" value={content.personalInfo?.email || ""} error={validateEmail(content.personalInfo?.email)} onChange={(v) => handlePatchPersonalInfo("email", v)} />
+                <Field label="Phone" type="phone" value={content.personalInfo?.phone || ""} error={validatePhone(content.personalInfo?.phone)} onChange={(v) => handlePatchPersonalInfo("phone", v)} />
               </div>
               <Field label="Location" value={content.personalInfo?.location || ""} onChange={(v) => handlePatchPersonalInfo("location", v)} />
               <div className="grid grid-cols-3 gap-3">
-                <Field label="Website" value={content.personalInfo?.website || ""} onChange={(v) => handlePatchPersonalInfo("website", v)} />
-                <Field label="LinkedIn" value={content.personalInfo?.linkedin || ""} onChange={(v) => handlePatchPersonalInfo("linkedin", v)} />
-                <Field label="GitHub" value={content.personalInfo?.github || ""} onChange={(v) => handlePatchPersonalInfo("github", v)} />
+                <Field label="Website" placeholder="https://..." value={content.personalInfo?.website || ""} error={validateUrl(content.personalInfo?.website, "Website")} onChange={(v) => handlePatchPersonalInfo("website", v)} />
+                <Field label="LinkedIn" placeholder="https://..." value={content.personalInfo?.linkedin || ""} error={validateUrl(content.personalInfo?.linkedin, "LinkedIn")} onChange={(v) => handlePatchPersonalInfo("linkedin", v)} />
+                <Field label="GitHub" placeholder="https://..." value={content.personalInfo?.github || ""} error={validateUrl(content.personalInfo?.github, "GitHub")} onChange={(v) => handlePatchPersonalInfo("github", v)} />
               </div>
             </SectionShell>
 
@@ -1359,12 +1381,13 @@ export default function ResumeEditor() {
               title="Professional summary"
               open={open.summary}
               onToggle={() => toggle("summary")}
-              hasWarning={hasContentIssues && !content.summary}
+              hasWarning={(hasContentIssues && !content.summary) || Boolean(validateSummary(content.summary))}
             >
               <Field
                 multiline
                 label="Summary"
                 value={content.summary || ""}
+                error={validateSummary(content.summary)}
                 onChange={(v) => handlePatchContent({ summary: v })}
               />
             </SectionShell>
@@ -1375,7 +1398,18 @@ export default function ResumeEditor() {
               title="Experience"
               open={open.experience}
               onToggle={() => toggle("experience")}
-              hasWarning={hasContentIssues}
+              hasWarning={
+                hasContentIssues ||
+                (content.experience || []).some(
+                  (x) =>
+                    validateTextTitle(x.title, "Job title") ||
+                    validateTextTitle(x.company, "Company name") ||
+                    validateDateStr(x.startDate, "Start date") ||
+                    validateDateStr(x.endDate, "End date") ||
+                    validateDateRange(x.startDate, x.endDate) ||
+                    (x.bullets || []).some((b) => validateBullet(b))
+                )
+              }
               onAdd={() =>
                 handlePatchContent({
                   experience: [
@@ -1409,6 +1443,7 @@ export default function ResumeEditor() {
                   <Field
                     label="Title"
                     value={x.title}
+                    error={validateTextTitle(x.title, "Job title")}
                     onChange={(v) =>
                       handlePatchContent({
                         experience: content.experience.map((e, i) =>
@@ -1421,6 +1456,7 @@ export default function ResumeEditor() {
                     <Field
                       label="Company"
                       value={x.company}
+                      error={validateTextTitle(x.company, "Company name")}
                       onChange={(v) =>
                         handlePatchContent({
                           experience: content.experience.map((e, i) =>
@@ -1446,6 +1482,7 @@ export default function ResumeEditor() {
                       label="Start Date"
                       placeholder="e.g. Mar 2022"
                       value={x.startDate}
+                      error={validateDateStr(x.startDate, "Start date")}
                       onChange={(v) =>
                         handlePatchContent({
                           experience: content.experience.map((e, i) =>
@@ -1458,6 +1495,7 @@ export default function ResumeEditor() {
                       label="End Date"
                       placeholder="e.g. Present"
                       value={x.endDate}
+                      error={validateDateStr(x.endDate, "End date") || validateDateRange(x.startDate, x.endDate)}
                       onChange={(v) =>
                         handlePatchContent({
                           experience: content.experience.map((e, i) =>
@@ -1472,40 +1510,49 @@ export default function ResumeEditor() {
                   <div className="mt-2">
                     <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Bullet Points</label>
                     {(x.bullets || []).map((b, bi) => (
-                      <div key={bi} className="mt-1.5 flex gap-2">
-                        <textarea
-                          value={b}
-                          rows={2}
-                          onChange={(e) =>
-                            handlePatchContent({
-                              experience: content.experience.map((it, i) =>
-                                i === idx
-                                  ? {
-                                      ...it,
-                                      bullets: it.bullets.map((bb, j) =>
-                                        j === bi ? e.target.value : bb
-                                      )
-                                    }
-                                  : it
-                              )
-                            })
-                          }
-                          placeholder="Quantify details, e.g. increased X by Y%..."
-                          className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        />
-                        <IconBtn
-                          onClick={() =>
-                            handlePatchContent({
-                              experience: content.experience.map((it, i) =>
-                                i === idx
-                                  ? { ...it, bullets: it.bullets.filter((_, j) => j !== bi) }
-                                  : it
-                              )
-                            })
-                          }
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </IconBtn>
+                      <div key={bi} className="mt-1.5 flex flex-col gap-1">
+                        <div className="flex gap-2">
+                          <textarea
+                            value={b}
+                            rows={2}
+                            onChange={(e) =>
+                              handlePatchContent({
+                                experience: content.experience.map((it, i) =>
+                                  i === idx
+                                    ? {
+                                        ...it,
+                                        bullets: it.bullets.map((bb, j) =>
+                                          j === bi ? e.target.value : bb
+                                        )
+                                      }
+                                    : it
+                                )
+                              })
+                            }
+                            placeholder="Quantify details, e.g. increased X by Y%..."
+                            className={`w-full resize-none rounded-xl border bg-background px-3 py-2 text-xs transition-all ${
+                              validateBullet(b)
+                                ? "border-destructive focus:border-destructive focus:ring-2 focus:ring-destructive/20 text-destructive font-medium"
+                                : "border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            }`}
+                          />
+                          <IconBtn
+                            onClick={() =>
+                              handlePatchContent({
+                                experience: content.experience.map((it, i) =>
+                                  i === idx
+                                    ? { ...it, bullets: it.bullets.filter((_, j) => j !== bi) }
+                                    : it
+                                )
+                              })
+                            }
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </IconBtn>
+                        </div>
+                        {validateBullet(b) && (
+                          <span className="text-[10px] font-semibold text-destructive ml-1">{validateBullet(b)}</span>
+                        )}
                       </div>
                     ))}
                     <button
@@ -1531,7 +1578,17 @@ export default function ResumeEditor() {
               title="Education"
               open={open.education}
               onToggle={() => toggle("education")}
-              hasWarning={hasStructureIssues && content.education?.length === 0}
+              hasWarning={
+                (hasStructureIssues && content.education?.length === 0) ||
+                (content.education || []).some(
+                  (e) =>
+                    validateTextTitle(e.degree, "Degree") ||
+                    validateTextTitle(e.school, "School name") ||
+                    validateDateStr(e.startDate, "Start date") ||
+                    validateDateStr(e.endDate, "End date") ||
+                    validateDateRange(e.startDate, e.endDate)
+                )
+              }
               onAdd={() =>
                 handlePatchContent({
                   education: [
@@ -1564,6 +1621,7 @@ export default function ResumeEditor() {
                   <Field
                     label="Degree"
                     value={e.degree}
+                    error={validateTextTitle(e.degree, "Degree")}
                     onChange={(v) =>
                       handlePatchContent({
                         education: content.education.map((it, i) =>
@@ -1575,6 +1633,7 @@ export default function ResumeEditor() {
                   <Field
                     label="School / University"
                     value={e.school}
+                    error={validateTextTitle(e.school, "School name")}
                     onChange={(v) =>
                       handlePatchContent({
                         education: content.education.map((it, i) =>
@@ -1586,7 +1645,9 @@ export default function ResumeEditor() {
                   <div className="grid grid-cols-2 gap-3">
                     <Field
                       label="Start Date"
+                      placeholder="e.g. 2018"
                       value={e.startDate}
+                      error={validateDateStr(e.startDate, "Start date")}
                       onChange={(v) =>
                         handlePatchContent({
                           education: content.education.map((it, i) =>
@@ -1597,7 +1658,9 @@ export default function ResumeEditor() {
                     />
                     <Field
                       label="End Date"
+                      placeholder="e.g. 2022"
                       value={e.endDate}
+                      error={validateDateStr(e.endDate, "End date") || validateDateRange(e.startDate, e.endDate)}
                       onChange={(v) =>
                         handlePatchContent({
                           education: content.education.map((it, i) =>
@@ -1650,6 +1713,7 @@ export default function ResumeEditor() {
               title="Projects"
               open={open.projects}
               onToggle={() => toggle("projects")}
+              hasWarning={(content.projects || []).some((p) => validateTextTitle(p.name, "Project name") || validateUrl(p.link, "Project link"))}
               onAdd={() =>
                 handlePatchContent({
                   projects: [
@@ -1681,6 +1745,7 @@ export default function ResumeEditor() {
                   <Field
                     label="Project Name"
                     value={p.name}
+                    error={validateTextTitle(p.name, "Project name")}
                     onChange={(v) =>
                       handlePatchContent({
                         projects: content.projects.map((it, i) =>
@@ -1691,7 +1756,9 @@ export default function ResumeEditor() {
                   />
                   <Field
                     label="Link"
+                    placeholder="https://..."
                     value={p.link || ""}
+                    error={validateUrl(p.link, "Project link")}
                     onChange={(v) =>
                       handlePatchContent({
                         projects: content.projects.map((it, i) =>
@@ -1745,6 +1812,7 @@ export default function ResumeEditor() {
               title="Certifications"
               open={open.certifications}
               onToggle={() => toggle("certifications")}
+              hasWarning={(content.certifications || []).some((c) => validateTextTitle(c.name, "Certification name") || validateTextTitle(c.issuer, "Issuer name") || validateDateStr(c.date, "Date"))}
               onAdd={() =>
                 handlePatchContent({
                   certifications: [
@@ -1776,6 +1844,7 @@ export default function ResumeEditor() {
                   <Field
                     label="Certification Name"
                     value={c.name}
+                    error={validateTextTitle(c.name, "Certification name")}
                     onChange={(v) =>
                       handlePatchContent({
                         certifications: content.certifications.map((it, i) =>
@@ -1800,6 +1869,7 @@ export default function ResumeEditor() {
                     <Field
                       label="Issuer"
                       value={c.issuer || ""}
+                      error={validateTextTitle(c.issuer, "Issuer name")}
                       onChange={(v) =>
                         handlePatchContent({
                           certifications: content.certifications.map((it, i) =>
@@ -1810,7 +1880,9 @@ export default function ResumeEditor() {
                     />
                     <Field
                       label="Date"
+                      placeholder="e.g. 2023"
                       value={c.date || ""}
+                      error={validateDateStr(c.date, "Date")}
                       onChange={(v) =>
                         handlePatchContent({
                           certifications: content.certifications.map((it, i) =>
@@ -2865,30 +2937,208 @@ function SectionShell({
   );
 }
 
+// Validation helpers
+function validateFullName(name) {
+  if (!name || !name.trim()) return null;
+  const str = name.trim();
+  if (/^\d+$/.test(str)) return "Name cannot be numbers-only";
+  if (str.length < 2) return "Name must be at least 2 characters";
+  return null;
+}
+
+function validateTextTitle(title, label = "Title") {
+  if (!title || !title.trim()) return null;
+  const str = title.trim();
+  if (/^\d+$/.test(str)) return `${label} cannot be numbers-only`;
+  if (str.length < 2) return `${label} is too short`;
+  return null;
+}
+
+function validateSummary(summary) {
+  if (!summary || !summary.trim()) return null;
+  const words = summary.trim().split(/\s+/).filter(Boolean);
+  if (/^\d+$/.test(summary.trim())) return "Summary cannot be numbers-only";
+  if (words.length < 8) return "Summary is very short (aim for 15+ words)";
+  return null;
+}
+
+function validateBullet(bullet) {
+  if (!bullet || !bullet.trim()) return null;
+  const str = bullet.trim();
+  if (/^\d+$/.test(str)) return "Bullet cannot be numbers-only";
+  if (str.length < 10) return "Bullet point is very brief";
+  return null;
+}
+
+function validateEmail(email) {
+  if (!email || !email.trim()) return null;
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email.trim()) ? null : "Invalid email format";
+}
+
+function validatePhone(phone) {
+  if (!phone || !phone.trim()) return null;
+  const re = /^[+\d\s().-]{7,25}$/;
+  const digitCount = (phone.match(/\d/g) || []).length;
+  if (!re.test(phone.trim()) || digitCount < 5) {
+    return "Invalid phone format";
+  }
+  return null;
+}
+
+function validateUrl(url, type = "URL") {
+  if (!url || !url.trim()) return null;
+  const str = url.trim().toLowerCase();
+  if (str.includes(" ") || (!str.includes(".") && !str.startsWith("http"))) {
+    return `Invalid ${type} format`;
+  }
+  return null;
+}
+
+const VALID_MONTH_NAMES = [
+  "january", "jan", "february", "feb", "march", "mar",
+  "april", "apr", "may", "june", "jun", "july", "jul",
+  "august", "aug", "september", "sep", "october", "oct",
+  "november", "nov", "december", "dec"
+];
+
+function validateDateStr(dateStr, label = "Date") {
+  if (!dateStr || !dateStr.trim()) return null;
+  const str = dateStr.trim().toLowerCase();
+  
+  // 1. Present / Current keywords
+  if (["present", "current", "now", "ongoing"].includes(str)) return null;
+
+  // 2. Must contain digits for year
+  const yearMatch = str.match(/\b(19|20)\d{2}\b/);
+  if (!yearMatch) {
+    if (!/\d/.test(str)) {
+      return `${label} must be a valid date (e.g. Mar 2022, 03/2022, or Present)`;
+    }
+    return `${label} must include a valid 4-digit year (1950-2035)`;
+  }
+
+  const year = parseInt(yearMatch[0], 10);
+  if (year < 1950 || year > 2035) {
+    return `${label} year must be between 1950 and 2035`;
+  }
+
+  // 3. Check for slash / hyphen / space patterns: e.g. "13/2022", "13-2022", "2022/13", "13 2022"
+  const slashOrDashMatch = str.match(/\b(\d{1,2})[\/\-\s]+(19|20)\d{2}\b/) || str.match(/\b(19|20)\d{2}[\/\-\s]+(\d{1,2})\b/);
+  if (slashOrDashMatch) {
+    const monthNum = parseInt(slashOrDashMatch[1].length <= 2 ? slashOrDashMatch[1] : slashOrDashMatch[2], 10);
+    if (monthNum < 1 || monthNum > 12) {
+      return `${label} month must be between 1 and 12 (entered ${monthNum})`;
+    }
+  }
+
+  // 4. Check if words are present and whether any word is a valid month name
+  const words = str.replace(/[^a-z]/g, " ").split(/\s+/).filter(Boolean);
+  const hasMonthWord = words.some((w) => VALID_MONTH_NAMES.includes(w));
+  const hasOnlyYear = words.length === 0;
+
+  if (!hasMonthWord && !hasOnlyYear && !slashOrDashMatch) {
+    return `${label} month is invalid (use Jan-Dec or 1-12)`;
+  }
+
+  return null;
+}
+
+function parseYearMonth(dateStr) {
+  if (!dateStr || typeof dateStr !== "string") return null;
+  const str = dateStr.trim().toLowerCase();
+  if (!str) return null;
+  if (["present", "current", "now", "ongoing"].includes(str)) {
+    const now = new Date();
+    return now.getFullYear() * 12 + now.getMonth();
+  }
+  const yearMatch = str.match(/\b(19|20)\d{2}\b/);
+  if (!yearMatch) return null;
+  const year = parseInt(yearMatch[0], 10);
+  if (year < 1950 || year > 2035) return null;
+
+  let month = 0; // Default Jan for year-only entries
+  const slashOrDashMatch = str.match(/\b(\d{1,2})[\/\-\s]+(19|20)\d{2}\b/) || str.match(/\b(19|20)\d{2}[\/\-\s]+(\d{1,2})\b/);
+  if (slashOrDashMatch) {
+    const monthNum = parseInt(slashOrDashMatch[1].length <= 2 ? slashOrDashMatch[1] : slashOrDashMatch[2], 10);
+    if (monthNum >= 1 && monthNum <= 12) {
+      month = monthNum - 1;
+      return year * 12 + month;
+    } else {
+      return null;
+    }
+  }
+
+  const monthsMap = {
+    jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
+    apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6,
+    aug: 7, august: 7, sep: 8, september: 8, oct: 9, october: 9,
+    nov: 10, november: 10, dec: 11, december: 11
+  };
+  const words = str.replace(/[^a-z]/g, " ").split(/\s+/).filter(Boolean);
+  for (const w of words) {
+    if (w in monthsMap) {
+      month = monthsMap[w];
+      return year * 12 + month;
+    }
+  }
+
+  if (words.length > 0) {
+    return null;
+  }
+
+  return year * 12 + month;
+}
+
+function validateDateRange(startDateStr, endDateStr) {
+  if (!startDateStr || !endDateStr) return null;
+  const startYm = parseYearMonth(startDateStr);
+  const endYm = parseYearMonth(endDateStr);
+  if (startYm !== null && endYm !== null && startYm > endYm) {
+    return "End date cannot be before start date";
+  }
+  return null;
+}
+
 function Field({
   label,
   value,
   onChange,
   multiline,
-  placeholder
+  placeholder,
+  error,
+  type = "text"
 }) {
+  const hasError = Boolean(error);
   return (
     <label className="block">
-      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+        {hasError && <span className="text-[10px] font-semibold text-destructive">{error}</span>}
+      </div>
       {multiline ? (
         <textarea
           rows={3}
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-1 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+          className={`w-full resize-none rounded-xl border bg-background px-3 py-2 text-xs transition-all ${
+            hasError
+              ? "border-destructive focus:border-destructive focus:ring-2 focus:ring-destructive/20 text-destructive font-medium"
+              : "border-border focus:border-primary focus:ring-2 focus:ring-primary/20"
+          }`}
         />
       ) : (
         <input
+          type={type === "email" ? "email" : type === "phone" ? "tel" : "text"}
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+          className={`w-full rounded-xl border bg-background px-3 py-2 text-xs transition-all ${
+            hasError
+              ? "border-destructive focus:border-destructive focus:ring-2 focus:ring-destructive/20 text-destructive font-medium"
+              : "border-border focus:border-primary focus:ring-2 focus:ring-primary/20"
+          }`}
         />
       )}
     </label>

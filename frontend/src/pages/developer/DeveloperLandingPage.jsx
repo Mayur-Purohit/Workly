@@ -35,6 +35,7 @@ import { SocialTooltip } from "../../components/ui/social-media";
 import useDocumentTitle from "../../hooks/useDocumentTitle";
 import { DEVELOPER_PLANS } from "../../lib/constants";
 import ThemeToggle from "../../components/ThemeToggle";
+import Testimonials from "../../components/Testimonials";
 
 /* ═══════════════════ Framer Motion Animation System ═══════════════════ */
 const fadeInUpVariants = {
@@ -941,6 +942,9 @@ console.log(data);`,
           })}
         </div>
       </section>
+
+      {/* Developer Testimonials */}
+      <Testimonials userTypeFilter="developer" title="What Developers Say" label="Developer Reviews" />
 
       {/* ════════════════ FOOTER ════════════════ */}
       <footer className="bg-card border-t border-border text-muted-foreground py-16">

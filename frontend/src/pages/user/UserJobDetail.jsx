@@ -62,6 +62,7 @@ export default function UserJobDetail() {
           requirements: reqs,
           tags: inferredTags,
           applied: data.applied || false,
+          can_reapply: data.can_reapply || false,
           isSaved: data.is_saved || false,
           skillAlignment: data.skill_alignment,
         };
@@ -193,6 +194,10 @@ export default function UserJobDetail() {
               <span className="pill inline-flex items-center gap-2 bg-muted px-6 py-3 text-sm font-medium text-muted-foreground">
                 Applied
               </span>
+            ) : job.can_reapply ? (
+              <Link to={`/jobs/apply/${job.id}`} className="pill inline-flex items-center gap-2 bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 shadow-sm">
+                Re-apply now
+              </Link>
             ) : (
               <Link to={`/jobs/apply/${job.id}`} className="pill inline-flex items-center gap-2 bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90">
                 Apply now

@@ -580,7 +580,6 @@ export default function SettingsPage() {
                 {[
                   { label: "New candidate applied", desc: "Get notified when a candidate joins a session.", defaultVal: true },
                   { label: "Weekly digest", desc: "A summary of activity across sessions.", defaultVal: false },
-                  { label: "Fraud alerts", desc: "Immediate alert when a suspicious resume is flagged.", defaultVal: true },
                 ].map((it, i) => (
                   <div key={i} className="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0">
                     <div>

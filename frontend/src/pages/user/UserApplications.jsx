@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { Header, Footer } from "../../components/user/site-chrome";
 import { CompanyLogo } from "../../components/user/company-logo";
 import { seekerAPI, testAPI } from "../../lib/api";
@@ -253,6 +253,15 @@ export default function UserApplications() {
                     <div className="flex items-center gap-4 self-end sm:self-center">
                       <div className="flex flex-col items-end gap-1.5">
                         {getStatusBadge(app.status)}
+                        {app.status === "rejected" && (
+                          <Link
+                            to={`/jobs/apply/${app.job_id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs font-bold px-3 py-1 rounded-full bg-primary text-primary-foreground hover:opacity-90 shadow-sm mt-1 transition"
+                          >
+                            Re-apply →
+                          </Link>
+                        )}
                         {app.match_score !== null && (
                           <span className="text-xs font-semibold px-2 py-0.5 rounded bg-muted text-muted-foreground">
                             {app.match_score}% Match

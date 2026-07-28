@@ -15,6 +15,7 @@ import spotDashboard from "../../assets/spot-dashboard.png";
 import { ScrollingAnimation } from "../../components/user/ui/scrolling-animation";
 import heroBg from "../../assets/hero-bg.png";
 import useDocumentTitle from "../../hooks/useDocumentTitle";
+import Testimonials from "../../components/Testimonials";
 
 const fadeInUpVariants = {
   hidden: { opacity: 0, y: 30 },
@@ -611,40 +612,8 @@ function Home() {
 
       <ScrollingAnimation />
 
-      {/* Testimonials */}
-      <motion.section
-        className="mx-auto max-w-7xl px-6 py-14"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-80px" }}
-        variants={staggerContainerVariants}
-      >
-        <motion.div variants={fadeInUpVariants} className="text-center">
-          <div className="text-[11px] font-medium uppercase tracking-wider text-[var(--google-yellow)]">Stories</div>
-          <h2 className="mt-1.5 font-display text-2xl font-semibold tracking-tight sm:text-3xl">Loved by 120,000+ professionals</h2>
-        </motion.div>
-        <div className="mt-8 grid gap-3 md:grid-cols-3">
-          {[
-            { q: "Workly turned weeks of search into days. The match score was uncannily accurate.", n: "Maya R.", r: "Product Designer, Vela", c: "var(--google-blue)" },
-            { q: "Loved the calm pipeline view. I always knew where every application stood.", n: "Daniel O.", r: "Staff Engineer, Northwind", c: "var(--google-green)" },
-            { q: "Salary transparency made negotiation actually fair. Got 22% above my last role.", n: "Priya K.", r: "PM, Atlas Pay", c: "var(--google-red)" },
-          ].map((t) => (
-            <motion.figure key={t.n} variants={staggerItemVariants} className="rounded-2xl border border-border bg-card p-5">
-              <Quote className="h-5 w-5" style={{ color: t.c }} />
-              <blockquote className="mt-2 text-sm leading-relaxed text-foreground">"{t.q}"</blockquote>
-              <figcaption className="mt-4 flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-full text-xs font-semibold text-white" style={{ background: t.c }}>
-                  {t.n.charAt(0)}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold">{t.n}</div>
-                  <div className="text-[11px] text-muted-foreground">{t.r}</div>
-                </div>
-              </figcaption>
-            </motion.figure>
-          ))}
-        </div>
-      </motion.section>
+      {/* Testimonials — dynamic from API */}
+      <Testimonials userTypeFilter="job_seeker" title="Loved by professionals" label="Stories" />
 
       {/* For employers + Seekers split */}
       <motion.section

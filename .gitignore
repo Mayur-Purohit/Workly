@@ -73,6 +73,81 @@ backend/scratch/
 *.pdf
 
 # ML Model artifacts (trained at build time on Render)
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# Virtual environments
+backend/venv/
+backend/.venv/
+backend/env/
+
+# Django
+backend/.env
+backend/.env.local
+backend/db.sqlite3
+backend/db.sqlite3-journal
+backend/uploads/
+backend/photos/
+
+# Node / Vite (Frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/dist_ssr/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# IDEs & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Temp / Build artifacts
+/tmp/
+backend_output.log
+/backend_output.log
+dummy.pdf
+celerybeat-schedule
+celerybeat.pid
+.coverage
+.pytest_cache/
+.eslintcache
+frontend/.eslintcache
+htmlcov/
+.gemini/
+.antigravity/
+.vite/
+frontend/.vite/
+frontend/dist/
+frontend/node_modules/
+
+# Inspiration / Design References
+inspiration_ui/
+
+# Test output files
+backend/test_resume_2col.pdf
+backend/scratch/
+/*.pdf
+*.pdf
+
+# ML Model artifacts (trained at build time on Render)
 backend/models/*.pkl
 backend/models/ner_resume_parser/
 backend/datasets/Salary.csv
@@ -82,6 +157,7 @@ backend/datasets/Resume/
 # Exclude directories per user request
 OK/
 OLD ONES/
+TESTINAL/
 
 # Ignore markdown files per user request
 *.md

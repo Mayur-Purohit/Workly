@@ -6,6 +6,7 @@ import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recha
 import JobsNavbar from '../components/JobsNavbar';
 import ResumeUploadModal from '../components/ResumeUploadModal';
 import { publicJobsAPI, publicAPI } from '../lib/api';
+import Testimonials from '../components/Testimonials';
 import { Footer } from '../components/user/site-chrome';
 
 const LOCATION_STATE_MAP = {
@@ -186,7 +187,7 @@ export default function JobsLandingPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] text-[#2A2A2A] font-sans flex flex-col relative isolate">
-      
+
       {/* SCROLL-ACTIVATED HERO VIDEO BACKGROUND */}
       <motion.div
         style={{
@@ -220,7 +221,7 @@ export default function JobsLandingPage() {
       <JobsNavbar onUploadClick={() => setIsModalOpen(true)} />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-16 space-y-20">
-        
+
         {/* Search Section */}
         <section className="text-center max-w-3xl mx-auto space-y-6 pt-4">
           <span className="bg-[#DCFCE7] text-[#15803D] text-[10px] font-black px-4 py-1.5 rounded-full tracking-wider uppercase">
@@ -240,7 +241,7 @@ export default function JobsLandingPage() {
               <div className="overflow-hidden w-full relative h-6 flex items-center">
                 <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#FDFCFB] to-transparent z-10 pointer-events-none" />
                 <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#FDFCFB] to-transparent z-10 pointer-events-none" />
-                
+
                 <div className="animate-marquee whitespace-nowrap flex space-x-12 shrink-0">
                   <span className="text-gray-500 font-medium text-xs tracking-wide flex items-center gap-3">
                     <span>Software Engineer</span> <span className="text-gray-300">&bull;</span>
@@ -265,12 +266,12 @@ export default function JobsLandingPage() {
             </div>
 
             {/* Glowing Gradient Search Bar */}
-            <form 
-              onSubmit={handleSearch} 
+            <form
+              onSubmit={handleSearch}
               className="relative p-[2px] rounded-full max-w-3xl mx-auto bg-gradient-to-r from-indigo-500 via-pink-500 to-orange-400 focus-within:shadow-[0_0_25px_rgba(236,72,153,0.35)] transition-shadow duration-300"
             >
               <div className="bg-white rounded-full p-1.5 flex flex-col md:flex-row items-center justify-between w-full gap-2 md:gap-0">
-                
+
                 {/* Query Input */}
                 <div className="flex items-center space-x-2.5 px-4 flex-1 w-full relative" onClick={(e) => e.stopPropagation()}>
                   <Search className="text-gray-400 shrink-0" size={18} />
@@ -285,7 +286,7 @@ export default function JobsLandingPage() {
                     }}
                     className="w-full text-black placeholder-gray-400 font-medium focus:outline-none text-sm bg-transparent"
                   />
-                  
+
                   {showQuerySuggestions && querySuggestions.length > 0 && (
                     <div className="absolute left-0 right-0 top-[125%] bg-white border border-gray-150 rounded-2xl shadow-2xl z-50 overflow-hidden py-1 max-h-60 overflow-y-auto text-left">
                       {querySuggestions.map((sug, idx) => (
@@ -322,7 +323,7 @@ export default function JobsLandingPage() {
                     }}
                     className="w-full text-black placeholder-gray-400 font-medium focus:outline-none text-sm bg-transparent"
                   />
-                  
+
                   {showLocationSuggestions && locationSuggestions.length > 0 && (
                     <div className="absolute left-0 right-0 top-[125%] bg-white border border-gray-150 rounded-2xl shadow-2xl z-50 overflow-hidden py-1 max-h-60 overflow-y-auto text-left">
                       {locationSuggestions.map((sug, idx) => (
@@ -474,7 +475,7 @@ export default function JobsLandingPage() {
                   Tech sector wage growth is tracked at +{trends?.average_tech_base_change ?? 0}% based on verified platform postings.
                 </p>
               </div>
-              
+
               {/* Bar chart container */}
               <div className="w-full h-24">
                 {(!trends?.salary_timeline || trends.salary_timeline.length === 0) ? (
@@ -531,6 +532,9 @@ export default function JobsLandingPage() {
         </section>
 
       </main>
+
+      {/* Job Seeker Testimonials */}
+      <Testimonials userTypeFilter="job_seeker" title="What Job Seekers Say" label="Testimonials" />
 
       {/* Footer */}
       <Footer />

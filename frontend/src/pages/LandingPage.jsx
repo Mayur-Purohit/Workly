@@ -45,6 +45,7 @@ import Footer from '../components/Footer';
 import FlipFadeText from '../components/ui/flip-fade-text';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import { API_HOST, billingAPI } from '../lib/api';
+import Testimonials from '../components/Testimonials';
 
 /* ═══════════════════ Animation Variants ═══════════════════ */
 const fadeInUpVariants = {
@@ -1490,6 +1491,7 @@ export default function LandingPage() {
         <WorkflowSection liveSession={liveSession} />
         <PricingSection onStart={handleAuth} plans={plans} />
         <SplitCTA onStart={handleAuth} onNavigateDev={handleNavigateDev} />
+        <Testimonials userTypeFilter="recruiter" title="Trusted by Innovative Teams" label="Voices of Impact" />
         <FinalCTA onStart={handleAuth} companiesCount={stats.total_companies} />
       </main>
 

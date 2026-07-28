@@ -61,6 +61,9 @@ def subscribe(request):
     try:
         data = json.loads(request.body)
         plan = data.get("plan")
+        if plan in ["pro_monthly", "pro_yearly", "pro"]:
+            plan = "premium"
+
         if plan not in PLAN_DETAILS or plan == "free":
             return JsonResponse(error_response("Invalid plan. Choose premium"), status=400)
 
@@ -118,6 +121,8 @@ def verify_payment(request):
         razorpay_order_id = data.get("razorpay_order_id")
         razorpay_signature = data.get("razorpay_signature")
         plan = data.get("plan")
+        if plan in ["pro_monthly", "pro_yearly", "pro"]:
+            plan = "premium"
 
         if not all([razorpay_payment_id, razorpay_order_id, razorpay_signature, plan]):
             return JsonResponse(error_response("Missing required verification parameters"), status=400)
