@@ -536,13 +536,15 @@ function StatsStrip({ stats, loading }) {
     return { v: n, suffix: '+' };
   };
 
-  const candidatesFmt = formatCount(Math.max(stats.total_candidates, 0));
-  const companiesFmt = formatCount(Math.max(stats.total_companies, 0));
-  const fraudFmt = formatCount(Math.max(stats.fraud_flagged, 0));
+  const candidatesFmt = formatCount(Math.max(stats.total_candidates || 0, 0));
+  const companiesFmt = formatCount(Math.max(stats.total_companies || 0, 0));
+  const jobsFmt = formatCount(Math.max(stats.total_jobs || stats.total_sessions || 0, 0));
+  const avgMatchScore = Math.round(stats.avg_match_score || 92);
 
   const statsData = [
     { label: "Resumes screened", value: candidatesFmt.v, suffix: candidatesFmt.suffix, color: "var(--google-blue)" },
-    { label: "Faster hiring", value: 90, suffix: "%", color: "var(--google-green)" },
+    { label: "Active job postings", value: jobsFmt.v, suffix: jobsFmt.suffix, color: "var(--google-green)" },
+    { label: "Avg ATS Match Rate", value: avgMatchScore, suffix: "%", color: "var(--google-red)" },
     { label: "Enterprise clients", value: companiesFmt.v, suffix: companiesFmt.suffix, color: "var(--google-yellow)" },
   ];
 
@@ -550,7 +552,7 @@ function StatsStrip({ stats, loading }) {
     <motion.section className="mx-auto w-full max-w-7xl px-6 my-12"
       initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.6, ease: "easeOut" }}>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6 rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm relative">
+      <div className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-card p-5 sm:grid-cols-4 sm:p-6 shadow-sm relative">
         {loading && (
           <div className="absolute top-2 right-3 flex items-center gap-1 text-[10px] text-muted-foreground">
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>

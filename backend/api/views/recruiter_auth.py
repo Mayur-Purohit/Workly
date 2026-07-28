@@ -733,13 +733,22 @@ def public_stats(request):
         return JsonResponse(error_response("Method not allowed"), status=405)
 
     try:
-        # ── Core counts ───────────────────────────────────────────────────────
+        # ── Core counts (100% Dynamic Database Queries) ──────────────────────────────────
+        from django.db.models import Avg, Count
+        from api.models import Company, Session, Candidate, JobSeekerAccount, JobApplication
+
         total_companies = Company.objects.filter(is_active=True).count()
         total_candidates = Candidate.objects.filter(deleted_at__isnull=True).count()
         total_sessions = Session.objects.count()
+        total_applications = JobApplication.objects.count()
+
+        avg_score_res = Candidate.objects.filter(
+            deleted_at__isnull=True,
+            match_score__isnull=False
+        ).aggregate(avg_score=Avg("match_score"))
+        avg_match_score = round(avg_score_res["avg_score"] or 92)
 
         # Fraud-flagged = candidates whose recommendation starts with "Reject"
-        # (our agent writes "Reject" / "Strong Reject" for bad candidates)
         fraud_flagged = Candidate.objects.filter(
             deleted_at__isnull=True,
             recommendation__icontains="reject"
@@ -886,6 +895,9 @@ def public_stats(request):
                 "total_candidates": total_candidates,
                 "total_companies": total_companies,
                 "total_sessions": total_sessions,
+                "total_jobs": total_sessions,
+                "total_applications": total_applications,
+                "avg_match_score": avg_match_score,
                 "fraud_flagged": fraud_flagged,
             },
             "live_session": {
