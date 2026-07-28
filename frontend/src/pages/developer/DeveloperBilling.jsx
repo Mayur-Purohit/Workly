@@ -5,6 +5,7 @@ import { DEVELOPER_PLANS } from "../../lib/constants";
 import { CreditCard, CheckCircle2, AlertTriangle, Star, RefreshCw, Activity, Zap, Layers } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePortalAuthStore } from "../../stores/portalAuthStore";
 
 /* ═══════════════════ Framer Motion Animation System ═══════════════════ */
 const staggerContainerVariants = {

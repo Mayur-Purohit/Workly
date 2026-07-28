@@ -51,6 +51,10 @@ export default function CandidateCard({ candidate, sessionId, rounds = [], onAct
 
   const getInitials = (name) => {
     if (!name) return "??";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
     return name.slice(0, 2).toUpperCase();
   };
 
@@ -187,6 +191,8 @@ export default function CandidateCard({ candidate, sessionId, rounds = [], onAct
   const topOther = activeCandidate?.other_skills?.slice(0, 3) || [];
   const highlights = [...topMatched, ...topOther].slice(0, 5);
 
+  const [imgError, setImgError] = useState(false);
+
   return (
     <>
       <motion.div
@@ -202,8 +208,13 @@ export default function CandidateCard({ candidate, sessionId, rounds = [], onAct
         {/* HEADER: Avatar + Name + Score */}
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full shrink-0 flex items-center justify-center font-bold text-white overflow-hidden shadow-sm" style={{ backgroundColor: getHashColor(candidate?.name) }}>
-            {photoUrl ? (
-              <img src={photoUrl} alt={candidate.name} className="w-full h-full object-cover" />
+            {photoUrl && !imgError ? (
+              <img 
+                src={photoUrl} 
+                alt={candidate?.name || 'Candidate'} 
+                className="w-full h-full object-cover" 
+                onError={() => setImgError(true)}
+              />
             ) : (
               getInitials(candidate?.name)
             )}

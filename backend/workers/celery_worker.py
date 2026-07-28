@@ -32,6 +32,7 @@ import uuid
 import traceback
 import base64
 import io
+from PIL import Image
 import threading
 import logging
 import secrets
@@ -120,12 +121,24 @@ def _parse_resume_sync(file_path: str, skip_llm: bool = False) -> dict:
             try:
                 doc = fitz.open(file_path)
                 for page in doc:
-                    for img in page.get_images():
-                        xref = img[0]
+                    for img_info in page.get_images():
+                        xref = img_info[0]
                         base = doc.extract_image(xref)
-                        photo_path = f"{photo_dir}/{uuid.uuid4()}.jpg"
-                        with open(photo_path, "wb") as f:
-                            f.write(base["image"])
+                        img_bytes = base.get("image")
+                        if not img_bytes:
+                            continue
+                        try:
+                            im = Image.open(io.BytesIO(img_bytes))
+                            w, h = im.size
+                            # Profile photo must be at least 80x80 and roughly square/portrait
+                            if w >= 80 and h >= 80 and 0.4 <= (w / h) <= 2.2:
+                                photo_path = f"{photo_dir}/{uuid.uuid4()}.jpg"
+                                with open(photo_path, "wb") as f:
+                                    f.write(img_bytes)
+                                break
+                        except Exception:
+                            continue
+                    if photo_path:
                         break
             except Exception:
                 photo_path = None
@@ -363,21 +376,41 @@ def process_resume_batch(self, job_id: str, file_paths: list, session_id: str, s
                 raw_skills = raw_data.get("skills", [])
                 normalized_skills = _normalize_skills_sync(raw_skills)
 
-                new_cand = Candidate(
-                    session=session_row,
-                    name=raw_data.get("name") or Path(path).stem,
-                    email=raw_data.get("email"),
-                    phone=raw_data.get("phone"),
-                    location=raw_data.get("location"),
-                    total_experience_years=float(raw_data.get("total_experience_years") or 0),
-                    normalized_skills=normalized_skills,
-                    raw_resume_data=parsed_res,
-                    resume_file_path=path,
-                    resume_photo_path=parsed_res.get("photo_path"),
-                    current_round_index=first_round_order,
-                    status="new",
-                    source=source
-                )
+                cand_email = raw_data.get("email")
+                cand_name = raw_data.get("name") or Path(path).stem
+
+                existing_cand = None
+                if cand_email:
+                    existing_cand = Candidate.objects.filter(session=session_row, email=cand_email).first()
+                if not existing_cand and cand_name:
+                    existing_cand = Candidate.objects.filter(session=session_row, name=cand_name).first()
+
+                if existing_cand:
+                    new_cand = existing_cand
+                    new_cand.name = cand_name
+                    if raw_data.get("phone"): new_cand.phone = raw_data.get("phone")
+                    if raw_data.get("location"): new_cand.location = raw_data.get("location")
+                    if raw_data.get("total_experience_years"): new_cand.total_experience_years = float(raw_data.get("total_experience_years"))
+                    new_cand.normalized_skills = normalized_skills or new_cand.normalized_skills
+                    new_cand.raw_resume_data = parsed_res
+                    new_cand.resume_file_path = path
+                    if parsed_res.get("photo_path"): new_cand.resume_photo_path = parsed_res.get("photo_path")
+                else:
+                    new_cand = Candidate(
+                        session=session_row,
+                        name=cand_name,
+                        email=cand_email,
+                        phone=raw_data.get("phone"),
+                        location=raw_data.get("location"),
+                        total_experience_years=float(raw_data.get("total_experience_years") or 0),
+                        normalized_skills=normalized_skills,
+                        raw_resume_data=parsed_res,
+                        resume_file_path=path,
+                        resume_photo_path=parsed_res.get("photo_path"),
+                        current_round_index=first_round_order,
+                        status="new",
+                        source=source
+                    )
 
                 # Simple rule-based match scoring if criteria exist
                 if required_skills:
@@ -596,57 +629,155 @@ def sync_gmail_resumes(session_id: str, job_id: str):
         session_row = SessionModel.objects.get(id=session_id)
         job = IngestJob.objects.get(id=job_id)
     except (SessionModel.DoesNotExist, IngestJob.DoesNotExist):
+        logging.error(f"Gmail sync: session {session_id} or job {job_id} not found in DB.")
         return
 
     if not session_row.gmail_tokens:
         job.status = "failed"
-        job.error_log = ["Gmail not connected"]
+        job.error_log = ["Gmail not connected. Please connect a Gmail account first."]
+        job.completed_at = datetime.now(timezone.utc)
         job.save()
+        logging.error(f"Gmail sync failed: no gmail_tokens on session {session_id}")
         return
+
+    job.status = "processing"
+    job.save()
 
     try:
         import google.oauth2.credentials
+        import google.auth.transport.requests
         from googleapiclient.discovery import build
-        creds = google.oauth2.credentials.Credentials(**session_row.gmail_tokens)
+
+        # ── Build credentials with token refresh support ──
+        token_data = dict(session_row.gmail_tokens)  # copy so we don't mutate the JSONField
+        # google.oauth2.credentials.Credentials doesn't accept 'scopes' via **kwargs
+        stored_scopes = token_data.pop('scopes', None)
+        if stored_scopes and isinstance(stored_scopes, (set,)):
+            stored_scopes = list(stored_scopes)
+
+        creds = google.oauth2.credentials.Credentials(**token_data)
+        if stored_scopes:
+            creds.scopes = stored_scopes
+
+        # ── Auto-refresh expired token ──
+        if creds.expired and creds.refresh_token:
+            logging.info(f"Gmail sync: access token expired, refreshing...")
+            creds.refresh(google.auth.transport.requests.Request())
+            # Save refreshed token back to DB so future syncs don't re-refresh
+            session_row.gmail_tokens = {
+                'token': creds.token,
+                'refresh_token': creds.refresh_token,
+                'token_uri': creds.token_uri,
+                'client_id': creds.client_id,
+                'client_secret': creds.client_secret,
+                'scopes': list(creds.scopes) if creds.scopes else None,
+            }
+            session_row.save()
+            logging.info("Gmail sync: token refreshed and saved.")
+
         service = build('gmail', 'v1', credentials=creds)
 
-        # Search for any message with attachments (pdf, docx, doc, txt or resume keywords)
-        query = "has:attachment"
-        results = service.users().messages().list(userId='me', q=query, maxResults=50).execute()
+        # ── Fetch messages ──
+        # Search for emails that have attachments to avoid scanning every message
+        results = service.users().messages().list(
+            userId='me', maxResults=100, q='has:attachment'
+        ).execute()
         messages = results.get('messages', [])
+        logging.info(f"Gmail sync: found {len(messages)} messages with attachments.")
+
+        if not messages:
+            # Fallback: try without filter in case the query syntax differs
+            results = service.users().messages().list(
+                userId='me', maxResults=50
+            ).execute()
+            messages = results.get('messages', [])
+            logging.info(f"Gmail sync fallback: found {len(messages)} total messages.")
 
         save_dir = os.path.join(os.getenv("UPLOAD_DIR", "uploads"), session_id)
         os.makedirs(save_dir, exist_ok=True)
         downloaded = []
+        errors = []
+
+        def extract_part_filename(part):
+            fname = part.get('filename', '')
+            if fname:
+                return fname
+            headers = part.get('headers', [])
+            for h in headers:
+                name = h.get('name', '').lower()
+                val = h.get('value', '')
+                if name == 'content-disposition' and 'filename=' in val.lower():
+                    m = re.search(r'filename=["\']?([^"\';]+)["\']?', val, re.IGNORECASE)
+                    if m:
+                        return m.group(1).strip()
+                elif name == 'content-type' and 'name=' in val.lower():
+                    m = re.search(r'name=["\']?([^"\';]+)["\']?', val, re.IGNORECASE)
+                    if m:
+                        return m.group(1).strip()
+            return ''
+
+        RESUME_EXTENSIONS = {'.pdf', '.docx', '.doc', '.txt'}
+        RESUME_MIMETYPES = {
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/msword',
+            'text/plain',
+        }
 
         def get_attachments_recursive(part_list):
             atts = []
             for part in part_list:
-                fname = part.get('filename', '')
+                fname = extract_part_filename(part)
                 att_id = part.get('body', {}).get('attachmentId')
-                if fname and att_id and any(fname.lower().endswith(ext) for ext in ['.pdf', '.docx', '.doc', '.txt']):
-                    atts.append((fname, att_id))
+                mime_type = part.get('mimeType', '').lower()
+
+                is_target = False
+                if fname and any(fname.lower().endswith(ext) for ext in RESUME_EXTENSIONS):
+                    is_target = True
+                elif mime_type in RESUME_MIMETYPES:
+                    is_target = True
+
+                if is_target and att_id:
+                    final_name = fname or f"attachment_{att_id[:8]}.pdf"
+                    atts.append((final_name, att_id))
+
                 if part.get('parts'):
                     atts.extend(get_attachments_recursive(part.get('parts')))
             return atts
 
+        seen_filenames = set()  # deduplicate same attachment across messages
+
         for msg in messages:
             msg_id = msg['id']
-            message_data = service.users().messages().get(userId='me', id=msg_id).execute()
-            payload = message_data.get('payload', {})
-            parts = payload.get('parts', [])
-            if not parts and payload.get('filename'):
-                parts = [payload]
+            try:
+                message_data = service.users().messages().get(userId='me', id=msg_id).execute()
+                payload = message_data.get('payload', {})
+                parts = payload.get('parts', [])
+                if not parts:
+                    parts = [payload]
 
-            attachments = get_attachments_recursive(parts)
-            for filename, att_id in attachments:
-                import base64
-                att = service.users().messages().attachments().get(userId='me', messageId=msg_id, id=att_id).execute()
-                file_data = base64.urlsafe_b64decode(att['data'].encode('UTF-8'))
-                file_path = os.path.join(save_dir, f"{msg_id}_{filename}")
-                with open(file_path, 'wb') as f:
-                    f.write(file_data)
-                downloaded.append(file_path)
+                attachments = get_attachments_recursive(parts)
+                for filename, att_id in attachments:
+                    dedup_key = filename.lower()
+                    if dedup_key in seen_filenames:
+                        continue
+                    seen_filenames.add(dedup_key)
+
+                    att = service.users().messages().attachments().get(
+                        userId='me', messageId=msg_id, id=att_id
+                    ).execute()
+                    file_data = base64.urlsafe_b64decode(att['data'].encode('UTF-8'))
+                    file_path = os.path.join(save_dir, f"{msg_id}_{filename}")
+                    with open(file_path, 'wb') as f:
+                        f.write(file_data)
+                    downloaded.append(file_path)
+                    logging.info(f"Gmail sync: downloaded attachment '{filename}' from message {msg_id}")
+            except Exception as msg_err:
+                err_msg = f"Error reading message {msg_id}: {msg_err}"
+                logging.warning(err_msg)
+                errors.append(err_msg)
+
+        logging.info(f"Gmail sync: total downloaded = {len(downloaded)}, errors = {len(errors)}")
 
         if downloaded:
             job.total_files = len(downloaded)
@@ -654,10 +785,13 @@ def sync_gmail_resumes(session_id: str, job_id: str):
             safe_dispatch_task(process_resume_batch, job_id, downloaded, session_id, "gmail")
         else:
             job.status = "done"
+            job.processed_files = 0
+            job.error_log = errors or ["No resume attachments found in recent emails."]
             job.completed_at = datetime.now(timezone.utc)
             job.save()
 
     except Exception as e:
+        logging.error(f"Gmail sync failed: {e}", exc_info=True)
         job.status = "failed"
         job.error_log = [str(e)]
         job.completed_at = datetime.now(timezone.utc)

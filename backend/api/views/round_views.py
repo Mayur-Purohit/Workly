@@ -189,26 +189,56 @@ Return ONLY valid JSON in this format:
         return None
 
 
-def auto_progress_candidate(candidate, session, round_score):
+def auto_progress_candidate(candidate, session, round_score, round_type=None, attempt_round=None):
     """
-    Automatically updates candidate round progress based on score.
-    Passing threshold is read from SessionRound, defaulting to 50%.
+    Automatically updates candidate round progress based on score ONLY for MCQ/Aptitude and Coding rounds.
+    For other round types (e.g. AI Interview or manual rounds), manual forwarding applies.
     """
-    rounds = session.rounds or []
-    max_round = len(rounds) if rounds else 1
-    
-    current_round = candidate.current_round_index if candidate.current_round_index > 0 else 1
-    
-    current_sr = SessionRound.objects.filter(session=session, round_number=current_round).first()
-    passing_threshold = current_sr.passing_score if current_sr else 50
-    
+    if not candidate or not session:
+        return
+
+    current_sr = attempt_round or SessionRound.objects.filter(
+        session=session, round_number=candidate.current_round_index if candidate.current_round_index > 0 else 1
+    ).first()
+
+    r_type = round_type or (current_sr.round_type if current_sr else None)
+    r_name = (current_sr.name if current_sr else "").lower()
+
+    # Check if this is an MCQ/Aptitude or Coding round
+    is_mcq_or_coding = (
+        r_type in ["mcq", "coding"] or
+        "aptitude" in r_name or
+        "mcq" in r_name or
+        "quiz" in r_name or
+        "coding" in r_name or
+        "technical" in r_name or
+        "programming" in r_name
+    )
+
+    # ONLY auto-forward for MCQ and Coding/Aptitude rounds
+    if not is_mcq_or_coding:
+        return
+
+    passing_threshold = current_sr.passing_score if (current_sr and current_sr.passing_score is not None) else 50
+
+    # Accurately compute max round from database SessionRound models and session.rounds JSONField
+    session_srs = SessionRound.objects.filter(session=session)
+    if session_srs.exists():
+        max_round = max([sr.round_number for sr in session_srs])
+    elif session.rounds:
+        max_round = max([int(r.get("order", 1)) for r in session.rounds])
+    else:
+        max_round = 1
+
+    current_round_num = current_sr.round_number if current_sr else (candidate.current_round_index or 1)
+
     if round_score >= passing_threshold:
-        if current_round < max_round:
-            candidate.current_round_index = current_round + 1
+        if current_round_num < max_round:
+            candidate.current_round_index = current_round_num + 1
             candidate.status = "forwarded"
             candidate.save(update_fields=['current_round_index', 'status'])
-            
-            # Pre-generate next round attempt proactively
+
+            # Pre-generate next round attempt proactively so candidate can proceed immediately
             next_sr = SessionRound.objects.filter(session=session, round_number=candidate.current_round_index).first()
             if next_sr:
                 token = secrets.token_urlsafe(32)
@@ -716,8 +746,8 @@ def submit_mcq(request):
     attempt.overall_score = score
     attempt.save()
 
-    # Automatically evaluate candidate pipeline progression
-    auto_progress_candidate(attempt.candidate, attempt.round.session, score)
+    # Automatically evaluate candidate pipeline progression for MCQ round
+    auto_progress_candidate(attempt.candidate, attempt.round.session, score, round_type="mcq", attempt_round=attempt.round)
 
     return JsonResponse(success_response({
         "score": score,
@@ -1075,8 +1105,8 @@ def submit_coding(request):
     attempt.overall_score = score
     attempt.save()
 
-    # Automatically evaluate candidate pipeline progression
-    auto_progress_candidate(attempt.candidate, attempt.round.session, score)
+    # Automatically evaluate candidate pipeline progression for Coding round
+    auto_progress_candidate(attempt.candidate, attempt.round.session, score, round_type="coding", attempt_round=attempt.round)
 
     return JsonResponse(success_response({
         "score": score,
@@ -1232,7 +1262,8 @@ def finalize_interview(request):
     score = summary.get("overall_score", 0)
     if score == 0 and ("proceed" in rec or "hire" in rec):
         score = 70.0
-    auto_progress_candidate(attempt.candidate, attempt.round.session, score)
+    # Interview rounds require manual recruiter review/forwarding
+    auto_progress_candidate(attempt.candidate, attempt.round.session, score, round_type="interview")
 
     return JsonResponse(success_response(summary))
 
@@ -1418,8 +1449,8 @@ def mock_submit(request):
     attempt.submitted_at = timezone.now()
     attempt.save()
 
-    # Run pipeline evaluation
-    auto_progress_candidate(attempt.candidate, attempt.round.session, score)
+    # Run pipeline evaluation (auto-forwarding only for mcq and coding)
+    auto_progress_candidate(attempt.candidate, attempt.round.session, score, round_type=attempt.round.round_type, attempt_round=attempt.round)
 
     return JsonResponse(success_response({"message": "Mock submission successful", "score": score}))
 
