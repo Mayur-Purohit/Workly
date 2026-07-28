@@ -543,7 +543,6 @@ function StatsStrip({ stats, loading }) {
   const statsData = [
     { label: "Resumes screened", value: candidatesFmt.v, suffix: candidatesFmt.suffix, color: "var(--google-blue)" },
     { label: "Faster hiring", value: 90, suffix: "%", color: "var(--google-green)" },
-    { label: "Fraud detected", value: fraudFmt.v, suffix: fraudFmt.suffix, color: "var(--google-red)" },
     { label: "Enterprise clients", value: companiesFmt.v, suffix: companiesFmt.suffix, color: "var(--google-yellow)" },
   ];
 
@@ -551,7 +550,7 @@ function StatsStrip({ stats, loading }) {
     <motion.section className="mx-auto w-full max-w-7xl px-6 my-12"
       initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.6, ease: "easeOut" }}>
-      <div className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-card p-5 sm:grid-cols-4 sm:p-6 shadow-sm relative">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6 rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm relative">
         {loading && (
           <div className="absolute top-2 right-3 flex items-center gap-1 text-[10px] text-muted-foreground">
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
