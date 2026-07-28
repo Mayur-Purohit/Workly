@@ -610,7 +610,8 @@ def sync_gmail_resumes(session_id: str, job_id: str):
         creds = google.oauth2.credentials.Credentials(**session_row.gmail_tokens)
         service = build('gmail', 'v1', credentials=creds)
 
-        query = "has:attachment filename:(pdf OR docx OR txt) subject:(resume OR CV OR application)"
+        # Search for any message with attachments (pdf, docx, doc, txt or resume keywords)
+        query = "has:attachment"
         results = service.users().messages().list(userId='me', q=query, maxResults=50).execute()
         messages = results.get('messages', [])
 
@@ -618,27 +619,39 @@ def sync_gmail_resumes(session_id: str, job_id: str):
         os.makedirs(save_dir, exist_ok=True)
         downloaded = []
 
+        def get_attachments_recursive(part_list):
+            atts = []
+            for part in part_list:
+                fname = part.get('filename', '')
+                att_id = part.get('body', {}).get('attachmentId')
+                if fname and att_id and any(fname.lower().endswith(ext) for ext in ['.pdf', '.docx', '.doc', '.txt']):
+                    atts.append((fname, att_id))
+                if part.get('parts'):
+                    atts.extend(get_attachments_recursive(part.get('parts')))
+            return atts
+
         for msg in messages:
             msg_id = msg['id']
             message_data = service.users().messages().get(userId='me', id=msg_id).execute()
-            parts = message_data.get('payload', {}).get('parts', [])
-            for part in parts:
-                filename = part.get('filename', '')
-                if filename and (filename.lower().endswith('.pdf') or filename.lower().endswith('.docx') or filename.lower().endswith('.txt')):
-                    att_id = part['body'].get('attachmentId')
-                    if att_id:
-                        import base64
-                        att = service.users().messages().attachments().get(userId='me', messageId=msg_id, id=att_id).execute()
-                        file_data = base64.urlsafe_b64decode(att['data'].encode('UTF-8'))
-                        file_path = os.path.join(save_dir, f"{msg_id}_{filename}")
-                        with open(file_path, 'wb') as f:
-                            f.write(file_data)
-                        downloaded.append(file_path)
+            payload = message_data.get('payload', {})
+            parts = payload.get('parts', [])
+            if not parts and payload.get('filename'):
+                parts = [payload]
+
+            attachments = get_attachments_recursive(parts)
+            for filename, att_id in attachments:
+                import base64
+                att = service.users().messages().attachments().get(userId='me', messageId=msg_id, id=att_id).execute()
+                file_data = base64.urlsafe_b64decode(att['data'].encode('UTF-8'))
+                file_path = os.path.join(save_dir, f"{msg_id}_{filename}")
+                with open(file_path, 'wb') as f:
+                    f.write(file_data)
+                downloaded.append(file_path)
 
         if downloaded:
             job.total_files = len(downloaded)
             job.save()
-            process_resume_batch.delay(job_id, downloaded, session_id, "gmail")
+            safe_dispatch_task(process_resume_batch, job_id, downloaded, session_id, "gmail")
         else:
             job.status = "done"
             job.completed_at = datetime.now(timezone.utc)

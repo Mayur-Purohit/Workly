@@ -336,7 +336,7 @@ def gmail_sync(request):
 
         job = IngestJob.objects.create(session=session, type="gmail", status="pending")
 
-        sync_gmail_resumes.delay(str(session.id), str(job.id))
+        safe_dispatch_task(sync_gmail_resumes, str(session.id), str(job.id))
         return JsonResponse(success_response({"job_id": str(job.id), "status": "pending"}))
     except Exception as e:
         return JsonResponse(error_response(f"Server error: {str(e)}"), status=500)
