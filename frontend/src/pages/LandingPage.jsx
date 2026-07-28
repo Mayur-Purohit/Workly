@@ -260,7 +260,7 @@ function HeroSection({ onStart, companiesCount }) {
               )}
             </span>
             <br />
-            <span>with AI-powered screening</span>
+            <span>with <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--google-blue)] via-[#7c3aed] to-[var(--google-green)]">AI-powered screening</span></span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -296,12 +296,9 @@ function HeroSection({ onStart, companiesCount }) {
 }
 
 /* ═══════════════════ Live Demo Card ═══════════════════ */
-const SCORE_KEYFRAMES = [
-  { t: 0, v: 0 }, { t: 0.15, v: 12 }, { t: 0.28, v: 34 },
-  { t: 0.42, v: 41 }, { t: 0.55, v: 61 }, { t: 0.72, v: 78 },
-  { t: 0.82, v: 87 }, { t: 0.9, v: 92 }, { t: 0.95, v: 95 },
-  { t: 1, v: 98.7 },
-];
+const FINAL_SCORE = 98.7;
+const SCAN_DURATION_MS = 3200;
+const SCAN_DELAY_MS = 400;
 
 function LiveDemoCard() {
   const [displayScore, setDisplayScore] = useState(0);
@@ -310,84 +307,87 @@ function LiveDemoCard() {
   const [scanning, setScanning] = useState(true);
   const [activeLine, setActiveLine] = useState(-1);
   const [checkedLines, setCheckedLines] = useState(new Set());
+  const [frozenElapsed, setFrozenElapsed] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const startRef = useRef(Date.now());
   const cardRef = useRef(null);
+  const cancelledRef = useRef(false);
   const isInView = useInView(cardRef, { once: true, margin: "-100px" });
 
-  useEffect(() => {
-    if (!isInView) return;
-    const duration = 3200;
-    const delay = 400;
-    let raf = 0;
-    let startTime = 0;
-    const step = (now) => {
-      if (!startTime) startTime = now;
-      const elapsedMs = now - startTime - delay;
-      if (elapsedMs < 0) { raf = requestAnimationFrame(step); return; }
-      const t = Math.min(1, elapsedMs / duration);
-      let a = SCORE_KEYFRAMES[0]; let b = SCORE_KEYFRAMES[SCORE_KEYFRAMES.length - 1];
-      for (let i = 0; i < SCORE_KEYFRAMES.length - 1; i++) {
-        if (t >= SCORE_KEYFRAMES[i].t && t <= SCORE_KEYFRAMES[i + 1].t) {
-          a = SCORE_KEYFRAMES[i]; b = SCORE_KEYFRAMES[i + 1]; break;
-        }
-      }
-      const segT = (t - a.t) / Math.max(0.0001, b.t - a.t);
-      const eased = 1 - Math.pow(1 - segT, 3);
-      const base = a.v + (b.v - a.v) * eased;
-      const jitter = t < 0.88 ? (Math.random() - 0.5) * 4 : 0;
-      setDisplayScore(Math.max(0, Math.min(99.9, base + jitter)));
-      if (t < 1) { raf = requestAnimationFrame(step); }
-      else {
-        setDisplayScore(98.7); setScanning(false); setFlash(true);
-        setTimeout(() => setShowPills(true), 250);
-      }
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [isInView]);
-
-  useEffect(() => {
-    startRef.current = Date.now();
-    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const resumeSections = [
+  const resumeSections = useMemo(() => [
     { type: "header", name: "Sarah Mitchell", title: "Senior Product Designer" },
     { type: "meta", items: ["New York, NY", "s.mitchell@email.com", "6 yrs exp"] },
     { type: "section", label: "Experience" },
-    { type: "role", company: "Figma", role: "Lead Product Designer", years: "2022 — Present" },
-    { type: "role", company: "Stripe", role: "Senior Designer", years: "2019 — 2022" },
-    { type: "role", company: "Airbnb", role: "Product Designer", years: "2017 — 2019" },
+    { type: "role", company: "Figma", role: "Lead Product Designer", years: "2022 — Present", desc: "Spearheaded the complete redesign of Dev Mode, leading a team of 4 designers to bridge design and engineering." },
+    { type: "role", company: "Stripe", role: "Senior Designer", years: "2019 — 2022", desc: "Designed and launched Stripe Identity, driving a 40% increase in verification conversion rates." },
+    { type: "role", company: "Airbnb", role: "Product Designer", years: "2017 — 2019", desc: "Revamped the mobile booking flow and established core components for the cross-platform design system." },
     { type: "section", label: "Skills" },
     { type: "chips", items: ["Figma", "Design Systems", "User Research", "Prototyping", "A/B Testing"] },
     { type: "section", label: "Education" },
     { type: "edu", school: "RISD", degree: "BFA Industrial Design" },
-  ];
+  ], []);
+
+  useEffect(() => {
+    if (!isInView) return;
+    cancelledRef.current = false;
+    let raf = 0;
+    let startTime = 0;
+    const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+    const step = (now) => {
+      if (cancelledRef.current) return;
+      if (!startTime) startTime = now;
+      const elapsedMs = now - startTime - SCAN_DELAY_MS;
+      if (elapsedMs < 0) { raf = requestAnimationFrame(step); return; }
+      const t = Math.min(1, elapsedMs / SCAN_DURATION_MS);
+      setDisplayScore(FINAL_SCORE * easeOutCubic(t));
+      if (t < 1) { raf = requestAnimationFrame(step); }
+      else {
+        setDisplayScore(FINAL_SCORE);
+        setScanning(false);
+        setFlash(true);
+        setTimeout(() => { if (!cancelledRef.current) setShowPills(true); }, 300);
+      }
+    };
+    raf = requestAnimationFrame(step);
+    return () => { cancelledRef.current = true; cancelAnimationFrame(raf); };
+  }, [isInView]);
+
+  useEffect(() => {
+    if (frozenElapsed !== null) return;
+    startRef.current = Date.now();
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [frozenElapsed]);
+
+  useEffect(() => {
+    if (!scanning && frozenElapsed === null) setFrozenElapsed(elapsed);
+  }, [scanning, elapsed, frozenElapsed]);
 
   useEffect(() => {
     if (!scanning || !isInView) { setActiveLine(-1); return; }
     let idx = 0;
+    const total = resumeSections.length;
     const id = setInterval(() => {
+      if (idx >= total) { clearInterval(id); setActiveLine(-1); return; }
       setActiveLine(idx);
       setCheckedLines((prev) => { const next = new Set(prev); next.add(idx); return next; });
-      idx = (idx + 1) % resumeSections.length;
+      idx++;
     }, 300);
     return () => clearInterval(id);
-  }, [scanning, isInView]);
+  }, [scanning, isInView, resumeSections]);
+
+  const shownElapsed = frozenElapsed !== null ? frozenElapsed : elapsed;
 
   return (
     <motion.section
       id="demo"
-      className="mx-auto w-full max-w-4xl px-6 my-8 scroll-mt-24"
+      className="mx-auto w-full max-w-4xl px-6 mt-4 mb-8 scroll-mt-24"
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.7, ease: [0.215, 0.61, 0.355, 1.0] }}
     >
-      <div ref={cardRef} className="relative rounded-2xl border border-border bg-card shadow-lg overflow-hidden">
-        {/* Window chrome */}
+      <div ref={cardRef} className="relative rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl shadow-2xl overflow-hidden ring-1 ring-white/10 dark:ring-white/5">
         <div className="border-b border-border bg-muted/30">
           <div className="flex items-center gap-2 px-5 py-3">
             <div className="flex gap-1.5">
@@ -398,19 +398,18 @@ function LiveDemoCard() {
             <div className="flex-1 flex justify-center min-w-0 px-2">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-background border border-border/80 text-[11px] text-muted-foreground font-mono max-w-full overflow-hidden">
                 <span className="w-1.5 h-1.5 flex-shrink-0 rounded-full bg-[var(--google-green)]" />
-                <span className="truncate">between.ai/screening/session-482</span>
+                <span className="truncate">workly.ai/screening/session-482</span>
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-[11px]">
               <span className={`w-1.5 h-1.5 rounded-full ${scanning ? "bg-[var(--google-blue)] animate-pulse" : "bg-[var(--google-green)]"}`} />
-              <span className="text-muted-foreground font-medium">{scanning ? "Analyzing" : "Complete"}</span>
+              <span className="text-muted-foreground font-medium">{scanning ? "Analyzing…" : "✓ Complete"}</span>
             </div>
           </div>
         </div>
 
         <div className="p-5 md:p-7">
           <div className="grid md:grid-cols-[1fr_auto] gap-5 items-stretch">
-            {/* Resume scan panel */}
             <div className="relative bg-surface rounded-2xl p-5 border border-border overflow-hidden min-h-[340px]">
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono mb-4 pb-3 border-b border-border/60">
                 <FileText className="w-3.5 h-3.5" />
@@ -421,7 +420,7 @@ function LiveDemoCard() {
                 {resumeSections.map((s, i) => {
                   const isActive = activeLine === i;
                   const isChecked = checkedLines.has(i) && !isActive;
-                  const bc = `relative transition-all duration-300 ${isActive ? "opacity-100 -translate-y-0.5" : isChecked ? "opacity-100" : "opacity-55"}`;
+                  const bc = `relative transition-all duration-300 ${isActive ? "opacity-100 -translate-y-0.5" : isChecked ? "opacity-100" : scanning ? "opacity-40" : "opacity-100"}`;
                   if (s.type === "header") return (
                     <div key={i} className={`${bc} flex items-center gap-3`}>
                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--google-blue)] to-[var(--google-green)] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">SM</div>
@@ -444,17 +443,15 @@ function LiveDemoCard() {
                     <div key={i} className={`${bc} flex items-start justify-between gap-2`}>
                       <div className="min-w-0 flex-1">
                         <div className="text-xs font-medium text-foreground truncate">{s.role} · {s.company}</div>
-                        <div className="flex gap-1 mt-1.5">
-                          <div className="h-1 rounded-full bg-border/70 flex-1" /><div className="h-1 rounded-full bg-border/70 w-8" /><div className="h-1 rounded-full bg-border/70 w-14" />
-                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed pr-2">{s.desc}</div>
                       </div>
-                      <div className="text-[10px] text-muted-foreground whitespace-nowrap tabular-nums">{s.years}</div>
+                      <div className="text-[10px] text-muted-foreground whitespace-nowrap tabular-nums mt-0.5">{s.years}</div>
                     </div>
                   );
                   if (s.type === "chips") return (
                     <div key={i} className={`${bc} flex flex-wrap gap-1.5`}>
                       {s.items.map((c) => (
-                        <span key={c} className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${isChecked ? "border-[var(--google-green)]/40 bg-[var(--google-green)]/10 text-[var(--google-green)]" : "border-border bg-card text-muted-foreground"}`}>{c}</span>
+                        <span key={c} className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors duration-500 ${isChecked || !scanning ? "border-[var(--google-green)]/40 bg-[var(--google-green)]/10 text-[var(--google-green)]" : "border-border bg-card text-muted-foreground"}`}>{c}</span>
                       ))}
                     </div>
                   );
@@ -468,33 +465,53 @@ function LiveDemoCard() {
                 })}
               </div>
               {scanning && (
-                <motion.div className="absolute left-4 right-4 h-[2px] bg-[var(--google-blue)] pointer-events-none rounded-full"
-                  style={{ boxShadow: "0 0 15px var(--google-blue)" }}
-                  initial={{ top: "12%" }} animate={{ top: ["12%", "95%", "12%"] }}
-                  transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }} />
+                <motion.div
+                  className="absolute left-0 right-0 h-20 pointer-events-none z-10"
+                  style={{
+                    background: 'linear-gradient(to bottom, transparent 0%, rgba(66,133,244,0.06) 40%, rgba(66,133,244,0.18) 75%, rgba(66,133,244,0.5) 95%, var(--google-blue) 100%)',
+                    borderBottom: '2px solid var(--google-blue)',
+                    boxShadow: '0 4px 20px rgba(66, 133, 244, 0.25)',
+                  }}
+                  initial={{ top: "-20%" }}
+                  animate={{ top: ["0%", "90%", "0%"] }}
+                  transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+                />
+              )}
+              {!scanning && (
+                <motion.div
+                  className="absolute inset-0 pointer-events-none z-10 rounded-2xl"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 1.2, ease: "easeOut" }}
+                  style={{ background: 'radial-gradient(ellipse at center, rgba(40, 200, 64, 0.08), transparent 70%)' }}
+                />
               )}
             </div>
 
-            {/* Score panel */}
             <div className="flex md:flex-col items-center md:items-stretch justify-between md:justify-center gap-3 md:min-w-[180px] rounded-2xl border border-border bg-surface p-4">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Match Score</div>
               <motion.div animate={flash ? { scale: [1, 1.12, 1] } : {}} transition={{ duration: 0.9 }}
                 className="font-display text-4xl md:text-5xl font-bold tabular-nums leading-none text-foreground">
                 {displayScore.toFixed(1)}<span className="text-2xl md:text-3xl text-muted-foreground">%</span>
               </motion.div>
-              <div className="text-[10px] text-muted-foreground tabular-nums md:mt-1">Scanned {elapsed}s ago</div>
+              <div className="text-[10px] text-muted-foreground tabular-nums md:mt-1">
+                {scanning ? "Scanning…" : `Scanned ${shownElapsed}s ago`}
+              </div>
               <div className="hidden md:block space-y-2 mt-3 pt-3 border-t border-border">
-                {[{ label: "Skills", val: "9/10", color: "text-[var(--google-blue)]" }, { label: "Experience", val: "6 yrs", color: "text-[var(--google-green)]" }, { label: "Fraud Risk", val: "None", color: "text-[var(--google-green)]" }].map((m) => (
+                {[
+                  { label: "Skills", val: scanning ? "—" : "9/10", color: scanning ? "text-muted-foreground" : "text-[var(--google-blue)]" },
+                  { label: "Experience", val: scanning ? "—" : "6 yrs", color: scanning ? "text-muted-foreground" : "text-[var(--google-green)]" },
+                  { label: "Fraud Risk", val: scanning ? "—" : "None", color: scanning ? "text-muted-foreground" : "text-[var(--google-green)]" },
+                ].map((m) => (
                   <div key={m.label} className="flex items-center justify-between text-[10px]">
                     <span className="text-muted-foreground uppercase tracking-wider">{m.label}</span>
-                    <span className={`font-semibold ${m.color} tabular-nums`}>{m.val}</span>
+                    <span className={`font-semibold ${m.color} tabular-nums transition-colors duration-500`}>{m.val}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Result pills */}
           <div className="flex flex-wrap gap-2 mt-5 min-h-[44px]">
             <AnimatePresence>
               {showPills && [
@@ -503,7 +520,8 @@ function LiveDemoCard() {
                 { icon: Shield, label: "Fraud Clear", color: "text-[var(--google-red)]" },
               ].map((p, i) => (
                 <motion.span key={p.label} initial={{ opacity: 0, y: 8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: i * 0.15, type: "spring", stiffness: 400, damping: 22 }} className="pill rounded-full bg-card border border-border px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                  transition={{ delay: i * 0.15, type: "spring", stiffness: 400, damping: 22 }}
+                  className="pill rounded-full bg-card border border-border px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm">
                   <p.icon className={`w-4 h-4 ${p.color}`} />{p.label}
                 </motion.span>
               ))}
@@ -708,7 +726,7 @@ function BentoFeatures() {
   return (
     <motion.section id="features" className="mx-auto w-full max-w-7xl px-6 my-20 scroll-mt-24"
       initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainerVariants}>
-      
+
       {/* Modal Overlay backdrop */}
       <AnimatePresence>
         {active && (
@@ -894,7 +912,7 @@ function IngestShowcase({ onNavigateDev }) {
             See ingest docs <ArrowRight className="w-4 h-4" />
           </button>
         </motion.div>
-        
+
         <motion.div variants={slideInRightVariants} className="order-1 lg:order-2 grid grid-cols-2 sm:grid-cols-3 gap-3.5">
           {sources.map((s) => (
             <motion.div
@@ -960,8 +978,8 @@ function WorkflowSection({ liveSession }) {
                 const badgeColor = recLower.includes('strong')
                   ? 'text-[var(--google-green)]'
                   : recLower.includes('reject')
-                  ? 'text-[var(--google-red)]'
-                  : 'text-[var(--google-blue)]';
+                    ? 'text-[var(--google-red)]'
+                    : 'text-[var(--google-blue)]';
                 const barColor = recLower.includes('reject')
                   ? 'bg-[var(--google-red)]'
                   : 'bg-[var(--google-blue)]';
@@ -1371,20 +1389,20 @@ export default function LandingPage() {
 
   return (
     <div style={{ padding: '0', backgroundColor: 'transparent', color: 'var(--text)', minHeight: '100vh', transition: 'background-color 0.3s, color 0.3s', position: 'relative' }}>
-      
+
       {/* Dynamic base background that matches theme when video fades out */}
-      <div 
-        style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          width: '100%', 
-          height: '100%', 
-          backgroundColor: 'var(--bg)', 
-          zIndex: -3, 
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'var(--bg)',
+          zIndex: -3,
           pointerEvents: 'none',
           transition: 'background-color 0.3s'
-        }} 
+        }}
       />
 
       {/* Background and scrim overlay styling */}
@@ -1480,10 +1498,10 @@ export default function LandingPage() {
       </motion.div>
 
       <motion.div style={{ width }} className="fixed top-0 left-0 h-[3px] bg-[var(--google-blue)] z-[60]" />
-      
+
       <Navbar onSignIn={handleAuth} isLoggedIn={isLoggedIn} />
-      
-      <main className="flex flex-col w-full overflow-x-hidden pt-16" style={{ background: 'transparent' }}>
+
+      <main className="flex flex-col w-full overflow-x-hidden pt-[80px]" style={{ background: 'transparent' }}>
         <HeroSection onStart={handleAuth} companiesCount={stats.total_companies} />
         <LiveDemoCard />
         <StatsStrip stats={stats} loading={loading} />

@@ -735,12 +735,19 @@ def public_stats(request):
     try:
         # ── Core counts (100% Dynamic Database Queries) ──────────────────────────────────
         from django.db.models import Avg, Count
-        from api.models import Company, Session, Candidate, JobSeekerAccount, JobApplication
+        from api.models import Company, Session, Candidate, JobSeekerAccount, JobApplication, DeveloperAccount, APIUsageLog, SkillTaxonomy
 
         total_companies = Company.objects.filter(is_active=True).count()
         total_candidates = Candidate.objects.filter(deleted_at__isnull=True).count()
         total_sessions = Session.objects.count()
         total_applications = JobApplication.objects.count()
+
+        total_developers = DeveloperAccount.objects.count()
+        total_api_calls = APIUsageLog.objects.count()
+        total_skills = SkillTaxonomy.objects.count()
+
+        avg_lat_res = APIUsageLog.objects.aggregate(avg_lat=Avg("latency_ms"))
+        avg_latency_ms = round(avg_lat_res["avg_lat"] or 8)
 
         avg_score_res = Candidate.objects.filter(
             deleted_at__isnull=True,
@@ -899,6 +906,10 @@ def public_stats(request):
                 "total_applications": total_applications,
                 "avg_match_score": avg_match_score,
                 "fraud_flagged": fraud_flagged,
+                "total_developers": total_developers,
+                "total_api_calls": total_api_calls,
+                "total_skills": total_skills,
+                "avg_latency_ms": avg_latency_ms,
             },
             "live_session": {
                 "title": session_title,
