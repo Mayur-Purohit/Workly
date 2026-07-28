@@ -627,7 +627,6 @@ console.log(data);`,
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
             <Link to="/" className="hover:text-[var(--google-blue)] transition-colors">Home</Link>
-            <a href="#playground" className="hover:text-[var(--google-blue)] transition-colors">API Console</a>
             <a href="#features" className="hover:text-[var(--google-blue)] transition-colors">Capabilities</a>
             <a href="#pricing" className="hover:text-[var(--google-blue)] transition-colors">Pricing</a>
             <a href="#docs" className="hover:text-[var(--google-blue)] transition-colors">Docs</a>
@@ -665,7 +664,6 @@ console.log(data);`,
       {mobileMenu && (
         <div className="fixed inset-0 top-[60px] bg-card z-40 p-6 flex flex-col gap-6 md:hidden border-b border-border">
           <Link to="/" className="text-lg font-semibold text-foreground" onClick={() => setMobileMenu(false)}>Home</Link>
-          <a href="#playground" className="text-lg font-semibold text-foreground" onClick={() => setMobileMenu(false)}>API Console</a>
           <a href="#features" className="text-lg font-semibold text-foreground" onClick={() => setMobileMenu(false)}>Capabilities</a>
           <a href="#pricing" className="text-lg font-semibold text-foreground" onClick={() => setMobileMenu(false)}>Pricing</a>
           <a href="#docs" className="text-lg font-semibold text-foreground" onClick={() => setMobileMenu(false)}>Docs</a>
@@ -709,12 +707,6 @@ console.log(data);`,
             >
               {isDevLoggedIn ? "Go to Dashboard" : "Get Free API Key"} <ArrowRight className="w-4 h-4" />
             </Link>
-            <a
-              href="#playground"
-              className="flex justify-center items-center px-6 py-3.5 rounded-full border border-border bg-card text-foreground font-bold hover:bg-muted transition-all"
-            >
-              Try Live API Console
-            </a>
           </div>
 
           <div className="flex flex-col gap-2 pt-2 text-xs font-semibold text-muted-foreground">
