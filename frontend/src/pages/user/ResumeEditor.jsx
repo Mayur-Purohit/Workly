@@ -302,25 +302,17 @@ export default function ResumeEditor() {
   const [showVersionsPanel, setShowVersionsPanel] = useState(false);
   const [newVersionName, setNewVersionName] = useState("");
 
-  // Dark Mode state
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem("theme") === "dark" || 
-    document.documentElement.classList.contains("dark")
-  );
+  // Dark Mode state (Light mode enforced)
+  const [darkMode, setDarkMode] = useState(false);
 
   // Auto-save Status
   const [autoSaveStatus, setAutoSaveStatus] = useState("Saved");
   const hasHydrated = useRef(false);
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [darkMode]);
+    document.documentElement.classList.remove("dark");
+    localStorage.setItem("theme", "light");
+  }, []);
 
   const loadVersions = async () => {
     if (!resumeId) return;

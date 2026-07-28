@@ -185,10 +185,15 @@ export default function ResumeBuilderLanding() {
     try {
       await seekerAPI.deleteDraft(id);
       toast.success("Draft deleted");
-      setDrafts(drafts.filter(d => d.id !== id));
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete draft");
+      if (err.message && (err.message.includes("not found") || err.message.includes("404"))) {
+        toast.success("Draft removed");
+      } else {
+        console.error(err);
+        toast.error("Failed to delete draft");
+      }
+    } finally {
+      setDrafts(prev => prev.filter(d => d.id !== id));
     }
   };
 

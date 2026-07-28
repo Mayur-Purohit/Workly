@@ -7,6 +7,7 @@ import { Bookmark, Briefcase, CheckCircle2, Clock, TrendingUp, Sparkles, AlertCi
 import toast from "react-hot-toast";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
 import AlertBanner from "../../components/AlertBanner";
+import { useSeekerAuthStore } from "../../stores/seekerAuthStore";
 
 const statuses = ["Applied", "Interview", "Offer", "Saved"];
 
@@ -34,6 +35,7 @@ export default function UserDashboard() {
     ])
       .then(([profile, appsData, savedData, draftsData]) => {
         setSeeker(profile);
+        if (profile) useSeekerAuthStore.getState().updateSeeker(profile);
         setApplications(appsData?.applications || []);
         setSavedJobs(savedData?.jobs || []);
         

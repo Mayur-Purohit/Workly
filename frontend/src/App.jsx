@@ -137,12 +137,8 @@ export default function App() {
   }));
 
   useEffect(() => {
-    const isDark = localStorage.getItem("theme") === "dark";
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.remove("dark");
+    localStorage.setItem("theme", "light");
   }, []);
 
   useEffect(() => {

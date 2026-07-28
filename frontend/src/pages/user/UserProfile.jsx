@@ -54,6 +54,7 @@ export default function UserProfile() {
     seekerAPI.getMe()
       .then((data) => {
         setSeeker(data);
+        useSeekerAuthStore.getState().updateSeeker(data);
         resetEditStates(data);
       })
       .catch((err) => {

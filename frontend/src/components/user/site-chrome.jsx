@@ -6,6 +6,7 @@ import { OnboardingTour, useTour } from "../OnboardingTour";
 import { SocialTooltip } from "../ui/social-media";
 import ThemeToggle from "../ThemeToggle";
 import { seekerAPI, API_HOST } from "../../lib/api";
+import { useSeekerAuthStore } from "../../stores/seekerAuthStore";
 
 const SEEKER_TOUR_STEPS = [
   {
@@ -118,7 +119,7 @@ export function Header() {
       seekerAPI.getMe()
         .then((profile) => {
           setSeekerData(profile);
-          localStorage.setItem('vish_seeker_data', JSON.stringify(profile));
+          useSeekerAuthStore.getState().updateSeeker(profile);
         })
         .catch((err) => console.error("Error syncing profile to navbar:", err));
     }
