@@ -356,14 +356,6 @@ function Home() {
                   </button>
                 </form>
               </div>
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-                <span className="font-medium">Trending:</span>
-                {["Product Designer", "ML Engineer", "Remote", "Fintech", "Staff Engineer"].map((t) => (
-                  <Link key={t} to={`/jobs/search?q=${t}`} className="pill border border-border bg-background/80 px-2.5 py-0.5 hover:bg-muted">
-                    {t}
-                  </Link>
-                ))}
-              </div>
             </motion.div>
 
             {/* Trust badges */}
