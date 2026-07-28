@@ -146,10 +146,27 @@ export default function UserDashboard() {
     ats_formatting: { score: 0, issues: [] }
   };
 
-  const breakdownItems = atsReport.mode === "general_ats" && atsReport.detailed_breakdown
+  const formatBreakdownLabel = (key, item) => {
+    if (item?.label) {
+      const pct = item.weight_pct !== undefined ? ` (${item.weight_pct}%)` : '';
+      return `${item.label}${pct}`;
+    }
+    const labelMap = {
+      keyword_match: "Keywords (35%)",
+      skills_match: "Skills (25%)",
+      experience_relevance: "Experience (15%)",
+      project_relevance: "Projects (10%)",
+      education_match: "Education (5%)",
+      ats_formatting: "Formatting (10%)"
+    };
+    if (labelMap[key]) return labelMap[key];
+    return key ? key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) : "Score Component";
+  };
+
+  const breakdownItems = atsReport.detailed_breakdown
     ? Object.entries(atsReport.detailed_breakdown).map(([k, item]) => ({
-        label: `${item.label} (${item.weight_pct}%)`,
-        val: item.score
+        label: formatBreakdownLabel(k, item),
+        val: typeof item === "number" ? item : (item?.score ?? 0)
       }))
     : [
         { label: "Keywords (35%)", val: bd.keyword_match?.score || 0 },
@@ -306,35 +323,35 @@ export default function UserDashboard() {
               <div className="space-y-6 flex flex-col items-center lg:items-start">
                 <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">ATS Match Score</div>
                 
-                <div className="relative flex items-center justify-center">
-                  <svg className="w-36 h-36 transform -rotate-90">
+                <div className="relative flex items-center justify-center p-2">
+                  <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 160 160">
                     <circle
-                      cx="72"
-                      cy="72"
-                      r="64"
-                      className="stroke-border"
+                      cx="80"
+                      cy="80"
+                      r="62"
+                      className="stroke-muted/20"
                       strokeWidth="10"
-                      fill="transparent"
+                      fill="none"
                     />
                     <circle
-                      cx="72"
-                      cy="72"
-                      r="64"
-                      className={`transition-all duration-500 ease-in-out ${
-                        overallScore >= 80 ? 'stroke-[var(--google-green)]' :
-                        overallScore >= 50 ? 'stroke-[var(--google-yellow)]' :
-                        'stroke-[var(--google-red)]'
+                      cx="80"
+                      cy="80"
+                      r="62"
+                      className={`transition-all duration-700 ease-out ${
+                        overallScore >= 80 ? 'stroke-emerald-500' :
+                        overallScore >= 50 ? 'stroke-amber-500' :
+                        'stroke-rose-500'
                       }`}
                       strokeWidth="10"
-                      fill="transparent"
-                      strokeDasharray={2 * Math.PI * 64}
-                      strokeDashoffset={2 * Math.PI * 64 * (1 - overallScore / 100)}
+                      fill="none"
+                      strokeDasharray={2 * Math.PI * 62}
+                      strokeDashoffset={2 * Math.PI * 62 * (1 - Math.min(100, Math.max(0, overallScore)) / 100)}
                       strokeLinecap="round"
                     />
                   </svg>
-                  <div className="absolute flex flex-col items-center justify-center">
-                    <span className="font-display text-4xl font-bold">{overallScore}</span>
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">/ 100</span>
+                  <div className="absolute flex flex-col items-center justify-center text-center">
+                    <span className="font-display text-4xl font-bold tracking-tight text-foreground">{overallScore}</span>
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">/ 100</span>
                   </div>
                 </div>
 
