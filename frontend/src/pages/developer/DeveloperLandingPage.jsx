@@ -112,25 +112,6 @@ const PLAYGROUND_ENDPOINTS = [
       implicit_skills_detected: ["REST APIs", "Async Queues"],
       fit_percentile: 98.4
     }
-  },
-  {
-    id: "fraud",
-    label: "POST /v1/detect-fraud",
-    badge: "Authenticity Shield",
-    description: "Detect AI-generated text, hidden prompt injections, and resume embellishments.",
-    payload: {
-      resume_text: "Senior Software Engineer with 15 years experience in Quantum AI...",
-      check_ai_generated: true,
-      check_keyword_stuffing: true
-    },
-    response: {
-      status: 200,
-      authentic: true,
-      fraud_risk: "LOW",
-      ai_text_probability: 0.03,
-      hidden_text_detected: false,
-      verification_hash: "sha256_e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b"
-    }
   }
 ];
 
