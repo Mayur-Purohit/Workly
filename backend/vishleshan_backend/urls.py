@@ -1,6 +1,7 @@
 import os
 import re
 import logging
+from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.static import serve
 from django.conf import settings
@@ -67,6 +68,7 @@ def custom_serve_uploads(request, path, document_root=None, **kwargs):
     return serve(request, path, document_root=document_root, **kwargs)
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
     # Route static/media uploads and photos
     re_path(r'^uploads/(?P<path>.*)$', custom_serve_uploads, {'document_root': os.getenv("UPLOAD_DIR", "uploads")}),
     re_path(r'^photos/(?P<path>.*)$', serve, {'document_root': os.getenv("PHOTO_DIR", "photos")}),
