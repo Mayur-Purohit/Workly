@@ -101,7 +101,7 @@ echo ===================================================
 echo [6/6] Starting Celery Worker...
 echo ===================================================
 cd /d "%~dp0backend"
-start "Celery Worker" cmd /k "call venv\Scripts\activate && celery -A workers.celery_worker worker --loglevel=info --pool=threads --concurrency=4"
+start "Celery Worker" cmd /k "call venv\Scripts\activate && python -m celery -A workers.celery_worker worker --loglevel=info --pool=threads --concurrency=4"
 
 echo.
 echo ===================================================

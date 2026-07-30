@@ -76,7 +76,7 @@ export function Header() {
     const parts = name.trim().split(" ").filter(Boolean);
     const dakshPart = parts.find(p => p.toUpperCase() === "DAKSH");
     if (dakshPart) return "D";
-    
+
     if (parts.length > 0) {
       const firstUpper = parts[0].toUpperCase();
       const lastNames = ["BHAVSAR", "PATEL", "SHAH", "MEHTA", "JOSHI", "TRIVEDI"];
@@ -93,7 +93,7 @@ export function Header() {
     const token = localStorage.getItem('vish_seeker_token');
     const data = localStorage.getItem('vish_seeker_data');
     if (token && data) {
-      try { return JSON.parse(data); } catch {}
+      try { return JSON.parse(data); } catch { }
     }
     return null;
   });
@@ -103,7 +103,7 @@ export function Header() {
     const handleProfileUpdate = () => {
       const data = localStorage.getItem('vish_seeker_data');
       if (data) {
-        try { setSeekerData(JSON.parse(data)); } catch {}
+        try { setSeekerData(JSON.parse(data)); } catch { }
       } else {
         setSeekerData(null);
       }
@@ -171,277 +171,270 @@ export function Header() {
 
   return (
     <div className="sticky top-0 z-40 w-full transition-all duration-300 p-0 pointer-events-none">
-      <header className={`mx-auto transition-all duration-300 pointer-events-auto backdrop-blur-xl ${
-        isScrolled
+      <header className={`mx-auto transition-all duration-300 pointer-events-auto backdrop-blur-xl ${isScrolled
           ? "max-w-7xl mt-3 rounded-full border border-border bg-background/80 shadow-lg"
           : "w-full border-b border-border/60 bg-background/80"
-      }`}>
-      <div className={`mx-auto flex max-w-7xl items-center gap-4 py-3 transition-all duration-300 ${
-        isScrolled ? "px-8" : "px-4 sm:px-6"
-      }`}>
-        <Link to="/jobs" className="flex items-center gap-2 pr-1 sm:pr-3 shrink-0 no-underline text-inherit">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-display font-bold text-sm bg-[#2A2A2A] p-1">
-            <svg viewBox="0 0 100 100" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="logo-grad-site-chrome" x1="0%" y1="100%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#38bdf8" />
-                  <stop offset="100%" stopColor="#2563eb" />
-                </linearGradient>
-              </defs>
-              <line x1="32" y1="68" x2="68" y2="32" stroke="url(#logo-grad-site-chrome)" strokeWidth="14" strokeLinecap="round" />
-              <circle cx="32" cy="68" r="16" fill="#38bdf8" />
-              <circle cx="68" cy="32" r="24" fill="#2563eb" />
-            </svg>
-          </div>
-          <span className="font-display text-[22px] text-foreground tracking-tight font-semibold">
-            Workly
-          </span>
-        </Link>
+        }`}>
+        <div className={`mx-auto flex max-w-7xl items-center gap-4 py-3 transition-all duration-300 ${isScrolled ? "px-8" : "px-4 sm:px-6"
+          }`}>
+          <Link to="/jobs" className="flex items-center gap-2 pr-1 sm:pr-3 shrink-0 no-underline text-inherit">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-display font-bold text-sm bg-[#2A2A2A] p-1">
+              <svg viewBox="0 0 100 100" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="logo-grad-site-chrome" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#38bdf8" />
+                    <stop offset="100%" stopColor="#2563eb" />
+                  </linearGradient>
+                </defs>
+                <line x1="32" y1="68" x2="68" y2="32" stroke="url(#logo-grad-site-chrome)" strokeWidth="14" strokeLinecap="round" />
+                <circle cx="32" cy="68" r="16" fill="#38bdf8" />
+                <circle cx="68" cy="32" r="24" fill="#2563eb" />
+              </svg>
+            </div>
+            <span className="font-display text-[22px] text-foreground tracking-tight font-semibold">
+              Workly
+            </span>
+          </Link>
 
-        <nav className="ml-4 hidden flex-1 items-center gap-1.5 md:flex">
-          {filteredPrimary.map((l) => {
+          <nav className="ml-4 hidden flex-1 items-center gap-1.5 md:flex">
+            {filteredPrimary.map((l) => {
+              const active = pathname === l.to;
+              const tourId = `seeker-nav-${l.label.toLowerCase().replace(/\s+/g, '-')}`;
+              return (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  data-tour={tourId}
+                  className={`pill px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition ${active
+                      ? "bg-muted text-foreground font-medium shadow-sm"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
+
+            {/* Tools Dropdown */}
+            {filteredTools.length > 0 && (
+              <div className="relative" ref={toolsDropdownRef}>
+                <button
+                  onClick={() => setToolsOpen(!toolsOpen)}
+                  data-tour="seeker-nav-career-tools"
+                  className={`pill px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition flex items-center gap-1 ${filteredTools.some(l => pathname === l.to)
+                      ? "bg-muted text-foreground font-semibold"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                >
+                  <span>Career Tools</span>
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${toolsOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {toolsOpen && (
+                  <div className="absolute left-0 mt-2 w-52 rounded-xl p-1.5 z-20 flex flex-col gap-0.5 skeuo-dropdown-panel">
+                    {filteredTools.map((l) => {
+                      const Icon = l.icon;
+                      const active = pathname === l.to;
+                      const tourId = `seeker-nav-${l.label.toLowerCase().replace(/\s+/g, '-')}`;
+                      return (
+                        <Link
+                          key={l.to}
+                          to={l.to}
+                          data-tour={tourId}
+                          onClick={() => setToolsOpen(false)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm skeuo-dropdown-item ${active
+                              ? "bg-[#faf9f6] dark:bg-[#212126] text-foreground font-semibold"
+                              : "text-muted-foreground"
+                            }`}
+                        >
+                          <Icon size={14} className="text-muted-foreground shrink-0 transition-colors" />
+                          <span className="transition-colors">{l.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Premium plans featured pill */}
+            {isLoggedIn && (
+              <Link
+                to="/jobs/billing"
+                data-tour="seeker-nav-premium-plans"
+                className={`pill px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition flex items-center gap-1.5 ${pathname === "/jobs/billing"
+                    ? "bg-amber-500/10 text-amber-500 font-semibold border border-amber-500/20"
+                    : "text-amber-500 hover:bg-amber-500/5"
+                  }`}
+              >
+                <Sparkles size={14} />
+                <span>Premium Plans</span>
+              </Link>
+            )}
+          </nav>
+
+          <div className="ml-auto flex items-center gap-2">
+            {/* 9-Dots App Switcher */}
+            <div className="relative" ref={appsDropdownRef}>
+              <button
+                onClick={() => setAppsOpen(!appsOpen)}
+                title="Switch Platform"
+                aria-label="Switch Platform"
+                className="pill p-2 text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center transition shrink-0"
+              >
+                <img width="18" height="18" src="https://img.icons8.com/fluency-systems-regular/48/menu-2--v1.png" alt="menu-2--v1" className="dark:invert opacity-80" />
+              </button>
+              {appsOpen && (
+                <div className="absolute right-0 mt-2 w-60 rounded-2xl p-2 z-50 flex flex-col gap-1 skeuo-dropdown-panel bg-background/95 border border-border shadow-2xl backdrop-blur-md">
+                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Switch Platform</div>
+                  <Link
+                    to="/"
+                    onClick={() => setAppsOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-foreground hover:bg-muted transition-all group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                      <Building2 size={16} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-foreground">Workly Recruiter</div>
+                      <div className="text-[10px] text-muted-foreground truncate">Company & Hiring Platform</div>
+                    </div>
+                  </Link>
+                  <Link
+                    to="/jobs"
+                    onClick={() => setAppsOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-foreground hover:bg-muted transition-all group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                      <Briefcase size={16} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-foreground flex items-center gap-1.5">
+                        Workly Jobs
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">Job Seeker Portal</div>
+                    </div>
+                  </Link>
+                  <Link
+                    to="/developer"
+                    onClick={() => setAppsOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-foreground hover:bg-muted transition-all group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+                      <Code2 size={16} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-foreground">Workly Developer</div>
+                      <div className="text-[10px] text-muted-foreground truncate">APIs & Integrations</div>
+                    </div>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            <ThemeToggle />
+            {isLoggedIn && (
+              <button
+                data-tour="seeker-help-btn"
+                aria-label="Help & Tour"
+                onClick={startTour}
+                className="pill p-2 text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center transition shrink-0"
+                title="Help & Tour"
+              >
+                <HelpCircle className="h-4 w-4" />
+              </button>
+            )}
+            {isLoggedIn ? (
+              <>
+                <Link
+                  to="/jobs/dashboard"
+                  data-tour="seeker-nav-dashboard"
+                  className="pill hidden border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted sm:inline-flex"
+                >
+                  Dashboard
+                </Link>
+                <div className="flex items-center gap-2">
+                  <NotificationBell />
+                  {seekerData?.avatar_url ? (
+                    <Link
+                      to="/jobs/profile"
+                      className="flex items-center justify-center h-10 w-10 rounded-full border border-accent/20 bg-muted overflow-hidden transition shrink-0 hover:opacity-90"
+                      aria-label="Profile"
+                    >
+                      <img
+                        src={seekerData.avatar_url.startsWith('http') ? seekerData.avatar_url : `${API_HOST}${seekerData.avatar_url}`}
+                        alt={seekerData.full_name}
+                        className="h-full w-full object-cover"
+                      />
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/jobs/profile"
+                      className="flex items-center justify-center h-10 w-10 rounded-full bg-[#1a73e8] text-white font-extrabold text-sm uppercase transition shrink-0 hover:bg-[#155cb0] shadow-sm"
+                      aria-label="Profile"
+                    >
+                      {getSeekerInitial(seekerData?.full_name)}
+                    </Link>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="pill p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    title="Logout"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/jobs/login"
+                  className="pill hidden border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted sm:inline-flex"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/jobs/register"
+                  className="pill bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                >
+                  Get started
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+
+        <nav className="flex gap-1 overflow-x-auto hide-scrollbar border-t border-border/60 px-3 py-2 md:hidden">
+          {filteredLinks.map((l) => {
             const active = pathname === l.to;
+            const Icon = l.icon;
             const tourId = `seeker-nav-${l.label.toLowerCase().replace(/\s+/g, '-')}`;
             return (
               <Link
                 key={l.to}
                 to={l.to}
                 data-tour={tourId}
-                className={`pill px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition ${
-                  active
+                className={`pill flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-xs font-medium ${active
                     ? "bg-muted text-foreground font-medium shadow-sm"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                  }`}
               >
+                <Icon className="h-3.5 w-3.5" />
                 {l.label}
               </Link>
             );
           })}
-
-          {/* Tools Dropdown */}
-          {filteredTools.length > 0 && (
-            <div className="relative" ref={toolsDropdownRef}>
-              <button
-                onClick={() => setToolsOpen(!toolsOpen)}
-                data-tour="seeker-nav-career-tools"
-                className={`pill px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition flex items-center gap-1 ${
-                  filteredTools.some(l => pathname === l.to)
-                    ? "bg-muted text-foreground font-semibold"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <span>Career Tools</span>
-                <ChevronDown size={14} className={`transition-transform duration-200 ${toolsOpen ? "rotate-180" : ""}`} />
-              </button>
-
-              {toolsOpen && (
-                <div className="absolute left-0 mt-2 w-52 rounded-xl p-1.5 z-20 flex flex-col gap-0.5 skeuo-dropdown-panel">
-                  {filteredTools.map((l) => {
-                    const Icon = l.icon;
-                    const active = pathname === l.to;
-                    const tourId = `seeker-nav-${l.label.toLowerCase().replace(/\s+/g, '-')}`;
-                    return (
-                      <Link
-                        key={l.to}
-                        to={l.to}
-                        data-tour={tourId}
-                        onClick={() => setToolsOpen(false)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm skeuo-dropdown-item ${
-                          active
-                            ? "bg-[#faf9f6] dark:bg-[#212126] text-foreground font-semibold"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        <Icon size={14} className="text-muted-foreground shrink-0 transition-colors" />
-                        <span className="transition-colors">{l.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Premium plans featured pill */}
-          {isLoggedIn && (
-            <Link
-              to="/jobs/billing"
-              data-tour="seeker-nav-premium-plans"
-              className={`pill px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition flex items-center gap-1.5 ${
-                pathname === "/jobs/billing"
-                  ? "bg-amber-500/10 text-amber-500 font-semibold border border-amber-500/20"
-                  : "text-amber-500 hover:bg-amber-500/5"
-              }`}
-            >
-              <Sparkles size={14} />
-              <span>Premium Plans</span>
-            </Link>
-          )}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
-          {/* 9-Dots App Switcher */}
-          <div className="relative" ref={appsDropdownRef}>
-            <button
-              onClick={() => setAppsOpen(!appsOpen)}
-              title="Switch Platform"
-              aria-label="Switch Platform"
-              className="pill p-2 text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center transition shrink-0"
-            >
-              <Grid3x3 className="h-4 w-4" />
-            </button>
-            {appsOpen && (
-              <div className="absolute right-0 mt-2 w-60 rounded-2xl p-2 z-50 flex flex-col gap-1 skeuo-dropdown-panel bg-background/95 border border-border shadow-2xl backdrop-blur-md">
-                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Switch Platform</div>
-                <Link
-                  to="/"
-                  onClick={() => setAppsOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-foreground hover:bg-muted transition-all group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-                    <Building2 size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-foreground">Workly Recruiter</div>
-                    <div className="text-[10px] text-muted-foreground truncate">Company & Hiring Platform</div>
-                  </div>
-                </Link>
-                <Link
-                  to="/jobs"
-                  onClick={() => setAppsOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-foreground hover:bg-muted transition-all group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-                    <Briefcase size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-foreground flex items-center gap-1.5">
-                      Workly Jobs
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    </div>
-                    <div className="text-[10px] text-muted-foreground truncate">Job Seeker Portal</div>
-                  </div>
-                </Link>
-                <Link
-                  to="/developer"
-                  onClick={() => setAppsOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-foreground hover:bg-muted transition-all group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
-                    <Code2 size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-foreground">Workly Developer</div>
-                    <div className="text-[10px] text-muted-foreground truncate">APIs & Integrations</div>
-                  </div>
-                </Link>
-              </div>
-            )}
-          </div>
-
-          <ThemeToggle />
-          {isLoggedIn && (
-            <button
-              data-tour="seeker-help-btn"
-              aria-label="Help & Tour"
-              onClick={startTour}
-              className="pill p-2 text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center transition shrink-0"
-              title="Help & Tour"
-            >
-              <HelpCircle className="h-4 w-4" />
-            </button>
-          )}
-          {isLoggedIn ? (
-            <>
-              <Link
-                to="/jobs/dashboard"
-                data-tour="seeker-nav-dashboard"
-                className="pill hidden border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted sm:inline-flex"
-              >
-                Dashboard
-              </Link>
-              <div className="flex items-center gap-2">
-                <NotificationBell />
-                {seekerData?.avatar_url ? (
-                  <Link
-                    to="/jobs/profile"
-                    className="flex items-center justify-center h-10 w-10 rounded-full border border-accent/20 bg-muted overflow-hidden transition shrink-0 hover:opacity-90"
-                    aria-label="Profile"
-                  >
-                    <img
-                      src={seekerData.avatar_url.startsWith('http') ? seekerData.avatar_url : `${API_HOST}${seekerData.avatar_url}`}
-                      alt={seekerData.full_name}
-                      className="h-full w-full object-cover"
-                    />
-                  </Link>
-                ) : (
-                  <Link
-                    to="/jobs/profile"
-                    className="flex items-center justify-center h-10 w-10 rounded-full bg-[#1a73e8] text-white font-extrabold text-sm uppercase transition shrink-0 hover:bg-[#155cb0] shadow-sm"
-                    aria-label="Profile"
-                  >
-                    {getSeekerInitial(seekerData?.full_name)}
-                  </Link>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="pill p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  title="Logout"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/jobs/login"
-                className="pill hidden border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted sm:inline-flex"
-              >
-                Sign in
-              </Link>
-              <Link
-                to="/jobs/register"
-                className="pill bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-              >
-                Get started
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
-
-      <nav className="flex gap-1 overflow-x-auto hide-scrollbar border-t border-border/60 px-3 py-2 md:hidden">
-        {filteredLinks.map((l) => {
-          const active = pathname === l.to;
-          const Icon = l.icon;
-          const tourId = `seeker-nav-${l.label.toLowerCase().replace(/\s+/g, '-')}`;
-          return (
-            <Link
-              key={l.to}
-              to={l.to}
-              data-tour={tourId}
-              className={`pill flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-xs font-medium ${
-                active 
-                  ? "bg-muted text-foreground font-medium shadow-sm" 
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {l.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {isLoggedIn && (
-        <OnboardingTour
-          tourKey="seeker_portal"
-          steps={SEEKER_TOUR_STEPS}
-          isOpen={tourOpen}
-          onClose={closeTour}
-        />
-      )}
+        {isLoggedIn && (
+          <OnboardingTour
+            tourKey="seeker_portal"
+            steps={SEEKER_TOUR_STEPS}
+            isOpen={tourOpen}
+            onClose={closeTour}
+          />
+        )}
       </header>
     </div>
   );
@@ -493,8 +486,8 @@ export function Footer() {
     <footer className="mt-24 border-t border-border/60 bg-background relative overflow-hidden">
       <div className="mx-auto flex flex-col md:flex-row justify-between items-start max-w-7xl w-full px-6 py-12 gap-10 relative z-10">
         <div className="max-w-xs w-full space-y-4">
-          <Link 
-            to="/jobs" 
+          <Link
+            to="/jobs"
             className="flex items-center gap-2.5 w-max group"
             onMouseEnter={() => setLogoHovered(true)}
             onMouseLeave={() => setLogoHovered(false)}
@@ -507,30 +500,29 @@ export function Footer() {
                     <stop offset="100%" stopColor="#2563eb" />
                   </linearGradient>
                 </defs>
-                <line 
-                  x1="32" y1="68" x2="68" y2="32" 
-                  stroke={logoHovered ? "url(#logo-grad-footer)" : "#9ca3af"} 
-                  strokeWidth="12" 
-                  strokeLinecap="round" 
+                <line
+                  x1="32" y1="68" x2="68" y2="32"
+                  stroke={logoHovered ? "url(#logo-grad-footer)" : "#9ca3af"}
+                  strokeWidth="12"
+                  strokeLinecap="round"
                   className="transition-all duration-300"
                 />
-                <circle 
-                  cx="32" cy="68" r="16" 
-                  fill={logoHovered ? "#38bdf8" : "#9ca3af"} 
+                <circle
+                  cx="32" cy="68" r="16"
+                  fill={logoHovered ? "#38bdf8" : "#9ca3af"}
                   className="transition-all duration-300"
                 />
-                <circle 
-                  cx="68" cy="32" r="24" 
-                  fill={logoHovered ? "#2563eb" : "#9ca3af"} 
+                <circle
+                  cx="68" cy="32" r="24"
+                  fill={logoHovered ? "#2563eb" : "#9ca3af"}
                   className="transition-all duration-300"
                 />
               </svg>
             </div>
-            <span className={`font-display text-2xl font-bold tracking-tight transition-all duration-300 ${
-              logoHovered 
-                ? "text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-600" 
+            <span className={`font-display text-2xl font-bold tracking-tight transition-all duration-300 ${logoHovered
+                ? "text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-600"
                 : "text-foreground"
-            }`}>
+              }`}>
               Workly
             </span>
           </Link>
@@ -544,27 +536,27 @@ export function Footer() {
 
         <div className="flex flex-1 flex-wrap gap-x-12 gap-y-8 justify-between md:justify-end md:gap-x-16 md:mr-[300px] lg:mr-[360px] xl:mr-[400px]">
           {[
-            { 
-              t: "Product", 
+            {
+              t: "Product",
               items: [
                 { label: "Browse jobs", to: "/jobs/search" },
                 { label: "Companies", to: "/jobs/companies" },
                 { label: "Billing Plans", to: "/jobs/billing" }
-              ] 
+              ]
             },
-            { 
-              t: "Company", 
+            {
+              t: "Company",
               items: [
                 { label: "About Us", to: "/about" },
                 { label: "Contact Us", to: "/contact" }
-              ] 
+              ]
             },
-            { 
-              t: "Resources", 
+            {
+              t: "Resources",
               items: [
                 { label: "Terms & Privacy", to: "/terms" },
                 { label: "Refund Policy", to: "/refund-policy" }
-              ] 
+              ]
             },
           ].map((c) => (
             <div key={c.t} className="min-w-[100px]">

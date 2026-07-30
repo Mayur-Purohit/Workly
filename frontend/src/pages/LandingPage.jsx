@@ -37,6 +37,8 @@ import {
   Users,
   AlertTriangle,
   X,
+  User,
+  Lock,
 } from 'lucide-react';
 
 import toast from 'react-hot-toast';
@@ -190,7 +192,7 @@ function useLandingData() {
 /* ═══════════════════ Hero Section ═══════════════════ */
 const rotatingWords = ["smarter", "faster", "better", "calmer"];
 
-function HeroSection({ onStart, companiesCount }) {
+function HeroSection({ onStart, companiesCount, bgY, bgOpacity, bgScale, videoRef }) {
   const [wordIdx, setWordIdx] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const words = useMemo(() => rotatingWords, []);
@@ -206,7 +208,41 @@ function HeroSection({ onStart, companiesCount }) {
     : 'Trusted by recruiting teams worldwide';
 
   return (
-    <section className="relative overflow-hidden pt-12 md:pt-16 pb-8">
+    <section className="relative overflow-hidden min-h-[95vh] sm:min-h-screen flex flex-col justify-center pt-12 md:pt-16 pb-8">
+      {/* SCROLL-ACTIVATED HERO VIDEO BACKGROUND CONTAINER */}
+      <motion.div
+        style={{
+          opacity: bgOpacity,
+          scale: bgScale,
+          y: bgY,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: -2,
+          pointerEvents: 'none',
+          willChange: 'transform, opacity',
+          WebkitTransform: 'translateZ(0)',
+          transform: 'translateZ(0)'
+        }}
+      >
+        <video
+          ref={videoRef}
+          src="https://zxdefgavgwfxastwmmjm.supabase.co/storage/v1/object/public/assets/flux.mp4"
+          className="bg-video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          style={{ filter: 'blur(2px) saturate(1.06)', willChange: 'transform', transform: 'translateZ(0)' }}
+        />
+        <div className="bg-scrim" />
+        
+        {/* Fade mask at the bottom to blend seamlessly into the page background */}
+        <div className="absolute inset-x-0 bottom-0 h-32 md:h-48 bg-gradient-to-t from-background via-background/80 to-transparent z-10 pointer-events-none" />
+      </motion.div>
+
       {/* Radial gradient backgrounds */}
       <div
         aria-hidden
@@ -246,12 +282,12 @@ function HeroSection({ onStart, companiesCount }) {
                   <motion.span
                     key={word}
                     className="absolute gradient-text font-bold"
-                    initial={{ opacity: 0, y: "100%" }}
-                    transition={{ type: "spring", stiffness: 75, damping: 15 }}
+                    initial={{ opacity: 0, y: 40 }}
+                    transition={{ type: "spring", stiffness: 120, damping: 20, mass: 1 }}
                     animate={
                       wordIdx === index
                         ? { y: 0, opacity: 1 }
-                        : { y: "-100%", opacity: 0 }
+                        : { y: -40, opacity: 0 }
                     }
                   >
                     {word}
@@ -260,7 +296,7 @@ function HeroSection({ onStart, companiesCount }) {
               )}
             </span>
             <br />
-            <span>with <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--google-blue)] via-[#7c3aed] to-[var(--google-green)]">AI-powered screening</span></span>
+            <span>with <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--google-blue)] via-[#7c3aed] to-[var(--google-green)] drop-shadow-sm">AI-powered screening</span></span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -283,7 +319,7 @@ function HeroSection({ onStart, companiesCount }) {
           >
             <button
               onClick={onStart}
-              className="pill cursor-pointer bg-primary text-primary-foreground px-8 py-3.5 text-base font-semibold hover:opacity-90 shadow-md flex items-center gap-2 rounded-full transition-all"
+              className="pill cursor-pointer bg-primary text-primary-foreground px-8 py-3.5 text-base font-semibold hover:scale-105 active:scale-95 shadow-md hover:shadow-xl hover:shadow-primary/20 flex items-center gap-2 rounded-full transition-all duration-300"
             >
               Start Free Trial
               <ArrowRight className="h-4.5 w-4.5" />
@@ -296,11 +332,70 @@ function HeroSection({ onStart, companiesCount }) {
 }
 
 /* ═══════════════════ Live Demo Card ═══════════════════ */
-const FINAL_SCORE = 98.7;
 const SCAN_DURATION_MS = 3200;
 const SCAN_DELAY_MS = 400;
+const CYCLE_MS = 10000; // full rescan interval
+
+// Anonymized candidate pool — no real names, emails, or exact locations.
+// Rotated automatically so the demo always shows a *different* profile
+// and score on each rescan.
+const CANDIDATES = [
+  {
+    id: "Candidate #4471",
+    title: "Senior Product Designer · Applicant",
+    meta: ["6 yrs experience", "Full-time", "Remote-eligible"],
+    score: 98.7, skillsMatch: "9/10", expYears: "6 yrs", risk: "None",
+    experience: [
+      { company: "Figma", role: "Lead Product Designer", years: "2022 — Present", desc: "Spearheaded the complete redesign of Dev Mode, leading a team of 4 designers to bridge design and engineering." },
+      { company: "Stripe", role: "Senior Designer", years: "2019 — 2022", desc: "Designed and launched Stripe Identity, driving a 40% increase in verification conversion rates." },
+      { company: "Airbnb", role: "Product Designer", years: "2017 — 2019", desc: "Revamped the mobile booking flow and established core components for the cross-platform design system." },
+    ],
+    skills: ["Figma", "Design Systems", "User Research", "Prototyping", "A/B Testing"],
+    education: { school: "RISD", degree: "BFA Industrial Design" },
+  },
+  {
+    id: "Candidate #2093",
+    title: "Full-Stack Engineer · Applicant",
+    meta: ["5 yrs experience", "Full-time", "Hybrid"],
+    score: 91.4, skillsMatch: "8/10", expYears: "5 yrs", risk: "None",
+    experience: [
+      { company: "Datadog", role: "Senior Software Engineer", years: "2023 — Present", desc: "Built real-time ingestion pipelines handling 2M+ events/sec across the monitoring platform." },
+      { company: "Notion", role: "Software Engineer", years: "2021 — 2023", desc: "Shipped the collaborative editing engine used by the block-based document canvas." },
+      { company: "Stripe", role: "Backend Engineer", years: "2019 — 2021", desc: "Maintained core billing infrastructure processing millions of transactions daily." },
+    ],
+    skills: ["React", "Node.js", "PostgreSQL", "AWS", "GraphQL"],
+    education: { school: "UC Berkeley", degree: "BS Computer Science" },
+  },
+  {
+    id: "Candidate #7788",
+    title: "Marketing Manager · Applicant",
+    meta: ["4 yrs experience", "Full-time", "Remote-eligible"],
+    score: 84.2, skillsMatch: "7/10", expYears: "4 yrs", risk: "Low",
+    experience: [
+      { company: "HubSpot", role: "Growth Marketing Manager", years: "2023 — Present", desc: "Owns lifecycle campaigns across a 200K+ subscriber base, lifting qualified-lead conversion by 22%." },
+      { company: "Mailchimp", role: "Marketing Specialist", years: "2021 — 2023", desc: "Ran multi-channel acquisition campaigns and built the attribution reporting dashboard." },
+      { company: "Segment", role: "Marketing Associate", years: "2020 — 2021", desc: "Coordinated launch campaigns for three major product releases." },
+    ],
+    skills: ["SEO", "Content Strategy", "Analytics", "Campaign Management", "Copywriting"],
+    education: { school: "NYU", degree: "BA Communications" },
+  },
+  {
+    id: "Candidate #5560",
+    title: "Data Scientist · Applicant",
+    meta: ["7 yrs experience", "Full-time", "On-site"],
+    score: 95.0, skillsMatch: "9/10", expYears: "7 yrs", risk: "None",
+    experience: [
+      { company: "Snowflake", role: "Senior Data Scientist", years: "2022 — Present", desc: "Built demand-forecasting models deployed across enterprise customer accounts." },
+      { company: "Palantir", role: "Data Scientist", years: "2019 — 2022", desc: "Developed anomaly-detection pipelines for government and commercial partners." },
+      { company: "Databricks", role: "Analytics Engineer", years: "2017 — 2019", desc: "Built the internal experimentation framework used across 6 product teams." },
+    ],
+    skills: ["Python", "SQL", "Machine Learning", "Statistics", "Tableau"],
+    education: { school: "MIT", degree: "MS Data Science" },
+  },
+];
 
 function LiveDemoCard() {
+  const [candidateIndex, setCandidateIndex] = useState(0);
   const [displayScore, setDisplayScore] = useState(0);
   const [showPills, setShowPills] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -309,47 +404,93 @@ function LiveDemoCard() {
   const [checkedLines, setCheckedLines] = useState(new Set());
   const [frozenElapsed, setFrozenElapsed] = useState(null);
   const [elapsed, setElapsed] = useState(0);
+
   const startRef = useRef(Date.now());
   const cardRef = useRef(null);
   const cancelledRef = useRef(false);
-  const isInView = useInView(cardRef, { once: true, margin: "-100px" });
+  const rafRef = useRef(0);
+  const cycleTimeoutRef = useRef(null);
+  const pillsTimeoutRef = useRef(null);
+  const cycleCountRef = useRef(0);
 
-  const resumeSections = useMemo(() => [
-    { type: "header", name: "Sarah Mitchell", title: "Senior Product Designer" },
-    { type: "meta", items: ["New York, NY", "s.mitchell@email.com", "6 yrs exp"] },
+  const isInView = useInView(cardRef, { once: true, amount: 0.1, margin: "0px 0px -50px 0px" });
+
+  const candidate = CANDIDATES[candidateIndex];
+
+  const resumeSections = useMemo(() => ([
+    { type: "header", id: candidate.id, title: candidate.title },
+    { type: "meta", items: candidate.meta },
     { type: "section", label: "Experience" },
-    { type: "role", company: "Figma", role: "Lead Product Designer", years: "2022 — Present", desc: "Spearheaded the complete redesign of Dev Mode, leading a team of 4 designers to bridge design and engineering." },
-    { type: "role", company: "Stripe", role: "Senior Designer", years: "2019 — 2022", desc: "Designed and launched Stripe Identity, driving a 40% increase in verification conversion rates." },
-    { type: "role", company: "Airbnb", role: "Product Designer", years: "2017 — 2019", desc: "Revamped the mobile booking flow and established core components for the cross-platform design system." },
+    ...candidate.experience.map((e) => ({ type: "role", ...e })),
     { type: "section", label: "Skills" },
-    { type: "chips", items: ["Figma", "Design Systems", "User Research", "Prototyping", "A/B Testing"] },
+    { type: "chips", items: candidate.skills },
     { type: "section", label: "Education" },
-    { type: "edu", school: "RISD", degree: "BFA Industrial Design" },
-  ], []);
+    { type: "edu", ...candidate.education },
+  ]), [candidate]);
 
+  // Single orchestrating loop: runs one scan, then schedules the next
+  // cycle with a different candidate. Only ever one RAF and one timeout
+  // alive — both are torn down before the next cycle starts, and on
+  // unmount, so nothing accumulates over repeated rescans.
   useEffect(() => {
     if (!isInView) return;
     cancelledRef.current = false;
-    let raf = 0;
-    let startTime = 0;
-    const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
-    const step = (now) => {
+
+    const prefersReducedMotion = typeof window !== "undefined"
+      && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    const runCycle = () => {
       if (cancelledRef.current) return;
-      if (!startTime) startTime = now;
-      const elapsedMs = now - startTime - SCAN_DELAY_MS;
-      if (elapsedMs < 0) { raf = requestAnimationFrame(step); return; }
-      const t = Math.min(1, elapsedMs / SCAN_DURATION_MS);
-      setDisplayScore(FINAL_SCORE * easeOutCubic(t));
-      if (t < 1) { raf = requestAnimationFrame(step); }
-      else {
-        setDisplayScore(FINAL_SCORE);
-        setScanning(false);
-        setFlash(true);
-        setTimeout(() => { if (!cancelledRef.current) setShowPills(true); }, 300);
+
+      const idx = cycleCountRef.current % CANDIDATES.length;
+      cycleCountRef.current += 1;
+
+      setCandidateIndex(idx);
+      setScanning(true);
+      setShowPills(false);
+      setFlash(false);
+      setDisplayScore(0);
+      setCheckedLines(new Set());
+      setActiveLine(-1);
+      setFrozenElapsed(null);
+
+      const targetScore = CANDIDATES[idx].score;
+      const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+      let startTime = 0;
+
+      const step = (now) => {
+        if (cancelledRef.current) return;
+        if (!startTime) startTime = now;
+        const elapsedMs = now - startTime - SCAN_DELAY_MS;
+        if (elapsedMs < 0) { rafRef.current = requestAnimationFrame(step); return; }
+        const t = Math.min(1, elapsedMs / SCAN_DURATION_MS);
+        setDisplayScore(targetScore * easeOutCubic(t));
+        if (t < 1) {
+          rafRef.current = requestAnimationFrame(step);
+        } else {
+          setDisplayScore(targetScore);
+          setScanning(false);
+          setFlash(true);
+          pillsTimeoutRef.current = setTimeout(() => {
+            if (!cancelledRef.current) setShowPills(true);
+          }, 300);
+        }
+      };
+      rafRef.current = requestAnimationFrame(step);
+
+      if (!prefersReducedMotion) {
+        cycleTimeoutRef.current = setTimeout(runCycle, CYCLE_MS);
       }
     };
-    raf = requestAnimationFrame(step);
-    return () => { cancelledRef.current = true; cancelAnimationFrame(raf); };
+
+    runCycle();
+
+    return () => {
+      cancelledRef.current = true;
+      cancelAnimationFrame(rafRef.current);
+      clearTimeout(cycleTimeoutRef.current);
+      clearTimeout(pillsTimeoutRef.current);
+    };
   }, [isInView]);
 
   useEffect(() => {
@@ -381,13 +522,14 @@ function LiveDemoCard() {
   return (
     <motion.section
       id="demo"
-      className="mx-auto w-full max-w-4xl px-6 mt-4 mb-8 scroll-mt-24"
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.7, ease: [0.215, 0.61, 0.355, 1.0] }}
+      className="mx-auto w-full max-w-4xl px-6 py-12 md:py-20 scroll-mt-24"
+      initial={{ opacity: 0, y: 80, scale: 0.96 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, amount: 0.25 }}
+      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+      style={{ willChange: 'transform, opacity' }}
     >
-      <div ref={cardRef} className="relative rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl shadow-2xl overflow-hidden ring-1 ring-white/10 dark:ring-white/5">
+      <div ref={cardRef} className="relative rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl shadow-2xl overflow-hidden ring-1 ring-white/10 dark:ring-white/5" style={{ transform: 'translateZ(0)' }}>
         <div className="border-b border-border bg-muted/30">
           <div className="flex items-center gap-2 px-5 py-3">
             <div className="flex gap-1.5">
@@ -408,13 +550,23 @@ function LiveDemoCard() {
           </div>
         </div>
 
-        <div className="p-5 md:p-7">
-          <div className="grid md:grid-cols-[1fr_auto] gap-5 items-stretch">
-            <div className="relative bg-surface rounded-2xl p-5 border border-border overflow-hidden min-h-[340px]">
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono mb-4 pb-3 border-b border-border/60">
+        <div className="p-4 sm:p-5 md:p-7">
+          <div className="grid lg:grid-cols-[1fr_auto] gap-4 sm:gap-5 items-stretch">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.1 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+              className="relative bg-surface rounded-2xl p-4 sm:p-5 border border-border overflow-hidden min-h-[340px]"
+            >
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono mb-3 pb-3 border-b border-border/60">
                 <FileText className="w-3.5 h-3.5" />
-                Sarah_Mitchell_Resume.pdf
+                Resume.pdf
                 <span className="ml-auto tabular-nums">2 pages · 184 KB</span>
+              </div>
+              <div className="flex items-center gap-1.5 mb-4 text-[10px] font-medium text-muted-foreground">
+                <Lock className="w-3 h-3" />
+                <span>Name, contact & location redacted for bias-free review</span>
               </div>
               <div className="space-y-3 text-left">
                 {resumeSections.map((s, i) => {
@@ -423,9 +575,11 @@ function LiveDemoCard() {
                   const bc = `relative transition-all duration-300 ${isActive ? "opacity-100 -translate-y-0.5" : isChecked ? "opacity-100" : scanning ? "opacity-40" : "opacity-100"}`;
                   if (s.type === "header") return (
                     <div key={i} className={`${bc} flex items-center gap-3`}>
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--google-blue)] to-[var(--google-green)] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">SM</div>
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--google-blue)] to-[var(--google-green)] flex items-center justify-center text-white flex-shrink-0">
+                        <User className="w-4 h-4" />
+                      </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-foreground truncate">{s.name}</div>
+                        <div className="text-sm font-semibold text-foreground truncate tabular-nums">{s.id}</div>
                         <div className="text-[11px] text-muted-foreground truncate">{s.title}</div>
                       </div>
                       {isChecked && <CheckCircle2 className="w-3.5 h-3.5 text-[var(--google-green)] ml-auto flex-shrink-0" />}
@@ -433,7 +587,7 @@ function LiveDemoCard() {
                   );
                   if (s.type === "meta") return (
                     <div key={i} className={`${bc} flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground`}>
-                      {s.items.map((m) => <span key={m} className="tabular-nums">· {m}</span>)}
+                      {s.items.map((m) => <span key={m}>· {m}</span>)}
                     </div>
                   );
                   if (s.type === "section") return (
@@ -486,22 +640,28 @@ function LiveDemoCard() {
                   style={{ background: 'radial-gradient(ellipse at center, rgba(40, 200, 64, 0.08), transparent 70%)' }}
                 />
               )}
-            </div>
+            </motion.div>
 
-            <div className="flex md:flex-col items-center md:items-stretch justify-between md:justify-center gap-3 md:min-w-[180px] rounded-2xl border border-border bg-surface p-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.1 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+              className="flex lg:flex-col items-center lg:items-stretch justify-between lg:justify-center gap-3 lg:min-w-[200px] rounded-2xl border border-border bg-surface p-4 sm:p-5"
+            >
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Match Score</div>
               <motion.div animate={flash ? { scale: [1, 1.12, 1] } : {}} transition={{ duration: 0.9 }}
-                className="font-display text-4xl md:text-5xl font-bold tabular-nums leading-none text-foreground">
-                {displayScore.toFixed(1)}<span className="text-2xl md:text-3xl text-muted-foreground">%</span>
+                className="font-display text-4xl sm:text-5xl font-bold tabular-nums leading-none text-foreground flex items-baseline">
+                {displayScore.toFixed(1)}<span className="text-xl sm:text-3xl text-muted-foreground ml-1">%</span>
               </motion.div>
-              <div className="text-[10px] text-muted-foreground tabular-nums md:mt-1">
+              <div className="text-[10px] text-muted-foreground tabular-nums lg:mt-1 hidden sm:block">
                 {scanning ? "Scanning…" : `Scanned ${shownElapsed}s ago`}
               </div>
-              <div className="hidden md:block space-y-2 mt-3 pt-3 border-t border-border">
+              <div className="hidden lg:block space-y-2 mt-3 pt-3 border-t border-border">
                 {[
-                  { label: "Skills", val: scanning ? "—" : "9/10", color: scanning ? "text-muted-foreground" : "text-[var(--google-blue)]" },
-                  { label: "Experience", val: scanning ? "—" : "6 yrs", color: scanning ? "text-muted-foreground" : "text-[var(--google-green)]" },
-                  { label: "Fraud Risk", val: scanning ? "—" : "None", color: scanning ? "text-muted-foreground" : "text-[var(--google-green)]" },
+                  { label: "Skills", val: scanning ? "—" : candidate.skillsMatch, color: scanning ? "text-muted-foreground" : "text-[var(--google-blue)]" },
+                  { label: "Experience", val: scanning ? "—" : candidate.expYears, color: scanning ? "text-muted-foreground" : "text-[var(--google-green)]" },
+                  { label: "Risk Flags", val: scanning ? "—" : candidate.risk, color: scanning ? "text-muted-foreground" : "text-[var(--google-green)]" },
                 ].map((m) => (
                   <div key={m.label} className="flex items-center justify-between text-[10px]">
                     <span className="text-muted-foreground uppercase tracking-wider">{m.label}</span>
@@ -509,24 +669,35 @@ function LiveDemoCard() {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mt-5 min-h-[44px]">
-            <AnimatePresence>
-              {showPills && [
-                { icon: Brain, label: "AI Verified", color: "text-[var(--google-blue)]" },
-                { icon: CheckCircle2, label: "Skills Match", color: "text-[var(--google-green)]" },
-                { icon: Shield, label: "Fraud Clear", color: "text-[var(--google-red)]" },
-              ].map((p, i) => (
-                <motion.span key={p.label} initial={{ opacity: 0, y: 8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: i * 0.15, type: "spring", stiffness: 400, damping: 22 }}
-                  className="pill rounded-full bg-card border border-border px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm">
-                  <p.icon className={`w-4 h-4 ${p.color}`} />{p.label}
-                </motion.span>
-              ))}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.1 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.4 }}
+            className="flex flex-wrap gap-2 mt-5 min-h-[44px]"
+          >
+            <AnimatePresence mode="wait">
+              {showPills && (
+                <>
+                  {[
+                    { icon: Brain, label: "Credentials Verified", color: "text-[var(--google-blue)]" },
+                    { icon: CheckCircle2, label: "Skills Match", color: "text-[var(--google-green)]" },
+                    { icon: Shield, label: "No Risk Flags", color: "text-[var(--google-red)]" },
+                  ].map((p, i) => (
+                    <motion.span key={`${candidate.id}-${p.label}`} initial={{ opacity: 0, y: 8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.9 }}
+                      transition={{ delay: i * 0.15, type: "spring", stiffness: 400, damping: 22 }}
+                      className="pill rounded-full bg-card border border-border px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                      <p.icon className={`w-4 h-4 ${p.color}`} />{p.label}
+                    </motion.span>
+                  ))}
+                </>
+              )}
             </AnimatePresence>
-          </div>
+          </motion.div>
         </div>
       </div>
     </motion.section>
@@ -1469,40 +1640,19 @@ export default function LandingPage() {
         }
       `}</style>
 
-      {/* SCROLL-ACTIVATED HERO VIDEO BACKGROUND CONTAINER */}
-      <motion.div
-        style={{
-          opacity: bgOpacity,
-          scale: bgScale,
-          y: bgY,
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: -2,
-          pointerEvents: 'none'
-        }}
-      >
-        <video
-          ref={videoRef}
-          src="https://zxdefgavgwfxastwmmjm.supabase.co/storage/v1/object/public/assets/flux.mp4"
-          className="bg-video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          style={{ filter: 'blur(2px) saturate(1.06)' }}
-        />
-        <div className="bg-scrim" />
-      </motion.div>
-
       <motion.div style={{ width }} className="fixed top-0 left-0 h-[3px] bg-[var(--google-blue)] z-[60]" />
 
       <Navbar onSignIn={handleAuth} isLoggedIn={isLoggedIn} />
 
       <main className="flex flex-col w-full overflow-x-hidden pt-[80px]" style={{ background: 'transparent' }}>
-        <HeroSection onStart={handleAuth} companiesCount={stats.total_companies} />
+        <HeroSection 
+          onStart={handleAuth} 
+          companiesCount={stats.total_companies}
+          bgY={bgY}
+          bgOpacity={bgOpacity}
+          bgScale={bgScale}
+          videoRef={videoRef}
+        />
         <LiveDemoCard />
         <StatsStrip stats={stats} loading={loading} />
         <BentoFeatures />

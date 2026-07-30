@@ -626,7 +626,7 @@ function Home() {
               style={{ background: "radial-gradient(60% 70% at 0% 100%, color-mix(in oklab, var(--google-blue) 16%, transparent), transparent 70%)" }}
             />
             <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/70 px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-              <Sparkles className="h-3 w-3 text-[var(--google-blue)]" /> For job seekers
+              For job seekers
             </div>
             <h3 className="mt-3 font-display text-2xl font-semibold tracking-tight sm:text-3xl">Your next chapter starts here</h3>
             <p className="mt-2 text-sm text-muted-foreground">Upload your resume once. We'll match you with roles that fit your skills and energy.</p>

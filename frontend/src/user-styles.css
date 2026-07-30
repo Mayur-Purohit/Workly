@@ -1,4 +1,3 @@
-
 :root {
   --radius: 1.5rem;
   --background: oklch(1 0 0);
@@ -102,13 +101,11 @@ h5 {
 
 .gradient-text,
 .google-gradient-text {
-  background: linear-gradient(
-    90deg,
-    var(--google-blue) 0%,
-    var(--google-red) 33%,
-    var(--google-yellow) 66%,
-    var(--google-green) 100%
-  );
+  background: linear-gradient(90deg,
+      var(--google-blue) 0%,
+      var(--google-red) 33%,
+      var(--google-yellow) 66%,
+      var(--google-green) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -247,13 +244,11 @@ h5 {
 }
 
 .rb-pro-scope .google-gradient-text {
-  background: linear-gradient(
-    90deg,
-    var(--color-google-blue) 0%,
-    var(--color-google-red) 33%,
-    var(--color-google-yellow) 66%,
-    var(--color-google-green) 100%
-  );
+  background: linear-gradient(90deg,
+      var(--color-google-blue) 0%,
+      var(--color-google-red) 33%,
+      var(--color-google-yellow) 66%,
+      var(--color-google-green) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -267,6 +262,7 @@ h5 {
 .rb-pro-scope .elevation-hover {
   transition: box-shadow 200ms ease, transform 200ms ease;
 }
+
 .rb-pro-scope .elevation-hover:hover {
   box-shadow: var(--shadow-elevation-2);
   transform: translateY(-2px);
@@ -305,4 +301,3 @@ h5 {
 .bg-surface {
   background-color: var(--surface);
 }
-

@@ -493,9 +493,8 @@ export default function DashboardLayout() {
                       <div
                         key={n.id}
                         onClick={() => handleMarkRead(n.id, n.link)}
-                        className={`px-4 py-3 hover:bg-gray-50 transition cursor-pointer border-b border-gray-50 last:border-0 ${
-                          !n.is_read ? "bg-blue-50/20 font-medium" : ""
-                        }`}
+                        className={`px-4 py-3 hover:bg-gray-50 transition cursor-pointer border-b border-gray-50 last:border-0 ${!n.is_read ? "bg-blue-50/20 font-medium" : ""
+                          }`}
                       >
                         <div className="text-xs text-charcoal">{n.title}</div>
                         <div className="text-[11px] text-gray-500 mt-0.5">{n.message}</div>
@@ -517,7 +516,7 @@ export default function DashboardLayout() {
               aria-label="Apps"
               className="hidden sm:flex w-10 h-10 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 items-center justify-center text-gray-500 dark:text-zinc-400 transition shrink-0"
             >
-              <Grid3x3 size={20} />
+              <img width="20" height="20" src="https://img.icons8.com/fluency-systems-regular/48/menu-2--v1.png" alt="menu-2--v1" className="dark:invert opacity-80" />
             </button>
             {appsOpen && (
               <div className="absolute right-0 mt-2 w-52 rounded-xl p-1.5 z-50 flex flex-col gap-0.5 skeuo-dropdown-panel">
@@ -548,7 +547,7 @@ export default function DashboardLayout() {
               </div>
             )}
           </div>
-          
+
           {/* User profile identifier */}
           <div className="ml-1 flex items-center gap-2">
             <div className="text-right hidden md:block">
@@ -601,21 +600,20 @@ export default function DashboardLayout() {
 
       {/* Side Nav — Material 3 drawer */}
       <aside
-        className={`fixed top-16 bottom-0 left-0 z-40 bg-white dark:bg-[#0b0b0c] border-r border-gray-200 dark:border-[#222226] md:border-transparent transition-[width,transform] duration-200 ${
-          isDesktop
+        className={`fixed top-16 bottom-0 left-0 z-40 bg-white dark:bg-[#0b0b0c] border-r border-gray-200 dark:border-[#222226] md:border-transparent transition-[width,transform] duration-200 ${isDesktop
             ? open
               ? "w-[260px] translate-x-0"
               : "w-[72px] translate-x-0"
             : open
               ? "w-[280px] translate-x-0 shadow-md"
               : "w-[280px] -translate-x-full"
-        }`}
+          }`}
       >
         <nav className="py-3 px-2 space-y-1 overflow-y-auto h-[calc(100%-140px)]">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = item.exact 
-              ? cleanPath === item.to.replace(/\/$/, "") 
+            const active = item.exact
+              ? cleanPath === item.to.replace(/\/$/, "")
               : cleanPath.startsWith(item.to);
             const showLabel = !isDesktop || open;
             return (
@@ -624,11 +622,10 @@ export default function DashboardLayout() {
                 to={item.to}
                 data-tour={item.tourAttr || undefined}
                 onClick={() => { if (!isDesktop) setOpen(false); }}
-                className={`flex items-center h-12 rounded-full px-3 gap-5 relative group transition-colors duration-200 ${
-                  active 
-                    ? "text-[#111111] font-semibold" 
+                className={`flex items-center h-12 rounded-full px-3 gap-5 relative group transition-colors duration-200 ${active
+                    ? "text-[#111111] font-semibold"
                     : "text-charcoal hover:bg-gray-100 font-medium"
-                }`}
+                  }`}
                 title={item.label}
               >
                 {active && (
@@ -638,9 +635,8 @@ export default function DashboardLayout() {
                     transition={{ type: "spring", stiffness: 350, damping: 28 }}
                   />
                 )}
-                <span className={`w-6 flex items-center justify-center shrink-0 transition-colors duration-200 relative z-10 ${
-                  active ? "text-[#111111]" : "text-gray-500 group-hover:text-charcoal"
-                }`}>
+                <span className={`w-6 flex items-center justify-center shrink-0 transition-colors duration-200 relative z-10 ${active ? "text-[#111111]" : "text-gray-500 group-hover:text-charcoal"
+                  }`}>
                   <Icon size={20} />
                 </span>
                 {showLabel && (
@@ -657,7 +653,7 @@ export default function DashboardLayout() {
         <div className="absolute bottom-0 inset-x-0 p-3 border-t border-gray-200 dark:border-[#222226] bg-white dark:bg-[#0b0b0c]">
           {(!isDesktop || open) ? (
             <div className="space-y-3">
-              <div 
+              <div
                 onClick={() => navigate('/dashboard/settings?tab=billing')}
                 className="text-xs text-gray-500 px-2 cursor-pointer hover:opacity-80 transition group"
               >

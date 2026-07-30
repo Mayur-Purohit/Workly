@@ -44,7 +44,7 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
   };
 
   return (
-    <motion.nav 
+    <motion.nav
       className={`navbar ${scrolled ? 'scrolled' : ''}`}
       initial={{ y: -100 }}
       animate={{ y: 0 }}
@@ -73,9 +73,9 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
         {['Product', 'Features', 'Pricing', 'Developers'].map((item) => {
           if (item === 'Developers') {
             return (
-              <Link 
+              <Link
                 key={item}
-                to="/developer" 
+                to="/developer"
                 className="nav-link font-semibold transition-all hover:translate-y-[-2px]"
               >
                 Developers
@@ -85,35 +85,35 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
           if (item === 'Product') {
             return (
               <div key={item} className="product-dropdown-container">
-                <button 
+                <button
                   onClick={() => setProductDropdownOpen(!productDropdownOpen)}
                   className="nav-link dropdown-trigger font-semibold transition-all hover:translate-y-[-2px] flex items-center gap-1"
                 >
                   Product
                   <svg className={`chevron transition-transform duration-200 ${productDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m6 9 6 6 6-6"/>
+                    <path d="m6 9 6 6 6-6" />
                   </svg>
                 </button>
                 <div className={`product-dropdown-menu skeuo-dropdown-panel ${productDropdownOpen ? 'open' : ''}`}>
-                  <a 
-                    href="/#how-it-works" 
-                    onClick={(e) => { setProductDropdownOpen(false); handleScrollTo(e, 'how-it-works'); }} 
+                  <a
+                    href="/#how-it-works"
+                    onClick={(e) => { setProductDropdownOpen(false); handleScrollTo(e, 'how-it-works'); }}
                     className="product-dropdown-item skeuo-dropdown-item"
                   >
                     <span className="product-dropdown-item-title">AI Recruiter & Screening</span>
                     <span className="product-dropdown-item-desc">Automated resume ranking & matching</span>
                   </a>
-                  <a 
-                    href="/#features" 
-                    onClick={(e) => { setProductDropdownOpen(false); handleScrollTo(e, 'features'); }} 
+                  <a
+                    href="/#features"
+                    onClick={(e) => { setProductDropdownOpen(false); handleScrollTo(e, 'features'); }}
                     className="product-dropdown-item skeuo-dropdown-item"
                   >
                     <span className="product-dropdown-item-title">Smart Platform Features</span>
                     <span className="product-dropdown-item-desc">Deep-dive candidate profiles & analytics</span>
                   </a>
-                  <a 
-                    href="/#ingest" 
-                    onClick={(e) => { setProductDropdownOpen(false); handleScrollTo(e, 'ingest'); }} 
+                  <a
+                    href="/#ingest"
+                    onClick={(e) => { setProductDropdownOpen(false); handleScrollTo(e, 'ingest'); }}
                     className="product-dropdown-item skeuo-dropdown-item"
                   >
                     <span className="product-dropdown-item-title">Multi-Source Intake</span>
@@ -124,9 +124,9 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
             );
           }
           return (
-            <motion.a 
+            <motion.a
               key={item}
-              href={`/#${item.toLowerCase()}`} 
+              href={`/#${item.toLowerCase()}`}
               className="nav-link"
               onClick={(e) => handleScrollTo(e, item.toLowerCase())}
               whileHover={{ y: -2 }}
@@ -149,7 +149,7 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
             aria-label="Switch Platform"
             className="w-9 h-9 rounded-full hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center text-foreground transition-all duration-200"
           >
-            <Grid3x3 size={18} />
+            <img width="20" height="20" src="https://img.icons8.com/fluency-systems-regular/48/menu-2--v1.png" alt="menu-2--v1" className="dark:invert opacity-80" />
           </button>
           {appsOpen && (
             <div className="absolute right-0 mt-2 w-60 rounded-2xl p-2 z-50 flex flex-col gap-1 skeuo-dropdown-panel bg-white/95 dark:bg-zinc-950/95 border border-gray-200 dark:border-zinc-800 shadow-2xl backdrop-blur-md">
@@ -179,7 +179,7 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
                   <Briefcase size={16} />
                 </div>
                 <div className="min-w-0">
-                   <div className="font-bold text-charcoal dark:text-white">Workly Jobs</div>
+                  <div className="font-bold text-charcoal dark:text-white">Workly Jobs</div>
                   <div className="text-[10px] text-gray-400 dark:text-zinc-400 truncate">Job Seeker Portal</div>
                 </div>
               </Link>
@@ -192,7 +192,7 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
                   <Code2 size={16} />
                 </div>
                 <div className="min-w-0">
-                   <div className="font-bold text-charcoal dark:text-white">Workly Developer</div>
+                  <div className="font-bold text-charcoal dark:text-white">Workly Developer</div>
                   <div className="text-[10px] text-gray-400 dark:text-zinc-400 truncate">APIs & Integrations</div>
                 </div>
               </Link>
@@ -200,7 +200,7 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
           )}
         </div>
 
-        <motion.button 
+        <motion.button
           className="sign-in-btn"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -208,7 +208,7 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
         >
           {isLoggedIn ? 'Dashboard' : 'Sign In'}
           <svg className="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m9 18 6-6-6-6"/>
+            <path d="m9 18 6-6-6-6" />
           </svg>
         </motion.button>
       </div>

@@ -684,13 +684,8 @@ console.log(data);`,
         </div>
       )}
 
-      {/* ════════════════ HERO SECTION ════════════════ */}
       <header className="pt-32 pb-20 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
         <div className="lg:col-span-5 flex flex-col items-start gap-6 text-left">
-          <span className="px-4 py-1.5 rounded-full border border-border bg-card text-foreground text-xs font-semibold flex flex-row items-center gap-2 shadow-sm">
-            <Sparkles size={14} className="text-[var(--google-blue)]" /> Google Material 3 Developer Platform
-          </span>
-
           <h1 className="text-4xl sm:text-5xl lg:text-[50px] font-display font-extrabold text-foreground leading-[1.1] tracking-tight">
             Resume Intelligence API <br />
             <span className="google-gradient-text">for Next-Gen Hiring</span>
