@@ -129,7 +129,7 @@ export default function DeveloperLoginPage() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full mt-2 bg-accent text-white py-3.5 rounded-xl font-bold tracking-wide hover:bg-accent-dark transition-all shadow-md shadow-accent/20 hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
+            className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold tracking-wide transition-all shadow-md shadow-blue-500/20 hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>

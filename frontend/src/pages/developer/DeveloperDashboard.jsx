@@ -69,7 +69,7 @@ export default function DeveloperDashboard() {
                  You have reached <strong className="font-black">{Math.round(highestUsage)}%</strong> of your monthly limit. Consider upgrading your plan to avoid disruptions.
                </p>
             </div>
-            <Link to="/developer/portal/billing" className="px-5 py-2 bg-accent text-white text-sm font-bold rounded-lg hover:bg-accent-dark transition-colors whitespace-nowrap">Upgrade Plan</Link>
+            <Link to="/developer/portal/billing" className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors whitespace-nowrap shadow-sm">Upgrade Plan</Link>
          </div>
       )}
 

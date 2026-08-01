@@ -263,7 +263,7 @@ export default function DeveloperPortalLayout() {
           <div className="p-3 border-t border-gray-200 dark:border-[#222226] bg-gray-50/50 dark:bg-zinc-900/50">
              <UsageProgress />
               <div className="flex items-center gap-2 pt-3 mt-2 border-t border-gray-200/60">
-                <div className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center font-bold text-sm tracking-tighter shrink-0 cursor-default">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm tracking-tighter shrink-0 cursor-default shadow-sm">
                   {(company_name || developer?.email || "D").substring(0, 2).toUpperCase()}
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
@@ -274,7 +274,7 @@ export default function DeveloperPortalLayout() {
           </div>
         ) : (
           <div className="p-3 border-t border-gray-200 dark:border-[#222226] bg-gray-50/50 dark:bg-zinc-900/50 flex justify-center">
-            <div className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center font-bold text-sm tracking-tighter cursor-default" title={company_name || "Developer"}>
+            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm tracking-tighter cursor-default shadow-sm" title={company_name || "Developer"}>
               {(company_name || developer?.email || "D").substring(0, 2).toUpperCase()}
             </div>
           </div>

@@ -268,6 +268,9 @@ h5 {
   transform: translateY(-2px);
 }
 
+:root,
+.developer-portal,
+.developer-page,
 .recruiter-page,
 .auth-page {
   --accent: #2563eb !important;

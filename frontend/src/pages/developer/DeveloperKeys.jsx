@@ -442,13 +442,13 @@ const data = await response.json();`
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs tracking-wide transition-all text-left whitespace-nowrap lg:whitespace-normal w-full ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-black text-xs tracking-wide transition-all text-left whitespace-nowrap lg:whitespace-normal w-full ${
                   isSelected 
-                    ? 'bg-blue-50 text-accent border border-blue-100/50' 
-                    : 'text-gray-900 hover:bg-gray-50 hover:text-black font-extrabold'
+                    ? 'bg-blue-50/90 text-blue-600 border border-blue-200/80 shadow-sm' 
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-black font-bold'
                 }`}
               >
-                <Icon size={16} className={isSelected ? 'text-accent' : 'text-gray-700'} />
+                <Icon size={16} className={isSelected ? 'text-blue-600' : 'text-gray-500'} />
                 <span>{tab.label}</span>
               </button>
             );

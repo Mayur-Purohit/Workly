@@ -99,7 +99,7 @@ export default function DeveloperWebhooks() {
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 mb-6"><Lock size={32} /></div>
             <h2 className="text-2xl font-black text-charcoal mb-3">Webhooks require Starter plan</h2>
             <p className="text-gray-500 font-medium mb-8">Receive real-time HTTP callbacks to your infrastructure when processing completes. Eliminate constant polling.</p>
-            <Link to="/developer/portal/billing" className="w-full py-4 bg-accent text-white text-sm font-bold rounded-2xl hover:bg-accent-dark transition-all text-center">Upgrade to Starter &rarr;</Link>
+            <Link to="/developer/portal/billing" className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-2xl transition-all text-center shadow-lg shadow-blue-500/25">Upgrade to Starter &rarr;</Link>
          </div>
       </div>
     );

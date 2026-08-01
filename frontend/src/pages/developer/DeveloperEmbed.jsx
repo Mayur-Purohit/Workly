@@ -106,7 +106,7 @@ import { BetweenPanel } from '@between/vue';
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 mb-6"><Component size={32} /></div>
             <h2 className="text-2xl font-black text-charcoal mb-3">Embed requires Business plan</h2>
             <p className="text-gray-500 font-medium mb-8">Drop in a beautifully styled React component to instantly bring AI resume parsing and matching directly into your UI.</p>
-            <Link to="/developer/portal/billing" className="w-full py-4 bg-accent text-white font-bold rounded-2xl hover:bg-accent-dark transition-all text-center">Upgrade to Business &rarr;</Link>
+            <Link to="/developer/portal/billing" className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all text-center shadow-lg shadow-blue-500/25">Upgrade to Business &rarr;</Link>
          </div>
       </div>
     );
