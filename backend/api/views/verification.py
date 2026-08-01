@@ -28,31 +28,101 @@ def get_user_by_role_and_phone(role, phone):
         return DeveloperAccount.objects.filter(phone=phone).first()
     return None
 
-def _build_otp_html(otp, purpose="verification"):
-    """Build a branded HTML email body for OTP delivery."""
-    return f"""
-    <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
-        <div style="text-align: center; margin-bottom: 24px;">
-            <h2 style="color: #111827; font-size: 22px; font-weight: 700; margin: 0;">Verify Your Account</h2>
-            <p style="color: #6b7280; font-size: 14px; margin-top: 8px;">
-                Use the code below to complete your {purpose}.
-            </p>
-        </div>
-        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0;">
-            <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #1e293b; font-family: 'SF Mono', 'Fira Code', monospace;">
-                {otp}
-            </span>
-        </div>
-        <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 20px; line-height: 1.5;">
-            This code will expire in <strong>5 minutes</strong>.<br/>
-            If you did not request this verification, please ignore this email.
-        </p>
-        <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 24px 0 16px;" />
-        <p style="color: #d1d5db; font-size: 11px; text-align: center; margin: 0;">
-            Between AI — Vishleshan Platform
-        </p>
-    </div>
-    """
+def _build_otp_html(otp, purpose="email verification"):
+    """Build an HTML email template that mirrors the exact Workly web UI card design system."""
+    formatted_otp = f"{otp[:3]} {otp[3:]}" if len(otp) == 6 else otp
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Code — Workly</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Google Sans Text', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 16px;">
+        <tr>
+            <td align="center">
+                
+                <!-- Main Workly UI Card Container -->
+                <table role="presentation" width="100%" style="max-width: 480px; background: #ffffff; border-radius: 20px; border: 1px solid #e5e7eb; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04); overflow: hidden;">
+                    
+                    <!-- Top Brand Bar -->
+                    <tr>
+                        <td style="padding: 24px 28px 0px; text-align: left;">
+                            <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td style="width: 32px; height: 32px; background: #1a73e8; border-radius: 10px; text-align: center; color: #ffffff; font-weight: 900; font-size: 16px; line-height: 32px;">
+                                        W
+                                    </td>
+                                    <td style="padding-left: 10px;">
+                                        <span style="font-size: 18px; font-weight: 800; color: #202124; letter-spacing: -0.3px;">Workly</span>
+                                        <span style="font-size: 11px; font-weight: 700; color: #1a73e8; background: #e8f0fe; padding: 3px 8px; border-radius: 9999px; margin-left: 8px; text-transform: uppercase;">Portal</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Card Body -->
+                    <tr>
+                        <td style="padding: 28px 28px 24px; text-align: center;">
+                            
+                            <!-- UI Shield Icon Badge -->
+                            <div style="width: 56px; height: 56px; background: #e8f0fe; border-radius: 16px; display: inline-block; margin-bottom: 16px; border: 1px solid #d2e3fc;">
+                                <div style="line-height: 56px; font-size: 26px;">
+                                    🛡️
+                                </div>
+                            </div>
+
+                            <!-- Header Title -->
+                            <h2 style="color: #202124; font-size: 22px; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.4px;">
+                                Verify Your Account
+                            </h2>
+                            <p style="color: #5f6368; font-size: 14px; margin: 0 0 24px; line-height: 1.5;">
+                                We sent a verification code to complete your {purpose}.
+                            </p>
+
+                            <!-- Workly UI Inset OTP Box -->
+                            <div style="background-color: #f8fafc; border: 1.5px solid #dadce0; border-radius: 16px; padding: 18px 16px; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);">
+                                <span style="font-family: 'Google Sans Mono', 'SF Mono', 'Fira Code', 'Courier New', monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #1a73e8; display: block; margin-left: 8px;">
+                                    {formatted_otp}
+                                </span>
+                            </div>
+
+                            <!-- Expiry Pill -->
+                            <div style="margin-bottom: 20px;">
+                                <span style="background: #fce8e6; border: 1px solid #fad2cf; padding: 5px 14px; border-radius: 9999px; font-size: 12px; color: #c5221f; font-weight: 600; display: inline-block;">
+                                    ⏱️ Code expires in <strong style="color: #a50e0e;">5 minutes</strong>
+                                </span>
+                            </div>
+
+                            <p style="color: #70757a; font-size: 12px; margin: 0; line-height: 1.5;">
+                                If you didn't request this code, you can safely ignore this email.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- Card Footer -->
+                    <tr>
+                        <td style="background: #faf9f6; padding: 18px 28px; text-align: center; border-top: 1px solid #e8eaed;">
+                            <p style="color: #5f6368; font-size: 12px; margin: 0; font-weight: 600;">
+                                Workly — AI-Powered Recruiting Platform
+                            </p>
+                            <p style="color: #80868b; font-size: 11px; margin: 4px 0 0;">
+                                © 2026 Workly • <a href="https://workly.ai" style="color: #1a73e8; text-decoration: none; font-weight: 600;">workly.ai</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+</body>
+</html>"""
 
 
 @csrf_exempt
@@ -81,7 +151,7 @@ def send_email_otp(request):
         cache.set(cache_key, otp, timeout=300)  # 5 minutes expiration
         
         # Send Email
-        subject = "Your Verification Code — Between AI"
+        subject = "Your Verification Code — Workly"
         text_body = f"Your verification code is: {otp}. It will expire in 5 minutes."
         html_body = _build_otp_html(otp, purpose="email verification")
         
@@ -253,7 +323,7 @@ def send_phone_otp(request):
             })
         
         # Fallback to simulated code on screen (free tier/no credentials/API failure)
-        otp = str(random.randint(1000, 9999))  # 4-digit code to match 2Factor API format
+        otp = str(random.randint(100000, 999999))  # Standard 6-digit OTP code
         key_identifier = user_email or phone
         cache_key = f"phone_otp:{role}:{key_identifier}"
         cache.set(cache_key, otp, timeout=300)  # 5 minutes

@@ -650,14 +650,18 @@ def sync_gmail_resumes(session_id: str, job_id: str):
 
         # ── Build credentials with token refresh support ──
         token_data = dict(session_row.gmail_tokens)  # copy so we don't mutate the JSONField
-        # google.oauth2.credentials.Credentials doesn't accept 'scopes' via **kwargs
-        stored_scopes = token_data.pop('scopes', None)
-        if stored_scopes and isinstance(stored_scopes, (set,)):
+        stored_scopes = token_data.get('scopes', None)
+        if stored_scopes and isinstance(stored_scopes, set):
             stored_scopes = list(stored_scopes)
 
-        creds = google.oauth2.credentials.Credentials(**token_data)
-        if stored_scopes:
-            creds.scopes = stored_scopes
+        creds = google.oauth2.credentials.Credentials(
+            token=token_data.get('token'),
+            refresh_token=token_data.get('refresh_token'),
+            token_uri=token_data.get('token_uri', 'https://oauth2.googleapis.com/token'),
+            client_id=token_data.get('client_id'),
+            client_secret=token_data.get('client_secret'),
+            scopes=stored_scopes
+        )
 
         # ── Auto-refresh expired token ──
         if creds.expired and creds.refresh_token:
@@ -677,21 +681,42 @@ def sync_gmail_resumes(session_id: str, job_id: str):
 
         service = build('gmail', 'v1', credentials=creds)
 
-        # ── Fetch messages ──
-        # Search for emails that have attachments to avoid scanning every message
+        # ── Fetch messages with smart date filtering ──
+        # Construct query: filter emails with attachments received after session creation date
+        q_filter = 'has:attachment'
+        if getattr(session_row, 'created_at', None):
+            try:
+                after_date = session_row.created_at.strftime('%Y/%m/%d')
+                q_filter = f'has:attachment after:{after_date}'
+            except Exception as dt_err:
+                logging.warning(f"Gmail sync: Could not format session created_at date: {dt_err}")
+                q_filter = 'has:attachment newer_than:30d'
+
+        logging.info(f"Gmail sync using query filter: '{q_filter}'")
+
         results = service.users().messages().list(
-            userId='me', maxResults=100, q='has:attachment'
+            userId='me', maxResults=100, q=q_filter
         ).execute()
         messages = results.get('messages', [])
-        logging.info(f"Gmail sync: found {len(messages)} messages with attachments.")
+        logging.info(f"Gmail sync: found {len(messages)} messages with attachments matching filter.")
 
         if not messages:
-            # Fallback: try without filter in case the query syntax differs
+            # Fallback 1: Try relative 30-day window
+            logging.info("Gmail sync fallback 1: trying 'has:attachment newer_than:30d'")
             results = service.users().messages().list(
-                userId='me', maxResults=50
+                userId='me', maxResults=100, q='has:attachment newer_than:30d'
             ).execute()
             messages = results.get('messages', [])
-            logging.info(f"Gmail sync fallback: found {len(messages)} total messages.")
+            logging.info(f"Gmail sync fallback 1: found {len(messages)} messages.")
+
+        if not messages:
+            # Fallback 2: General has:attachment filter
+            logging.info("Gmail sync fallback 2: trying general 'has:attachment'")
+            results = service.users().messages().list(
+                userId='me', maxResults=50, q='has:attachment'
+            ).execute()
+            messages = results.get('messages', [])
+            logging.info(f"Gmail sync fallback 2: found {len(messages)} messages.")
 
         save_dir = os.path.join(os.getenv("UPLOAD_DIR", "uploads"), session_id)
         os.makedirs(save_dir, exist_ok=True)

@@ -32,10 +32,10 @@ def verify_google_token(token):
     except Exception as e:
         logger.info("Google token not verified as ID token, trying as access token: %s", e)
 
-    # Method 2: Verify as Access token
+    # Method 2: Verify as Access token via query parameter
     try:
         url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}"
-        req = urllib.request.Request(url)
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
             if "email" in data:
@@ -44,7 +44,24 @@ def verify_google_token(token):
                     "name": data.get("name") or data.get("given_name") or "Google User"
                 }
     except Exception as e:
-        logger.error("Failed to verify Google token: %s", e)
+        logger.error("Failed to verify Google token via access_token query param: %s", e)
+
+    # Method 3: Verify as Access token via Authorization header
+    try:
+        url = "https://www.googleapis.com/oauth2/v3/userinfo"
+        req = urllib.request.Request(url, headers={
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        })
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode())
+            if "email" in data:
+                return {
+                    "email": data["email"].strip().lower(),
+                    "name": data.get("name") or data.get("given_name") or "Google User"
+                }
+    except Exception as e:
+        logger.error("Failed to verify Google token via Authorization header: %s", e)
 
     raise ValueError("Invalid Google credentials")
 

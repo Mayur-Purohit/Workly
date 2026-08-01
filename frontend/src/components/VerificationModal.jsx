@@ -81,7 +81,7 @@ export default function VerificationModal({ isOpen, onClose, type, value, role, 
 
   const handleVerify = async (e) => {
     e.preventDefault();
-    const requiredLength = type === 'email' ? 6 : 4;
+    const requiredLength = 6;
     if (!otp || otp.length < requiredLength) {
       setError(`Please enter a valid ${requiredLength}-digit verification code.`);
       return;
@@ -167,10 +167,10 @@ export default function VerificationModal({ isOpen, onClose, type, value, role, 
             </label>
             <input
               type="text"
-              maxLength={type === 'email' ? 6 : 4}
+              maxLength={6}
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-              placeholder={type === 'email' ? "000000" : "0000"}
+              placeholder="000000"
               className="w-full text-center text-2xl font-bold tracking-[8px] py-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-charcoal dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               required
             />

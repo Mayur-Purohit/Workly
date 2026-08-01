@@ -271,11 +271,11 @@ def send_welcome_email(
     }
     cta_link = role_links.get(role, FRONTEND_URL)
 
-    subject = f"Welcome to Between AI, {user_name.split()[0] if user_name else 'there'}! 🎉"
+    subject = f"Welcome to Workly, {user_name.split()[0] if user_name else 'there'}! 🎉"
     text_body = f"""
 Hi {user_name},
 
-Welcome to Between AI — the intelligent hiring platform!
+Welcome to Workly — the AI-powered recruiting platform!
 
 You have signed up as a {role_label}. Here is what you can do next:
 
@@ -285,16 +285,16 @@ You have signed up as a {role_label}. Here is what you can do next:
 
 If you have any questions, reply to this email or contact our support team.
 
-— The Between AI Team
+— The Workly Team
 """
     html_body = f"""
     <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 32px 24px; text-align: center;">
             <h1 style="color: #ffffff; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.5px;">
-                Welcome to Between AI
+                Welcome to Workly
             </h1>
             <p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">
-                Intelligent Hiring Platform
+                AI-Powered Recruiting Platform
             </p>
         </div>
         <div style="padding: 32px 24px;">
@@ -323,8 +323,8 @@ If you have any questions, reply to this email or contact our support team.
             </p>
         </div>
         <div style="background: #f9fafb; padding: 16px 24px; text-align: center; border-top: 1px solid #f3f4f6;">
-            <p style="color: #d1d5db; font-size: 11px; margin: 0;">
-                Between AI {EMAIL_SIGN_OFF}
+            <p style="color: #9ca3af; font-size: 11px; margin: 0;">
+                Workly {EMAIL_SIGN_OFF}
             </p>
         </div>
     </div>
