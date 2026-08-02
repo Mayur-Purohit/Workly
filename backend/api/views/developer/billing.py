@@ -79,6 +79,9 @@ def subscribe(request):
     try:
         data = json.loads(request.body)
         plan = data.get("plan")
+        if plan == "pro":
+            plan = "business"
+
         if plan not in PLAN_DETAILS or plan == "free":
             return JsonResponse(error_response("Invalid plan. Choose starter or business"), status=400)
 
