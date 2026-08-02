@@ -578,15 +578,19 @@ export default function SettingsPage() {
               </h2>
               <div className="divide-y divide-gray-100">
                 {[
-                  { label: "New candidate applied", desc: "Get notified when a candidate joins a session.", defaultVal: true },
-                  { label: "Weekly digest", desc: "A summary of activity across sessions.", defaultVal: false },
+                  { id: "new_candidate", label: "New candidate applied", desc: "Get notified when a candidate joins a session.", defaultVal: true },
+                  { id: "weekly_digest", label: "Weekly digest", desc: "A summary of activity across sessions.", defaultVal: false },
                 ].map((it, i) => (
                   <div key={i} className="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0">
                     <div>
                       <div className="font-bold text-sm text-charcoal">{it.label}</div>
                       <div className="text-xs text-gray-500 mt-0.5">{it.desc}</div>
                     </div>
-                    <ToggleSwitch defaultOn={it.defaultVal} />
+                    <ToggleSwitch 
+                      storageKey={`workly_notif_${it.id}`} 
+                      defaultOn={it.defaultVal} 
+                      label={it.label}
+                    />
                   </div>
                 ))}
               </div>
@@ -829,15 +833,31 @@ export default function SettingsPage() {
   );
 }
 
-function ToggleSwitch({ defaultOn }) {
-  const [on, setOn] = useState(!!defaultOn);
+function ToggleSwitch({ storageKey, defaultOn, label }) {
+  const [on, setOn] = useState(() => {
+    if (storageKey) {
+      const saved = localStorage.getItem(storageKey);
+      if (saved !== null) return saved === 'true';
+    }
+    return !!defaultOn;
+  });
+
+  const handleToggle = () => {
+    const nextState = !on;
+    setOn(nextState);
+    if (storageKey) {
+      localStorage.setItem(storageKey, String(nextState));
+    }
+    toast.success(`${label || 'Notification setting'} ${nextState ? 'enabled' : 'disabled'}`);
+  };
+
   return (
     <button
       type="button"
-      onClick={() => setOn((v) => !v)}
-      className={`w-12 h-7 rounded-full p-0.5 transition shrink-0 ${on ? "bg-accent" : "bg-gray-100 border border-gray-200"}`}
+      onClick={handleToggle}
+      className={`w-12 h-7 rounded-full p-0.5 transition shrink-0 cursor-pointer ${on ? "bg-blue-600" : "bg-gray-200 border border-gray-300"}`}
     >
-      <span className={`block w-6 h-6 bg-white rounded-full shadow transition-transform ${on ? "translate-x-5" : "translate-x-0 border border-gray-200/50"}`} />
+      <span className={`block w-6 h-6 bg-white rounded-full shadow-md transition-transform ${on ? "translate-x-5" : "translate-x-0"}`} />
     </button>
   );
 }
