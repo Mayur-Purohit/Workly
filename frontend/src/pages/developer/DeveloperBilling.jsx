@@ -61,15 +61,8 @@ export default function DeveloperBilling() {
   });
 
   const { data: usageSummary } = useQuery({
-    queryKey: ["billing-usage-summary"],
-    queryFn: async () => {
-      try {
-        if (portalUsage.summary) return await portalUsage.summary();
-      } catch (err) {
-        console.error("Failed to load usage summary:", err);
-      }
-      return { used_calls: 38, total_quota: 100 };
-    }
+    queryKey: ["portal-summary"],
+    queryFn: portalUsage.summary,
   });
 
   const handleUpgrade = async (planId) => {
@@ -164,8 +157,8 @@ export default function DeveloperBilling() {
   };
 
   const activePlan = current?.plan || tier || "free";
-  const usedCalls = usageSummary?.used_calls || 38;
-  const totalQuota = activePlan === "free" ? 100 : activePlan === "starter" ? 1000 : 10000;
+  const usedCalls = usageSummary?.limits?.parse?.count ?? (usageSummary?.used_calls ?? 0);
+  const totalQuota = usageSummary?.limits?.parse?.limit ?? (activePlan === "free" ? 100 : activePlan === "starter" ? 1000 : 10000);
   const usagePercentage = Math.min(100, Math.round((usedCalls / totalQuota) * 100));
 
   return (
