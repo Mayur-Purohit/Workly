@@ -100,7 +100,9 @@ def upload_resume(request):
             logger.warning("Skill normalization failed: %s", norm_err)
             normalized_skills = raw_skills_flat
 
-        # Save to seeker account
+        # Save to seeker account & automatically set as active resume
+        from api.models import ResumeDraft
+
         seeker = request.seeker
         seeker.resume_file_path = file_path
         seeker.resume_data = parsed
@@ -110,7 +112,23 @@ def upload_resume(request):
         if not seeker.headline and p_info.get("title"):
             seeker.headline = p_info["title"]
 
-        seeker.save(update_fields=["resume_file_path", "resume_data", "skills", "headline"])
+        # Automatically create & activate ResumeDraft for the uploaded resume
+        try:
+            ResumeDraft.objects.filter(seeker=seeker).update(is_active=False)
+            draft_title = file.name.rsplit(".", 1)[0] if file.name else "Uploaded Resume"
+            active_draft = ResumeDraft.objects.create(
+                seeker=seeker,
+                title=f"Active - {draft_title}",
+                template_id="modern",
+                content=parsed,
+                exported_pdf_path=file_path,
+                is_active=True
+            )
+            seeker.active_resume_draft = active_draft
+        except Exception as draft_err:
+            logger.warning("Failed to auto-create active ResumeDraft: %s", draft_err)
+
+        seeker.save(update_fields=["resume_file_path", "resume_data", "skills", "headline", "active_resume_draft"])
 
         return JsonResponse(success_response({
             "message": "Resume uploaded and parsed successfully",
