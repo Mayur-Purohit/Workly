@@ -1,0 +1,103 @@
+# Walkthrough of Changes (Updated)
+
+Sare requirements ke mutabik saare bug fixes aur optimization badlav kar diye gaye hain. Humne frontend backend connection setup, emoji rules, payment sync, company logos, broken social icons, aur dynamic stats with skeleton load states ko pure tarike se implement kiya hai.
+
+## Key Changes Made
+
+### 1. Dynamic API Base URL Setup
+- [api.js](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/lib/api.js#L1-L20) me static API URLs (`http://127.0.0.1:8000`) ke badle dynamic matcher lagaya jo custom domain (jaise `between.indevs.in`) par host hone par dynamic fallback support karegi, jis se connection failures resolved hain.
+
+### 2. Premium Warnings, Emojis Replacement & Color Matching
+- Emojis (jaise `✨`, `🔍`, `👥`, `🚀`, `🛡️`, `📂`) ko pure application pages se nikal kar proper Lucide icons se replace kiya in `DashboardLayout.jsx`, `ResumeBuilderLanding.jsx`, and `ResumeEditor.jsx`.
+- Warning buttons ko standard blue (`bg-blue-600 hover:bg-blue-700`) color palette se match kiya.
+
+### 3. Seeker Subscription State Synchronization (Zustand)
+- [SeekerBillingPage.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/seeker/SeekerBillingPage.jsx) me successful transaction and verification handler me Zustand store sync call `updateSeeker({ tier: planId })` add ki.
+
+### 4. Migration to Hunter.io Logo API
+- Clearbit Logo API deprecation ke baad, [company-logo.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/components/user/company-logo.jsx) helper me `logos.hunter.io` integrate kiya jo clean, active, aur keyless free API hai.
+- Seeding script `seed_imported_data.py` me logo fields update kiye.
+
+### 5. Social Media Logos SVG Fix & Footer Expansion
+- **Bypassed External CDN failures**: [social-media.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/components/ui/social-media.jsx) ko modify kiya taaki LinkedIn, X/Twitter, Instagram, Facebook, aur Telegram ke logos ko inline SVGs ke through render kiya ja sake. Is se external simpleicons CDN loading issues resolve ho gaye hain aur icons perfectly text styles (`group-hover:text-white` on hover) inherit kar rahe hain.
+- **Main Website Footer (`Footer.jsx`)**: Main landing page (website root `/`) par rendered dark-themed [Footer.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/components/Footer.jsx) me simple, hardcoded two-link social items (LinkedIn & X) ke badle hamara unified `SocialTooltip` align kiya.
+- **Job Seeker Landing Page Footer**: `/jobs` main landing page [JobsLandingPage.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/JobsLandingPage.jsx) ke standard copy-only footer ko replace kiya dynamic `<Footer />` block se.
+- **Developer Landing Page Footer**: Developer portal landing page [DeveloperLandingPage.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/developer/DeveloperLandingPage.jsx) ke footer block me `SocialTooltip` align kiya.
+
+### 6. Dynamic Stats & Market Trends Dashboard
+- Backend me naya controller `public_market_trends` add kiya hai jo database sessions, companies, hired applications, aur average response speed dynamically compute karta hai.
+- Home page stats strip (`UserHome.jsx`) aur Market Trends (`JobsTrendsPage.jsx`) dashboards ko dynamic API key values se integrate kiya.
+- Hamne dynamic stats return values me base offsets hataye hain aur direct database table counts populate kiye hain, jisse database state change hote hi dashboard counters instantly and correct match honge (with basic fallbacks for empty database states).
+- Load duration me generic indicators ke badle shimmer gradient `LoadingSkeleton` containers integrate kiye hain.
+
+### 7. Offer Letter Upload Fixes & Size Extension to 10MB
+- **PATCH multipart/form-data parser bug**: Django's default request parser only populates `request.POST` and `request.FILES` automatically on POST requests. For PATCH requests, they are empty. We resolved this inside [candidates.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/api/views/candidates.py) by dynamically spoofing the request method to trigger Django's `_load_post_and_files()` parser, restoring it afterwards. This allows PATCH multipart uploads to succeed.
+- **Increased File size limit to 10MB**:
+  - Frontend: [CandidateCard.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/components/CandidateCard.jsx) me drag zone labels ko "Max 10MB" me update kiya aur client-side validation logic add kiya jo 10MB block limits checks par helpful error toast notify karegi.
+  - Backend settings: [settings.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/vishleshan_backend/settings.py) me Django limits configurations properties: `DATA_UPLOAD_MAX_MEMORY_SIZE` and `FILE_UPLOAD_MAX_MEMORY_SIZE` ko 10MB (`10485760` bytes) scale kiya.
+  - Backend validation: `candidate_action` view logic me offer file size bounds validation check add kiya.
+
+### 8. Contact Sales Button Routing Fix
+- Main product landing page (website root `/`) ke CTA component [FinalCTA.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/components/FinalCTA.jsx) me empty click behavior wale "Contact Sales" button ko React Router `useNavigate` hook se link kiya hai. Ab is button par click karne par yeh dynamically user ko `/contact` query form sheet par scroll/route kar dega.
+
+### 9. Real Counts Error Fix (JobApplication NameError)
+- **JobApplication NameError Resolved**: [companies.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/api/views/companies.py) me `JobApplication` import missing hone ki wajah se dynamic stats load failures (500 Internal Server Error) ho rahe the, jiske kaaran stats fallback placeholders par reset ho ja rahe the. Humne import add karke dynamic real database counters restore kiye hain.
+
+### 10. Robust Drafts Listing JSON Response Wrapper
+- **HTML 500 fallback prevented**: Seeker drafts handler [seeker_resume_builder.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/api/views/seeker_resume_builder.py#L198) GET route ko clean try-except block se wrap kiya hai, taaki database check fail hone par direct HTML traceback page ke badle clear exception parameters ke saath valid JSON details console par reflect ho sakein (jaise missing migrations errors).
+
+### 11. Company Logo in Jobs Search Cards
+- **Logo Serialization Added**: [jobs.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/api/views/jobs.py) and [seeker_jobs.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/api/views/seeker_jobs.py) me serialized output fields list me `company_logo_path` field append kiya hai. Is se jobs search list cards me company initials circle placeholders ke badle correct corporate logos fetch aur render honge.
+
+### 12. Aligned Developer Layout to match Recruiter Workspace Sidebar
+- **Unified Portal Layouts**: [DeveloperPortalLayout.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/developer/DeveloperPortalLayout.jsx) layout structure ko full redesign kiya hai. Ab isme top fixed header bar render hoga jisme top-left hamburger menu circular toggle button, inline premium gradient blue SVG Between logo, aur standard gray border line (`border-gray-250`) configured hain, jo exact workspace dashboard style aur width transitions follow karega.
+
+### 13. Hover-Activated Product Dropdown & Visible New Badge
+- **Product Dropdown implementation**: [Navbar.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/components/Navbar.jsx) me "Product" link ko hover-activated dynamic dropdown panel me wrap kiya hai. CSS details [Navbar.css](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/components/Navbar.css) append kiye hain jo white card background, soft shadows, aur direct feature scroll links (AI Recruiter, Smart Analyzer, Fraud Protection) style karte hain.
+- **NEW Badge contrast tag**: [HeroHeader.css](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/components/HeroHeader.css) me `.badge-tag` style rules update kiye hain. Ab isme high-contrast royal blue background (#2563eb) aur white font color use kiya hai, jisse badge container me "NEW" label text 100% visible aur clean readable dikhta hai.
+
+### 14. Fix ResumeDraft UnboundLocalError
+- **Removed Redundant Local Import**: [seeker_resume_builder.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/api/views/seeker_resume_builder.py#L229) ke POST section me `from api.models import ResumeDraft` local import redundant statement tha, jiski wajah se compiler pure view namespace scope me `ResumeDraft` ko local variable treat kar raha tha. Iske karan GET requests ke time compilation error `UnboundLocalError: cannot access local variable 'ResumeDraft' where it is not associated with a value` throw ho rahi thi. Humne is local line ko delete karke variable scope clean fix kar diya hai.
+
+### 15. Cancel Subscription Handler in Seeker Billing
+- **Cancel Subscription option**: [SeekerBillingPage.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/seeker/SeekerBillingPage.jsx) me active subscription state check par Premium plan card ke main "Current Plan" box ke directly niche dashed light-red style border wala **Cancel Subscription** text button register kiya hai. Yeh backend sub cancellation endpoint `/api/v1/seeker/billing/cancel` trigger karke locally store validation sync update karta hai.
+
+### 16. Template Badges Emoji & Color Pallete Updates
+- **Replaced Emojis**: [ResumeBuilderLanding.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/user/ResumeBuilderLanding.jsx) me Premium card badges se `⚡` emoji hatakar Lucide `Zap` icon load kiya hai.
+- **Color Correction**: Premium template badges background `bg-amber-500` and templates unlock buttons ke amber warning colors ko replace karke premium brand blue accent `bg-blue-600` me override kiya hai.
+- **Dashboard Emojis Fix**: [UserDashboard.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/user/UserDashboard.jsx) me `Upgrade to Premium ⚡` and match compatibility state messages se emojis (`🎉`, `⚡`, `⚠️`) hataye hain, aur iski jagah inline Lucide icons (`Sparkles`, `TrendingUp`, `AlertCircle`) set kiye hain.
+
+### 17. Integrated Pagination & Dynamic Home Page Data (FEATURE_IMPROVEMENTS.md)
+- **Pagination Component**: [pagination.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/components/ui/pagination.jsx) ko clean JavaScript layout structure me create kiya hai.
+- **Backend Pagination**: Public list jobs ([jobs.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/api/views/jobs.py)) and seeker jobs ([seeker_jobs.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/api/views/seeker_jobs.py)) views ko paginate kiya hai. Yeh `page`/`per_page` URL query params padhte hain aur dynamic items data arrays block slices block return karte hain (supporting `total_pages` metadata).
+- **Frontend Jobs Page Pagination**: [UserJobs.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/user/UserJobs.jsx) ko update kiya hai taaki dynamic pagination parameters pass kiye ja sakein, aur template lists ke niche pagination controller render kiya hai.
+- **Dynamic Seeker Home Page**: [UserHome.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/user/UserHome.jsx) ko modify kiya hai taaki initial render par real database jobs and active companies fetch kiye ja sakein (with static fallback content checks for blank database layouts).
+
+### 18. Custom Error Boundaries, 404 Pages, Dynamic Email Link Routing & SEO Tagging
+- **ErrorBoundary**: [ErrorBoundary.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/components/ErrorBoundary.jsx) wrapper create kiya hai taaki runtime JavaScript/React failure par user ko standard white screen blank error block ke badle diagnostic reset options show hon.
+- **Custom 404 Page**: Modern dark theme support wala [NotFoundPage.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/NotFoundPage.jsx) page design aur routes mapping configure kiya hai.
+- **Dynamic Frontend Email Paths**: [email_service.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/api/services/email_service.py) me hardcoded `localhost:5173` links update karke environment-based `FRONTEND_URL` read checks configure kiye hain.
+- **Strict File Upload Validation**: [ingest.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/api/views/ingest.py) me files type parameters aur size parameters validation verify kiye bina parsing bypass safety limits set kiye hain.
+- **SEO useDocumentTitle custom Hook**: [useDocumentTitle.js](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/hooks/useDocumentTitle.js) custom react hook add kiya hai taaki key portal locations par high-relevance title tags aur page descriptions SEO optimized settings apply ho sakein.
+
+---
+
+## Verification & Status
+- **Build Pass**: `npm run build` completely pass ho gaya hai (built in 18.70s).
+- **Git State**: Local modifications completely committed. Working tree is clean. Ready to push.
+
+### 19. Skills Gap Analysis
+- **Dynamic Analysis**: Compare seeker's skills vs job requirements and return matched vs missing lists in `job_detail` endpoint of [seeker_jobs.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/api/views/seeker_jobs.py).
+- **Interactive UI**: Display a premium visual analysis panel in [UserJobDetail.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/user/UserJobDetail.jsx) comparing matched vs missing skills, complete with match percentage progress bar and dynamic Coursera search links for missing skills.
+
+### 20. AI Job Description Generator
+- **JD Generator Agent**: Built `JobDescriptionGeneratorAgent` in [jd_generator_agent.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/agents/jd_generator_agent.py).
+- **Recruiter Form Integration**: Added "Generate with AI" button in the recruiter session creator form [NewSessionPage.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/NewSessionPage.jsx) that automatically populates the job description based on title and criteria.
+
+### 21. AI Cover Letter Generator
+- **Cover Letter Agent**: Built `CoverLetterGeneratorAgent` in [cover_letter_agent.py](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/backend/agents/cover_letter_agent.py).
+- **Seeker Flow Integration**: Added "Write with AI" button in seeker application flow [UserApply.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/user/UserApply.jsx) to generate tailored cover letter notes aligned to candidate skills/experience and job description.
+
+### 22. Recruiter Session Analytics & Hiring Funnel Chart
+- **Dynamic Funnel Visualization**: Added a dynamic CSS-based hiring funnel chart card to the analytics tab inside the recruiter session workspace page [SessionWorkspacePage.jsx](file:///c:/Users/parul/Desktop/Resume%20Project/DAIICT_Hackathon-26/frontend/src/pages/SessionWorkspacePage.jsx). It computes candidate transitions through all active rounds and displays counts/conversion rates with a sleek color-coordinated layout.
+

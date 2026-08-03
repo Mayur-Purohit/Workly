@@ -1,4 +1,8 @@
-# Python
+# ==============================================================================
+# WORKLY PRODUCTION GITIGNORE
+# ==============================================================================
+
+# --- Python & Django ---
 __pycache__/
 *.py[cod]
 *$py.class
@@ -8,159 +12,102 @@ __pycache__/
 dist/
 build/
 *.whl
+*.pyc
 
-# Virtual environments
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
 backend/venv/
 backend/.venv/
 backend/env/
 
-# Django
-backend/.env
-backend/.env.local
+# Django Databases & Storage
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+db.sqlite3-journal
 backend/db.sqlite3
 backend/db.sqlite3-journal
 backend/uploads/
 backend/photos/
+backend/scratch/
 dump.rdb
 
-# Node / Vite (Frontend)
-frontend/node_modules/
-frontend/dist/
-frontend/dist_ssr/
-frontend/.env
-frontend/.env.local
-frontend/.env.development.local
-frontend/.env.test.local
-frontend/.env.production.local
-
-# IDEs & System
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-*.log
-*.log.*
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Temp / Build artifacts
-/tmp/
-backend_output.log
-/backend_output.log
-dummy.pdf
-celerybeat-schedule
-celerybeat.pid
-.coverage
-.pytest_cache/
-.eslintcache
-frontend/.eslintcache
-htmlcov/
-.gemini/
-.antigravity/
-.vite/
-frontend/.vite/
-frontend/dist/
-frontend/node_modules/
-
-# Inspiration / Design References
-inspiration_ui/
-
-# Test output files
-backend/test_resume_2col.pdf
-backend/scratch/
-/*.pdf
-*.pdf
-
-# ML Model artifacts (trained at build time on Render)
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-*.egg-info/
-*.egg
-dist/
-build/
-*.whl
-
-# Virtual environments
-backend/venv/
-backend/.venv/
-backend/env/
-
-# Django
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
 backend/.env
-backend/.env.local
-backend/db.sqlite3
-backend/db.sqlite3-journal
-backend/uploads/
-backend/photos/
-
-# Node / Vite (Frontend)
-frontend/node_modules/
-frontend/dist/
-frontend/dist_ssr/
+backend/.env.*
 frontend/.env
+frontend/.env.*
 frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
 
-# IDEs & System
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
+# --- Node.js & Frontend ---
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/dist_ssr/
+.eslintcache
+frontend/.eslintcache
+.vite/
+frontend/.vite/
+
+# Logs
 *.log
 *.log.*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
-# Temp / Build artifacts
-/tmp/
 backend_output.log
 /backend_output.log
-dummy.pdf
-celerybeat-schedule
-celerybeat.pid
-.coverage
-.pytest_cache/
-.eslintcache
-frontend/.eslintcache
-htmlcov/
-.gemini/
-.antigravity/
-.vite/
-frontend/.vite/
-frontend/dist/
-frontend/node_modules/
 
-# Inspiration / Design References
-inspiration_ui/
-
-# Test output files
-backend/test_resume_2col.pdf
-backend/scratch/
-/*.pdf
-*.pdf
-
-# ML Model artifacts (trained at build time on Render)
+# --- ML Models & Heavy Datasets ---
 backend/models/*.pkl
 backend/models/ner_resume_parser/
 backend/datasets/Salary.csv
 backend/datasets/DSL-StrongPasswordData.csv
 backend/datasets/Resume/
 
-# Exclude directories per user request
+# --- Testing & Celery ---
+celerybeat-schedule
+celerybeat.pid
+.coverage
+.pytest_cache/
+htmlcov/
+testsprite_tests/tmp/
+
+# --- IDEs, Editors & OS Files ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Agent & Temporary Tools ---
+.gemini/
+.antigravity/
+tmp/
+/tmp/
+
+# --- Document & Reference Files ---
+*.pdf
+*.pptx
+*.csv
+*.xlsx
+dummy.pdf
+inspiration_ui/
+alwayzz-zen-landing-main/
 OK/
 OLD ONES/
 TESTINAL/
-
-# Ignore markdown files per user request
-*.md
-
-testsprite_tests\tmp\config.json
