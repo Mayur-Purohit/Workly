@@ -1,6 +1,14 @@
 from django.core.management.base import BaseCommand
-from api.models import SubscriptionPlan, MarketRegionConfig, SalaryTimelineConfig, GrowthSkillFallback, LocationLookup
 from django.utils import timezone
+try:
+    from api.models import SubscriptionPlan, MarketRegionConfig, SalaryTimelineConfig, GrowthSkillFallback, LocationLookup
+except ImportError:
+    SubscriptionPlan = None
+    MarketRegionConfig = None
+    SalaryTimelineConfig = None
+    GrowthSkillFallback = None
+    LocationLookup = None
+
 
 class Command(BaseCommand):
     help = 'Seeds database with default configuration plans, region trends, timelines, and fallback parameters.'
@@ -175,12 +183,13 @@ class Command(BaseCommand):
             }
         ]
 
-        for p_data in plans:
-            SubscriptionPlan.objects.update_or_create(
-                id=p_data["id"],
-                defaults=p_data
-            )
-        self.stdout.write(self.style.SUCCESS('Successfully seeded Subscription Plans.'))
+        if SubscriptionPlan:
+            for p_data in plans:
+                SubscriptionPlan.objects.update_or_create(
+                    id=p_data["id"],
+                    defaults=p_data
+                )
+            self.stdout.write(self.style.SUCCESS('Successfully seeded Subscription Plans.'))
 
         # 2. Seed Location Lookups
         locations_data = {
@@ -220,14 +229,15 @@ class Command(BaseCommand):
             }
         }
 
-        for country, states in locations_data.items():
-            for state, cities in states.items():
-                LocationLookup.objects.update_or_create(
-                    country=country,
-                    state=state,
-                    defaults={"cities": cities}
-                )
-        self.stdout.write(self.style.SUCCESS('Successfully seeded Location hierarchy.'))
+        if LocationLookup:
+            for country, states in locations_data.items():
+                for state, cities in states.items():
+                    LocationLookup.objects.update_or_create(
+                        country=country,
+                        state=state,
+                        defaults={"cities": cities}
+                    )
+            self.stdout.write(self.style.SUCCESS('Successfully seeded Location hierarchy.'))
 
         # 3. Seed MarketRegionConfig
         regions = [
@@ -236,12 +246,13 @@ class Command(BaseCommand):
             {"name": "Zurich", "fallback_value": 180, "color_hex": "#22C55E"},
             {"name": "London", "fallback_value": 240, "color_hex": "#8b5cf6"}
         ]
-        for r_data in regions:
-            MarketRegionConfig.objects.update_or_create(
-                name=r_data["name"],
-                defaults=r_data
-            )
-        self.stdout.write(self.style.SUCCESS('Successfully seeded Market Regions.'))
+        if MarketRegionConfig:
+            for r_data in regions:
+                MarketRegionConfig.objects.update_or_create(
+                    name=r_data["name"],
+                    defaults=r_data
+                )
+            self.stdout.write(self.style.SUCCESS('Successfully seeded Market Regions.'))
 
         # 4. Seed SalaryTimelineConfig
         timelines = [
@@ -250,12 +261,13 @@ class Command(BaseCommand):
             {"year": "2025", "salary_k": 138, "is_projection": False},
             {"year": "2026 (Est)", "salary_k": 150, "is_projection": True}
         ]
-        for t_data in timelines:
-            SalaryTimelineConfig.objects.update_or_create(
-                year=t_data["year"],
-                defaults=t_data
-            )
-        self.stdout.write(self.style.SUCCESS('Successfully seeded Salary Timeline.'))
+        if SalaryTimelineConfig:
+            for t_data in timelines:
+                SalaryTimelineConfig.objects.update_or_create(
+                    year=t_data["year"],
+                    defaults=t_data
+                )
+            self.stdout.write(self.style.SUCCESS('Successfully seeded Salary Timeline.'))
 
         # 5. Seed GrowthSkillFallback
         skills = [
@@ -278,9 +290,10 @@ class Command(BaseCommand):
                 "description": "High throughput performance demand"
             }
         ]
-        for s_data in skills:
-            GrowthSkillFallback.objects.update_or_create(
-                name=s_data["name"],
-                defaults=s_data
-            )
-        self.stdout.write(self.style.SUCCESS('Successfully seeded Growth Skill Fallbacks.'))
+        if GrowthSkillFallback:
+            for s_data in skills:
+                GrowthSkillFallback.objects.update_or_create(
+                    name=s_data["name"],
+                    defaults=s_data
+                )
+            self.stdout.write(self.style.SUCCESS('Successfully seeded Growth Skill Fallbacks.'))

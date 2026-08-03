@@ -107,9 +107,12 @@ WSGI_APPLICATION = 'vishleshan_backend.wsgi.application'
 ASGI_APPLICATION = 'vishleshan_backend.asgi.application'
 
 # Database configuration (Neon PostgreSQL default / Render DATABASE_URL env var)
-DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_NEON_DB)
-if not DATABASE_URL or not DATABASE_URL.strip():
-    DATABASE_URL = DEFAULT_NEON_DB
+if os.getenv("USE_SQLITE", "false").lower() in ("true", "1"):
+    DATABASE_URL = "sqlite:///" + str(BASE_DIR / "db.sqlite3")
+else:
+    DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_NEON_DB)
+    if not DATABASE_URL or not DATABASE_URL.strip():
+        DATABASE_URL = DEFAULT_NEON_DB
 
 # Convert asyncpg to standard postgresql engine for Django ORM
 SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
