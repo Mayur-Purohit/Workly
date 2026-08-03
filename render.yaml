@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: workly-backend
+    env: python
+    rootDir: backend
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn vishleshan_backend.wsgi:application --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_3utdcrxPWh1F@ep-rapid-sky-aziuvybq.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_ORIGINS
+        value: "https://*.vercel.app,http://localhost:5173,http://localhost:3000"
