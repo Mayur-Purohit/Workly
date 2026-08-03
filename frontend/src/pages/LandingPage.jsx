@@ -48,6 +48,7 @@ import FlipFadeText from '../components/ui/flip-fade-text';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import { API_HOST, billingAPI } from '../lib/api';
 import Testimonials from '../components/Testimonials';
+import '../styles/alwayzz.css';
 
 /* ═══════════════════ Animation Variants ═══════════════════ */
 const fadeInUpVariants = {
@@ -189,6 +190,62 @@ function useLandingData() {
   return { stats, liveSession, fraudSignals, plans, loading, lastFetched, refresh: fetchAll };
 }
 
+/* ═══════════════════ Background Lines (from Alwayzz design) ═══════════════════ */
+function BackgroundLines() {
+  const numLines = 35;
+  return (
+    <>
+      <div className="az-lines" aria-hidden="true">
+        {Array.from({ length: numLines }).map((_, i) => {
+          // Exponential spacing so lines are packed near the edge and space out
+          const distance = 5 + Math.pow(i, 1.35) * 6;
+          // Opacity fades out towards the center
+          const maxOpacity = Math.max(0.02, 0.4 - (i * 0.015));
+          
+          return (
+            <span
+              key={`l-${i}`}
+              style={{ 
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: `${distance}px`,
+                width: '1px',
+                background: `linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,${maxOpacity}), rgba(255,255,255,0))`,
+                animation: `line-pulse-straight 6s ease-in-out infinite`,
+                animationDelay: `${i * 0.15}s`,
+                opacity: 0
+              }}
+            />
+          );
+        })}
+        {Array.from({ length: numLines }).map((_, i) => {
+          const distance = 5 + Math.pow(i, 1.35) * 6;
+          const maxOpacity = Math.max(0.02, 0.4 - (i * 0.015));
+          
+          return (
+            <span
+              key={`r-${i}`}
+              style={{ 
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                right: `${distance}px`,
+                width: '1px',
+                background: `linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,${maxOpacity}), rgba(255,255,255,0))`,
+                animation: `line-pulse-straight 6s ease-in-out infinite`,
+                animationDelay: `${i * 0.15}s`,
+                opacity: 0
+              }}
+            />
+          );
+        })}
+      </div>
+
+    </>
+  );
+}
+
 /* ═══════════════════ Hero Section ═══════════════════ */
 const rotatingWords = ["smarter", "faster", "better", "calmer"];
 
@@ -208,128 +265,90 @@ function HeroSection({ onStart, companiesCount, bgY, bgOpacity, bgScale, videoRe
     : 'Trusted by recruiting teams worldwide';
 
   return (
-    <section className="relative overflow-hidden min-h-[95vh] sm:min-h-screen flex flex-col justify-center pt-12 md:pt-16 pb-8">
-      {/* SCROLL-ACTIVATED HERO VIDEO BACKGROUND CONTAINER */}
-      <motion.div
-        style={{
-          opacity: bgOpacity,
-          scale: bgScale,
-          y: bgY,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: -2,
-          pointerEvents: 'none',
-          willChange: 'transform, opacity',
-          WebkitTransform: 'translateZ(0)',
-          transform: 'translateZ(0)'
-        }}
-      >
-        <video
-          ref={videoRef}
-          src="https://zxdefgavgwfxastwmmjm.supabase.co/storage/v1/object/public/assets/flux.mp4"
-          className="bg-video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          style={{ filter: 'blur(2px) saturate(1.06)', willChange: 'transform', transform: 'translateZ(0)' }}
-        />
-        <div className="bg-scrim" />
-        
-        {/* Fade mask at the bottom to blend seamlessly into the page background */}
-        <div className="absolute inset-x-0 bottom-0 h-32 md:h-48 bg-gradient-to-t from-background via-background/80 to-transparent z-10 pointer-events-none" />
-      </motion.div>
+    <section className="az-hero">
+      {/* Animated straight lines matching Alwayzz reference */}
+      <BackgroundLines />
 
-      {/* Radial gradient backgrounds */}
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(55% 50% at 15% 10%, color-mix(in oklab, var(--google-blue) 14%, transparent), transparent 70%), radial-gradient(45% 40% at 95% 0%, color-mix(in oklab, var(--google-red) 10%, transparent), transparent 70%), radial-gradient(45% 50% at 50% 100%, color-mix(in oklab, var(--google-green) 10%, transparent), transparent 70%)",
-        }}
-      />
+      <div className="az-hero-content">
+        {/* Status pill */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="pill inline-flex items-center gap-2 border border-border bg-background/70 px-3.5 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur rounded-full shadow-sm"
+        >
+          <span className="h-2 w-2 rounded-full bg-[var(--google-green)] animate-pulse" />
+          {pillLabel}
+        </motion.div>
 
-      <div className="mx-auto w-full flex max-w-4xl flex-col items-center text-center px-6">
-        <div className="flex flex-col items-center w-full">
-          {/* Status pill — dynamic company count */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="pill inline-flex items-center gap-2 border border-border bg-background/70 px-3.5 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur rounded-full shadow-sm"
+        {/* Title — exact 4-line line breaks matching Alwayzz structure */}
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          className="az-title"
+        >
+          Recruit<br />
+          <span className="relative inline-flex overflow-hidden h-[1.15em] w-[4.2em] items-center justify-center align-middle">
+            {!isMounted ? (
+              <span className="az-serif absolute google-gradient-text">smarter</span>
+            ) : (
+              words.map((word, index) => (
+                <motion.span
+                  key={word}
+                  className="az-serif absolute google-gradient-text"
+                  initial={{ opacity: 0, y: 40 }}
+                  transition={{ type: "spring", stiffness: 120, damping: 20, mass: 1 }}
+                  animate={
+                    wordIdx === index
+                      ? { y: 0, opacity: 1 }
+                      : { y: -40, opacity: 0 }
+                  }
+                >
+                  {word}
+                </motion.span>
+              ))
+            )}
+          </span><br />
+          with AI<br />
+          screening.
+        </motion.h1>
+
+        {/* Subtitle */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="az-subtitle text-gray-400 font-normal"
+        >
+          Parse resumes from any source, match candidates with semantic precision,
+          and detect fraud — all before they reach your pipeline.
+        </motion.p>
+
+        {/* CTA Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.55 }}
+          className="az-cta"
+        >
+          <button 
+            onClick={onStart} 
+            className="az-btn-primary google-shadow flex items-center justify-center gap-2"
+            style={{ background: 'var(--google-blue)', color: 'white', border: 'none' }}
           >
-            <span className="h-2 w-2 rounded-full bg-[var(--google-green)] animate-pulse" />
-            {pillLabel}
-          </motion.div>
-
-          {/* Headline with rotating word */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.25 }}
-            className="mt-6 font-display text-4xl font-semibold leading-[1.15] tracking-tight sm:text-5xl lg:text-[3.5rem]"
-          >
-            <span>Recruit </span>
-            <span className="relative inline-flex overflow-hidden h-[1.2em] w-[4em] items-center justify-center align-middle">
-              {!isMounted ? (
-                <span className="gradient-text font-bold">smarter</span>
-              ) : (
-                words.map((word, index) => (
-                  <motion.span
-                    key={word}
-                    className="absolute gradient-text font-bold"
-                    initial={{ opacity: 0, y: 40 }}
-                    transition={{ type: "spring", stiffness: 120, damping: 20, mass: 1 }}
-                    animate={
-                      wordIdx === index
-                        ? { y: 0, opacity: 1 }
-                        : { y: -40, opacity: 0 }
-                    }
-                  >
-                    {word}
-                  </motion.span>
-                ))
-              )}
-            </span>
-            <br />
-            <span>with <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--google-blue)] via-[#7c3aed] to-[var(--google-green)] drop-shadow-sm">AI-powered screening</span></span>
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="mt-5 max-w-[620px] mx-auto text-base text-muted-foreground leading-relaxed"
-          >
-            Parse resumes from any source, match candidates with semantic precision,
-            and detect fraud — all before they reach your pipeline.
-          </motion.p>
-
-          {/* CTA Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.55 }}
-            className="mt-8 flex justify-center"
-          >
-            <button
-              onClick={onStart}
-              className="pill cursor-pointer bg-primary text-primary-foreground px-8 py-3.5 text-base font-semibold hover:scale-105 active:scale-95 shadow-md hover:shadow-xl hover:shadow-primary/20 flex items-center gap-2 rounded-full transition-all duration-300"
-            >
-              Start Free Trial
-              <ArrowRight className="h-4.5 w-4.5" />
-            </button>
-          </motion.div>
-        </div>
+            Start Free Trial
+            <ArrowRight className="h-4.5 w-4.5" />
+          </button>
+        </motion.div>
       </div>
+
+      {/* Progressive blur at bottom */}
+      <div className="az-blur" aria-hidden="true" />
     </section>
   );
 }
+
 
 /* ═══════════════════ Live Demo Card ═══════════════════ */
 const SCAN_DURATION_MS = 3200;
@@ -1644,9 +1663,9 @@ export default function LandingPage() {
 
       <Navbar onSignIn={handleAuth} isLoggedIn={isLoggedIn} />
 
-      <main className="flex flex-col w-full overflow-x-hidden pt-[80px]" style={{ background: 'transparent' }}>
-        <HeroSection 
-          onStart={handleAuth} 
+      <main className="flex flex-col w-full overflow-x-hidden" style={{ background: 'transparent' }}>
+        <HeroSection
+          onStart={handleAuth}
           companiesCount={stats.total_companies}
           bgY={bgY}
           bgOpacity={bgOpacity}
