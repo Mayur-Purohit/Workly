@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Header, Footer } from '../../components/user/site-chrome';
 import { motion } from 'framer-motion';
-import { MapPin, Mail, Phone, Clock, FileText, Send } from 'lucide-react';
+import { MapPin, Mail, Phone, Clock, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ContactPage() {
@@ -19,23 +19,25 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-zinc-950 text-[#111111] dark:text-zinc-100 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-background text-foreground font-sans transition-colors duration-300">
       <Header />
 
-      <section className="mx-auto max-w-5xl px-6 pt-36 pb-16">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+      <section className="mx-auto max-w-6xl px-6 pt-36 pb-16 relative">
+        <div className="absolute top-10 right-10 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+        
+        <div className="text-center max-w-2xl mx-auto mb-16 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 bg-gray-100 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-full px-4 py-1.5 mb-6 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400"
+            className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-5 py-2 mb-8 text-xs font-bold uppercase tracking-wider text-primary"
           >
-            <Clock size={12} /> Contact Us
+            <Clock size={14} /> Contact Workly
           </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="font-display text-4xl sm:text-5xl font-black tracking-tight leading-none mb-6 text-gray-900 dark:text-white"
+            className="font-display text-5xl sm:text-6xl font-black tracking-tight leading-tight mb-6 text-foreground"
           >
             We are here to help.
           </motion.h1>
@@ -43,54 +45,60 @@ export default function ContactPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-gray-500 dark:text-zinc-400 text-base leading-relaxed"
+            className="text-muted-foreground text-lg leading-relaxed"
           >
             Have a question about our platforms, pricing, or need technical assistance? Drop us a message or reach out directly.
           </motion.p>
         </div>
 
-        <div className="grid lg:grid-cols-5 gap-10">
+        <div className="grid lg:grid-cols-5 gap-10 relative z-10">
           {/* Info Side */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl p-7 space-y-6 overflow-hidden">
+            <div className="bg-card border border-border rounded-[32px] p-8 space-y-8 shadow-google-1">
               <div>
-                <h3 className="text-xs font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-1">Entity Details</h3>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Workly Technologies Private Limited</p>
+                <h3 className="text-[11px] font-black text-muted-foreground uppercase tracking-widest mb-2">Entity Details</h3>
+                <p className="text-lg font-bold text-foreground">Workly Technologies Private Limited</p>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 text-sm">
-                  <MapPin className="h-5 w-5 text-gray-400 dark:text-zinc-500 shrink-0 mt-0.5" />
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <MapPin className="h-5 w-5 text-primary" />
+                  </div>
                   <div>
-                    <span className="font-bold text-gray-900 dark:text-white block mb-1">Registered Address</span>
-                    <span className="text-gray-500 dark:text-zinc-400 leading-relaxed block">
+                    <span className="font-bold text-foreground block mb-1">Registered Address</span>
+                    <span className="text-muted-foreground text-sm leading-relaxed block">
                       4th Floor, Innovation Hub, Block A, DA-IICT Campus, Gandhinagar, Gujarat, India - 382007
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail className="h-5 w-5 text-gray-400 dark:text-zinc-500 shrink-0" />
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Mail className="h-5 w-5 text-primary" />
+                  </div>
                   <div>
-                    <span className="font-bold text-gray-900 dark:text-white block mb-0.5">Support Email</span>
-                    <a href="mailto:support@between.indevs.in" className="text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white underline transition">
-                      support@between.indevs.in
+                    <span className="font-bold text-foreground block mb-0.5">Support Email</span>
+                    <a href="mailto:support@workly.com" className="text-muted-foreground text-sm hover:text-primary transition">
+                      support@workly.com
                     </a>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone className="h-5 w-5 text-gray-400 dark:text-zinc-500 shrink-0" />
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Phone className="h-5 w-5 text-primary" />
+                  </div>
                   <div>
-                    <span className="font-bold text-gray-900 dark:text-white block mb-0.5">Contact Number</span>
-                    <span className="text-gray-500 dark:text-zinc-400">+91 88495 38117</span>
+                    <span className="font-bold text-foreground block mb-0.5">Contact Number</span>
+                    <span className="text-muted-foreground text-sm">+91 88495 38117</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-zinc-800 rounded-3xl p-6 flex gap-3 text-xs leading-relaxed text-gray-500 dark:text-zinc-400">
-              <Clock className="h-4 w-4 text-gray-400 dark:text-zinc-500 shrink-0 mt-0.5" />
+            <div className="bg-muted border border-border rounded-[24px] p-6 flex gap-4 text-sm leading-relaxed text-muted-foreground">
+              <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <p>
                 Our support desk hours are Monday to Friday, 9:00 AM to 6:00 PM IST. We strive to reply to all queries within 1 business day.
               </p>
@@ -98,52 +106,52 @@ export default function ContactPage() {
           </div>
 
           {/* Form Side */}
-          <div className="lg:col-span-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-3xl p-7 sm:p-8 overflow-hidden">
-            <h3 className="font-display text-xl font-bold mb-6 text-gray-900 dark:text-white">Send us a Message</h3>
+          <div className="lg:col-span-3 bg-card border border-border rounded-[40px] p-8 sm:p-12 shadow-google-1">
+            <h3 className="font-display text-2xl sm:text-3xl font-bold mb-8 text-foreground">Send us a Message</h3>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">Your Name</label>
+                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-widest mb-2 block">Your Name</label>
                 <input 
                   type="text" 
                   required
                   placeholder="John Doe"
                   value={form.name}
                   onChange={e => setForm({...form, name: e.target.value})}
-                  className="w-full p-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-850 focus:border-accent dark:focus:border-accent rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:outline-none transition-colors"
+                  className="w-full p-4 bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl text-sm font-bold text-foreground focus:outline-none transition-all"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">Email Address</label>
+                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-widest mb-2 block">Email Address</label>
                 <input 
                   type="email" 
                   required
                   placeholder="john@example.com"
                   value={form.email}
                   onChange={e => setForm({...form, email: e.target.value})}
-                  className="w-full p-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-850 focus:border-accent dark:focus:border-accent rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:outline-none transition-colors"
+                  className="w-full p-4 bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl text-sm font-bold text-foreground focus:outline-none transition-all"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">Message</label>
+                <label className="text-[11px] font-black text-muted-foreground uppercase tracking-widest mb-2 block">Message</label>
                 <textarea 
                   required
-                  rows={4}
+                  rows={5}
                   placeholder="How can we help you?"
                   value={form.message}
                   onChange={e => setForm({...form, message: e.target.value})}
-                  className="w-full p-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-850 focus:border-accent dark:focus:border-accent rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:outline-none transition-colors resize-none"
+                  className="w-full p-4 bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl text-sm font-bold text-foreground focus:outline-none transition-all resize-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 bg-[#111111] dark:bg-zinc-100 hover:bg-gray-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+                className="w-full py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-2xl text-base transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg disabled:opacity-50"
               >
-                {submitting ? 'Sending...' : <><Send size={14} /> Send Message</>}
+                {submitting ? 'Sending...' : <><Send size={18} /> Send Message</>}
               </button>
             </form>
           </div>

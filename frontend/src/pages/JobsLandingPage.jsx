@@ -99,7 +99,7 @@ export default function JobsLandingPage() {
     fetchJobs();
 
     publicAPI.getMarketTrends()
-      .then(d => setTrends(d?.trends || null))
+      .then(d => setTrends(d?.trends || d?.stats || null))
       .catch(e => console.error("Failed to load market trends", e));
 
     const checkProfile = () => {

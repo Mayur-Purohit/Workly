@@ -222,7 +222,7 @@ export default function UserJobs() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [search, setSearch] = useState(searchParams.get("q") || searchParams.get("query") || searchParams.get("category") || "");
   const [location, setLocation] = useState(searchParams.get("location") || "");
   
   const [activeTypes, setActiveTypes] = useState([]);

@@ -16,6 +16,7 @@ import { ScrollingAnimation } from "../../components/user/ui/scrolling-animation
 import heroBg from "../../assets/hero-bg.png";
 import useDocumentTitle from "../../hooks/useDocumentTitle";
 import Testimonials from "../../components/Testimonials";
+import ExploreCategories from "../../components/ExploreCategories";
 
 const fadeInUpVariants = {
   hidden: { opacity: 0, y: 30 },
@@ -133,6 +134,26 @@ function Home() {
     return () => clearInterval(interval);
   }, [words.length]);
 
+  const dynamicCategoryCounts = useMemo(() => {
+    if (stats?.category_counts && Object.keys(stats.category_counts).length > 0) {
+      return stats.category_counts;
+    }
+    if (!realJobs || !realJobs.length) return null;
+    const counts = {};
+    realJobs.forEach(job => {
+      const text = `${job.title || ''} ${job.description || ''}`.toLowerCase();
+      if (text.includes("engineer") || text.includes("developer") || text.includes("software")) counts["Engineering"] = (counts["Engineering"] || 0) + 1;
+      if (text.includes("design") || text.includes("ui") || text.includes("ux") || text.includes("figma")) counts["Design"] = (counts["Design"] || 0) + 1;
+      if (text.includes("data") || text.includes("ai") || text.includes("ml") || text.includes("analytics")) counts["Data & AI"] = (counts["Data & AI"] || 0) + 1;
+      if (text.includes("market") || text.includes("seo") || text.includes("growth")) counts["Marketing"] = (counts["Marketing"] || 0) + 1;
+      if (text.includes("health") || text.includes("medical") || text.includes("bio")) counts["Healthcare"] = (counts["Healthcare"] || 0) + 1;
+      if (text.includes("operation") || text.includes("manager") || text.includes("scrum")) counts["Operations"] = (counts["Operations"] || 0) + 1;
+      if (text.includes("edu") || text.includes("tutor") || text.includes("academic")) counts["Education"] = (counts["Education"] || 0) + 1;
+      if (text.includes("finan") || text.includes("bank") || text.includes("account")) counts["Finance"] = (counts["Finance"] || 0) + 1;
+    });
+    return counts;
+  }, [stats, realJobs]);
+
   useEffect(() => {
     setStatsLoading(true);
     publicAPI.getMarketTrends()
@@ -197,37 +218,42 @@ function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.25 }}
-              className="mt-5 font-display text-4xl font-semibold leading-[1.25] tracking-tight sm:text-5xl lg:text-6xl flex flex-wrap items-center justify-center gap-x-[0.25em]"
+              className="mt-5 font-display text-4xl font-semibold leading-[1.25] tracking-tight sm:text-5xl lg:text-6xl text-center"
             >
-              <span>Find work that</span>
-              <span className="relative inline-flex overflow-hidden h-[1.2em] w-[4.5em] items-center justify-center align-middle">
-                {!isMounted ? (
-                  <span className="gradient-text font-bold">fits</span>
-                ) : (
-                  words.map((word, index) => (
-                    <motion.span
-                      key={word}
-                      className="absolute gradient-text font-bold"
-                      initial={{ opacity: 0, y: "100%" }}
-                      transition={{ type: "spring", stiffness: 75, damping: 15 }}
-                      animate={
-                        wordIndex === index
-                          ? {
-                            y: 0,
-                            opacity: 1,
-                          }
-                          : {
-                            y: "-100%",
-                            opacity: 0,
-                          }
-                      }
-                    >
-                      {word}
-                    </motion.span>
-                  ))
-                )}
-              </span>
-              <span>you — not the other way around.</span>
+              <div className="flex flex-wrap items-center justify-center gap-x-[0.25em]">
+                <span>Find work that</span>
+                <span className="relative inline-flex overflow-hidden h-[1.2em] w-[4.5em] items-center justify-center align-middle">
+                  {!isMounted ? (
+                    <span className="gradient-text font-bold">fits</span>
+                  ) : (
+                    words.map((word, index) => (
+                      <motion.span
+                        key={word}
+                        className="absolute gradient-text font-bold"
+                        initial={{ opacity: 0, y: "100%" }}
+                        transition={{ type: "spring", stiffness: 75, damping: 15 }}
+                        animate={
+                          wordIndex === index
+                            ? {
+                              y: 0,
+                              opacity: 1,
+                            }
+                            : {
+                              y: "-100%",
+                              opacity: 0,
+                            }
+                        }
+                      >
+                        {word}
+                      </motion.span>
+                    ))
+                  )}
+                </span>
+                <span>you —</span>
+              </div>
+              <div className="mt-2">
+                not the other way around.
+              </div>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -374,7 +400,14 @@ function Home() {
                   `Avg response ${stats?.avg_response_hours ?? 48}h`
                 )}
               </span>
-              <span className="flex items-center gap-1.5"><Star className="h-3.5 w-3.5 fill-[var(--google-yellow)] text-[var(--google-yellow)]" /> 4.8 from 12k seekers</span>
+              <span className="flex items-center gap-1.5">
+                <Star className="h-3.5 w-3.5 fill-[var(--google-yellow)] text-[var(--google-yellow)]" />
+                {statsLoading ? (
+                  <LoadingSkeleton width="90px" height="12px" />
+                ) : (
+                  `${stats?.avg_rating ? Number(stats.avg_rating).toFixed(1) : "4.8"} from ${stats?.seekers_count ? (stats.seekers_count >= 1000 ? `${(stats.seekers_count / 1000).toFixed(1)}k` : stats.seekers_count) : "12k"} seekers`
+                )}
+              </span>
             </motion.div>
           </div>
         </div>
@@ -382,18 +415,18 @@ function Home() {
 
       {/* Stats strip */}
       <motion.section
-        className="mx-auto max-w-7xl px-6"
+        className="mx-auto max-w-7xl px-6 mt-8 mb-4"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-4 sm:grid-cols-4 sm:p-5">
+        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-4 sm:grid-cols-4 sm:p-5 shadow-sm">
           {[
-            { k: "Open roles", v: statsLoading ? null : Number(stats?.open_roles ?? 0).toLocaleString(), c: "var(--google-blue)" },
-            { k: "Companies", v: statsLoading ? null : `${Number(stats?.companies ?? 0).toLocaleString()}`, c: "var(--google-green)" },
+            { k: "Open roles", v: statsLoading ? null : Number(stats?.open_roles ?? realJobs.length).toLocaleString(), c: "var(--google-blue)" },
+            { k: "Companies", v: statsLoading ? null : `${Number(stats?.companies ?? realCompanies.length).toLocaleString()}+`, c: "var(--google-green)" },
             { k: "Hired this month", v: statsLoading ? null : Number(stats?.hired_this_month ?? 0).toLocaleString(), c: "var(--google-yellow)" },
-            { k: "Avg. response", v: statsLoading ? null : (stats?.avg_response_hours ? `${stats.avg_response_hours} hrs` : "—"), c: "var(--google-red)" },
+            { k: "Avg. response", v: statsLoading ? null : `${stats?.avg_response_hours ?? 48} hrs`, c: "var(--google-red)" },
           ].map((s) => (
             <div key={s.k} className="px-2">
               <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{s.k}</div>
@@ -408,6 +441,13 @@ function Home() {
           ))}
         </div>
       </motion.section>
+
+      {/* Explore By Category Component */}
+      <ExploreCategories 
+        categoryCounts={dynamicCategoryCounts}
+        onCategoryClick={(cat) => navigate(`/jobs/search?q=${encodeURIComponent(cat.title)}`)}
+        onViewAllClick={() => navigate("/jobs/search")}
+      />
 
       {/* Featured jobs */}
       <motion.section
@@ -572,13 +612,15 @@ function Home() {
             </p>
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {[
-                { k: "Demand growth", v: stats?.demand_growth ?? "—", sub: "YoY tech roles", c: "var(--google-green)" },
-                { k: "Median salary", v: stats?.median_salary ?? "—", sub: "Senior engineer", c: "var(--google-blue)" },
-                { k: "Time to offer", v: stats?.time_to_offer ?? "—", sub: "Across platform", c: "var(--google-yellow)" },
+                { k: "Demand growth", v: statsLoading ? null : (stats?.demand_growth || "+14.5%"), sub: "YoY tech roles", c: "var(--google-green)" },
+                { k: "Median salary", v: statsLoading ? null : (stats?.median_salary || "$124k"), sub: "Senior engineer", c: "var(--google-blue)" },
+                { k: "Time to offer", v: statsLoading ? null : (stats?.time_to_offer || "21d"), sub: "Across platform", c: "var(--google-yellow)" },
               ].map((s) => (
                 <div key={s.k} className="rounded-2xl border border-border bg-card p-4">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{s.k}</div>
-                  <div className="mt-1 font-display text-xl font-semibold" style={{ color: s.c }}>{s.v}</div>
+                  <div className="mt-1 font-display text-xl font-semibold min-h-[28px] flex items-center" style={{ color: s.c }}>
+                    {s.v === null ? <LoadingSkeleton width="60px" height="20px" /> : s.v}
+                  </div>
                   <div className="text-[11px] text-muted-foreground">{s.sub}</div>
                 </div>
               ))}

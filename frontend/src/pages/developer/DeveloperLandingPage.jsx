@@ -36,6 +36,7 @@ import useDocumentTitle from "../../hooks/useDocumentTitle";
 import { DEVELOPER_PLANS } from "../../lib/constants";
 import ThemeToggle from "../../components/ThemeToggle";
 import Testimonials from "../../components/Testimonials";
+import SharedFooter from "../../components/SharedFooter";
 
 /* ═══════════════════ Framer Motion Animation System ═══════════════════ */
 const fadeInUpVariants = {
@@ -939,34 +940,7 @@ console.log(data);`,
       <Testimonials userTypeFilter="developer" title="What Developers Say" label="Developer Reviews" />
 
       {/* ════════════════ FOOTER ════════════════ */}
-      <footer className="bg-card border-t border-border text-muted-foreground py-16">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex flex-col items-center md:items-start gap-2">
-            <div className="flex items-center gap-2 text-foreground">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-display font-bold text-xs bg-[var(--google-blue)] p-1 shadow-sm">
-                <svg viewBox="0 0 100 100" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <line x1="32" y1="68" x2="68" y2="32" stroke="white" strokeWidth="14" strokeLinecap="round" />
-                  <circle cx="32" cy="68" r="16" fill="white" />
-                  <circle cx="68" cy="32" r="24" fill="white" />
-                </svg>
-              </div>
-              <span className="font-display text-lg font-bold tracking-tight text-foreground">Workly</span>
-            </div>
-            <p className="text-xs mt-1">Built for high performance resume parsing & intelligence.</p>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-8 text-sm font-medium">
-            <Link to="/privacy" className="hover:text-[var(--google-blue)] transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-[var(--google-blue)] transition-colors">Terms of Service</Link>
-            <Link to="/contact" className="hover:text-[var(--google-blue)] transition-colors">Contact Support</Link>
-          </div>
-
-          <div className="flex flex-col items-center md:items-end gap-4">
-            <SocialTooltip items={socialLinks} className="justify-center md:justify-end" />
-            <div className="text-xs">© {new Date().getFullYear()} Workly Developer Hub.</div>
-          </div>
-        </div>
-      </footer>
+      <SharedFooter />
     </div>
   );
 }

@@ -138,7 +138,7 @@ export default function JobsSearchPage() {
   const navigate = useNavigate();
 
   // Search input states
-  const [queryInput, setQueryInput] = useState(searchParams.get('query') || '');
+  const [queryInput, setQueryInput] = useState(searchParams.get('query') || searchParams.get('q') || searchParams.get('category') || '');
   const [locationInput, setLocationInput] = useState(searchParams.get('location') || '');
 
   // Active filters states
