@@ -304,3 +304,38 @@ h5 {
 .bg-surface {
   background-color: var(--surface);
 }
+
+@media print {
+  /* Hide absolutely everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Make only the print-area and its children visible */
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+
+  /* Position the print-area at the top-left corner of the page */
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Force background colors and remove margins */
+  @page { 
+    margin: 0;
+    size: letter portrait;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

@@ -60,12 +60,12 @@ def tokens_root(request):
                 is_active=True
             )
 
-            html_snippet = f"""<div id="vishleshan-panel"></div>
-<script src="https://cdn.vishleshan.ai/embed.js"></script>
+            html_snippet = f"""<div id="workly-panel"></div>
+<script src="http://localhost:5173/embed.js"></script>
 <script>
-Vishleshan.init({{
+Workly.init({{
   token: "{token_value}",
-  container: "#vishleshan-panel",
+  container: "#workly-panel",
   theme: "light"
 }});
 </script>"""
@@ -122,8 +122,9 @@ def validate_embed_token(request):
         else:
             request_domain = ""
 
-        # Validate domain
-        if token.allowed_domain and token.allowed_domain not in request_domain:
+        # Validate domain (support localhost & local file test page)
+        is_local_dev = token.allowed_domain in ["localhost", "127.0.0.1", ""] or "localhost" in request_domain or "127.0.0.1" in request_domain or not request_domain
+        if token.allowed_domain and not is_local_dev and token.allowed_domain not in request_domain:
             return JsonResponse(error_response("Domain not authorized for this embed token"), status=403)
 
         # Generate short-lived JWT (1 hour)

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workly Embed Widget Test</title>
+</head>
+<body style="background-color: #f1f5f9; padding: 40px; margin: 0; font-family: sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; text-align: center;">
+        <h1 style="color: #0f172a; margin-bottom: 8px;">My HRMS Portal</h1>
+        <p style="color: #64748b; margin-top: 0;">Testing Workly Candidate AI Screening Embed Widget</p>
+
+        <!-- Workly Widget Container -->
+        <div id="workly-panel"></div>
+
+        <!-- Workly Embed SDK -->
+        <script src="http://localhost:5173/embed.js"></script>
+        <script>
+        Workly.init({
+          token: "vish_embed_noKr5Mh_rrty4pdLm-HwF0xj5kyBApLckVjKSnqxEB0",
+          container: "#workly-panel",
+          theme: "light"
+        });
+        </script>
+    </div>
+</body>
+</html>

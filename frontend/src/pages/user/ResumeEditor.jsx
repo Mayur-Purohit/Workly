@@ -1006,88 +1006,67 @@ export default function ResumeEditor() {
     }
   };
 
-  // 4. Export PDF (Frontend html2pdf download or backend high-fidelity renderer)
+  // 4. Export PDF — Always use backend ReportLab for real selectable text
   const handleExportPdf = async () => {
     try {
       toast.loading("Generating high-fidelity PDF…", { id: "pdf" });
 
-      if (templateId === "ats") {
-        // Backend ReportLab high-fidelity render
-        await seekerAPI.updateDraft(resumeId, {
-          title: draftTitle,
-          templateId,
-          content
-        });
+      // Save current draft content to backend first
+      await seekerAPI.updateDraft(resumeId, {
+        title: draftTitle,
+        templateId,
+        content
+      });
 
-        const res = await seekerAPI.exportDraftPdf(resumeId);
-        if (res.downloadUrl) {
-          const link = document.createElement("a");
-          const fullUrl = res.downloadUrl.startsWith("http")
-            ? res.downloadUrl
-            : `${API_HOST}${res.downloadUrl}`;
-          link.href = fullUrl;
-          link.setAttribute("download", `${(draftTitle || "resume").replace(/\s+/g, "_")}.pdf`);
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          toast.success("ATS-Safe PDF exported successfully", { id: "pdf" });
-          return;
+      if (templateId === "ats") {
+        // Attempt backend ReportLab high-fidelity render (produces real text PDF)
+        try {
+          const res = await seekerAPI.exportDraftPdf(resumeId);
+          if (res.downloadUrl) {
+            const link = document.createElement("a");
+            const fullUrl = res.downloadUrl.startsWith("http")
+              ? res.downloadUrl
+              : `${API_HOST}${res.downloadUrl}`;
+            link.href = fullUrl;
+            link.setAttribute("download", `${(draftTitle || "resume").replace(/\s+/g, "_")}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            toast.success("ATS-Safe PDF exported successfully — text is fully selectable", { id: "pdf" });
+            return;
+          }
+        } catch (backendErr) {
+          console.warn("Backend PDF export failed, falling back to client-side render:", backendErr);
         }
       }
 
-      // Standard html2pdf rendering fallback for other templates
+      // Fallback or non-ATS templates: Native Browser Print (Selectable Text!)
       if (!previewRef.current) return;
-      const html2pdf = (await import("html2pdf.js")).default;
       const node = previewRef.current.querySelector(".resume-page");
       if (!node) {
         toast.error("No preview node found to export", { id: "pdf" });
         return;
       }
 
-      const options = {
-        margin: 0,
-        filename: `${(draftTitle || "resume").replace(/\s+/g, "_")}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          onclone: (clonedDoc) => {
-            const style = clonedDoc.createElement("style");
-            style.innerHTML = `
-              :root, [class*="rb-pro-scope"], body {
-                --background: #ffffff !important;
-                --foreground: #1a1a1a !important;
-                --card: #ffffff !important;
-                --card-foreground: #1a1a1a !important;
-                --popover: #ffffff !important;
-                --popover-foreground: #1a1a1a !important;
-                --primary: #1a73e8 !important;
-                --primary-foreground: #ffffff !important;
-                --secondary: #f1f3f4 !important;
-                --secondary-foreground: #1a1a1a !important;
-                --muted: #f1f3f4 !important;
-                --muted-foreground: #5f6368 !important;
-                --accent: #f1f3f4 !important;
-                --accent-foreground: #1a1a1a !important;
-                --destructive: #d93025 !important;
-                --destructive-foreground: #ffffff !important;
-                --border: #dadce0 !important;
-                --input: #dadce0 !important;
-                --ring: #1a73e8 !important;
-                --google-blue: #1a73e8 !important;
-                --google-red: #ea4335 !important;
-                --google-yellow: #fbbc05 !important;
-                --google-green: #34a853 !important;
-              }
-            `;
-            clonedDoc.head.appendChild(style);
-          }
-        },
-        jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+      toast.success("Opening print dialog. Save as PDF!", { id: "pdf" });
+      
+      // Add print-area class to make only the resume visible during print
+      node.classList.add("print-area");
+      
+      // Add a listener to clean up the class after printing
+      const afterPrint = () => {
+        node.classList.remove("print-area");
+        window.removeEventListener("afterprint", afterPrint);
       };
+      window.addEventListener("afterprint", afterPrint);
 
-      await html2pdf().set(options).from(node).save();
-      toast.success("PDF exported successfully", { id: "pdf" });
+      // Trigger the browser's native print dialog
+      setTimeout(() => {
+        window.print();
+        // Fallback cleanup if afterprint event doesn't fire
+        setTimeout(() => node.classList.remove("print-area"), 1000);
+      }, 300);
+
     } catch (err) {
       console.error(err);
       toast.error("Export failed", { id: "pdf" });
@@ -1109,12 +1088,23 @@ export default function ResumeEditor() {
 
       let pdfBlob;
       if (templateId === "ats") {
-        // Fetch from backend render
-        const res = await seekerAPI.exportDraftPdf(resumeId);
-        const pdfResponse = await fetch(res.downloadUrl);
-        pdfBlob = await pdfResponse.blob();
-      } else {
-        // Generate from html2pdf
+        // Always try backend ReportLab renderer first (produces real text PDF)
+        try {
+          const res = await seekerAPI.exportDraftPdf(resumeId);
+          if (res.downloadUrl) {
+            const fullUrl = res.downloadUrl.startsWith("http")
+              ? res.downloadUrl
+              : `${API_HOST}${res.downloadUrl}`;
+            const pdfResponse = await fetch(fullUrl);
+            pdfBlob = await pdfResponse.blob();
+          }
+        } catch (backendErr) {
+          console.warn("Backend PDF render failed for activate, falling back to html2pdf:", backendErr);
+        }
+      }
+
+      // Fallback to html2pdf if backend didn't produce a blob
+      if (!pdfBlob) {
         if (!previewRef.current) {
           toast.error("No preview page found to activate", { id: "activate" });
           setActivateLoading(false);
