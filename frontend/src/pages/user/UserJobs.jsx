@@ -20,7 +20,7 @@ import { BookmarkIconButton } from "../../components/ui/bookmark-icon-button";
 
 // Robust Salary Parsing & Conversion Helpers
 const parseSalary = (salaryStr) => {
-  if (!salaryStr || salaryStr.toLowerCase().includes("competitive")) {
+  if (!salaryStr || salaryStr.toLowerCase().includes("competitive") || salaryStr.toLowerCase().includes("not disclosed")) {
     return { min: null, max: null, currency: null };
   }
 
@@ -75,7 +75,7 @@ const convertSalaryToCurrency = (val, fromCurrency, toCurrency) => {
   
   const toUSD = {
     USD: 1.0,
-    INR: 1.2 / 100, // INR Lakhs to USD Thousands (~$1.2k per Lakh)
+    INR: 1.2, // INR Lakhs to USD Thousands (~$1.2k per Lakh)
     GBP: 1.25, 
     EUR: 1.1,  
   };
@@ -86,7 +86,7 @@ const convertSalaryToCurrency = (val, fromCurrency, toCurrency) => {
 
 const salaryFilterFn = (salaryRange, minVal, filterCurrencyCode) => {
   if (!minVal || minVal === 0) return true;
-  if (!salaryRange || salaryRange.toLowerCase().includes("competitive")) return false;
+  if (!salaryRange || salaryRange.toLowerCase().includes("competitive") || salaryRange.toLowerCase().includes("not disclosed")) return false;
   
   const parsed = parseSalary(salaryRange);
   if (!parsed.min && !parsed.max) return false;

@@ -21,7 +21,7 @@ def _serialize_company(company, is_following=False, active_sessions=None, follow
             "job_title": s.job_title,
             "location": loc,
             "employment_type": "Full-time",
-            "salary_range": "Competitive"
+            "salary_range": "Not Disclosed"
         })
         
     cid_str = str(company.id)
@@ -367,9 +367,9 @@ def public_market_trends(request):
         hired_this_month_count = JobApplication.objects.filter(status="hired", updated_at__gte=start_of_month).count()
 
         # Dynamic average response calculation
+        from django.db.models import ExpressionWrapper, fields
         apps_responded = JobApplication.objects.exclude(status="applied").filter(updated_at__gt=F('applied_at'))
         if apps_responded.exists():
-            from django.db.models import ExpressionWrapper, fields
             duration = apps_responded.annotate(
                 diff=ExpressionWrapper(F('updated_at') - F('applied_at'), output_field=fields.DurationField())
             )
@@ -377,6 +377,17 @@ def public_market_trends(request):
             avg_hrs = max(2, int(avg_sec / 3600))
         else:
             avg_hrs = 48
+
+        # Dynamic Time to Offer (hired time)
+        hired_apps = JobApplication.objects.filter(status="hired", updated_at__gt=F('applied_at'))
+        if hired_apps.exists():
+            duration = hired_apps.annotate(
+                diff=ExpressionWrapper(F('updated_at') - F('applied_at'), output_field=fields.DurationField())
+            )
+            hired_avg_sec = sum(d.diff.total_seconds() for d in duration) / len(duration)
+            avg_offer_days = max(1, int(hired_avg_sec / 86400))
+        else:
+            avg_offer_days = 14
 
         # 2. Main Seeker landing stats
         categories_list = ["Engineering", "Design", "Data & AI", "Marketing", "Healthcare", "Operations", "Education", "Finance"]
@@ -429,9 +440,27 @@ def public_market_trends(request):
         else:
             median_salary_str = f"${int(avg_db_salary / 1000)}k" if avg_db_salary >= 1000 else f"${avg_db_salary:,}"
 
-        # Dynamic Demand Growth & Time to Offer
-        demand_growth_str = f"+{round(10.5 + (active_sessions_count * 0.15), 1)}%"
-        time_to_offer_str = f"{max(4, int(avg_hrs / 2))}d"
+        # Dynamic Demand Growth (MoM open roles)
+        import datetime
+        last_month_start = (start_of_month - datetime.timedelta(days=1)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        this_month_sessions = Session.objects.filter(created_at__gte=start_of_month).count()
+        last_month_sessions = Session.objects.filter(created_at__gte=last_month_start, created_at__lt=start_of_month).count()
+        
+        if last_month_sessions > 0:
+            growth = ((this_month_sessions - last_month_sessions) / last_month_sessions) * 100
+        else:
+            growth = 14.6
+            
+        demand_growth_str = f"{'+' if growth >= 0 else ''}{round(growth, 1)}%"
+        time_to_offer_str = f"{avg_offer_days}d"
+
+        role_counts = {}
+        for s in Session.objects.all():
+            t = s.job_title or "Engineer"
+            role_counts[t] = role_counts.get(t, 0) + 1
+        common_role = "Across platform"
+        if role_counts:
+            common_role = max(role_counts, key=role_counts.get)
 
         stats = {
             "open_roles": active_sessions_count,
@@ -440,8 +469,11 @@ def public_market_trends(request):
             "avg_response_hours": avg_hrs,
             "category_counts": category_counts,
             "demand_growth": demand_growth_str,
+            "demand_growth_subtitle": "MoM tech roles",
             "median_salary": median_salary_str,
+            "median_salary_subtitle": common_role.title(),
             "time_to_offer": time_to_offer_str,
+            "time_to_offer_subtitle": "Average hiring time",
             "seekers_count": seekers_count,
             "avg_rating": avg_rating,
         }

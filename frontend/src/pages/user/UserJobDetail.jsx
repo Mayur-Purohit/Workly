@@ -51,7 +51,7 @@ export default function UserJobDetail() {
           location: data.location || "Remote",
           type: data.employment_type || "Full-time",
           posted: data.created_at ? new Date(data.created_at).toLocaleDateString() : "Just now",
-          salary: data.salary_range || "Competitive",
+          salary: data.salary_range || "Not Disclosed",
           description: data.full_description || data.job_description,
           logoColor: "#4F46E5",
           logoPath: data.company_logo_path,
@@ -72,10 +72,11 @@ export default function UserJobDetail() {
         setJob(mappedJob);
       })
       .catch((err) => {
-        if (err.status === 404 || err.message?.toLowerCase().includes("not found")) {
+        const msg = (err?.message || err || "").toString().toLowerCase();
+        if (err?.status === 404 || msg.includes("404") || msg.includes("not found") || msg.includes("no longer active")) {
           console.warn("Job not found (404): It may have been removed.");
         } else {
-          console.error(err);
+          console.error("Job details fetch error:", err);
           toast.error("Failed to load job details");
         }
       })

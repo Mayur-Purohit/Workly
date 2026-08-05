@@ -49,7 +49,7 @@ def _parse_announcement_date(date_str):
 def _parse_job_description_meta(description: str) -> dict:
     """Parses salary, location, and employment type from job description text."""
     meta = {
-        "salary_range": "Competitive",
+        "salary_range": "Not Disclosed",
         "location": "On-site",
         "employment_type": "Full-time"
     }
