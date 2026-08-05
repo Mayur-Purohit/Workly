@@ -201,11 +201,11 @@ function BackgroundLines() {
           const distance = 5 + Math.pow(i, 1.35) * 6;
           // Opacity fades out towards the center
           const maxOpacity = Math.max(0.02, 0.4 - (i * 0.015));
-          
+
           return (
             <span
               key={`l-${i}`}
-              style={{ 
+              style={{
                 position: 'absolute',
                 top: 0,
                 bottom: 0,
@@ -222,11 +222,11 @@ function BackgroundLines() {
         {Array.from({ length: numLines }).map((_, i) => {
           const distance = 5 + Math.pow(i, 1.35) * 6;
           const maxOpacity = Math.max(0.02, 0.4 - (i * 0.015));
-          
+
           return (
             <span
               key={`r-${i}`}
-              style={{ 
+              style={{
                 position: 'absolute',
                 top: 0,
                 bottom: 0,
@@ -332,8 +332,8 @@ function HeroSection({ onStart, companiesCount, bgY, bgOpacity, bgScale, videoRe
           transition={{ duration: 0.5, delay: 0.55 }}
           className="az-cta"
         >
-          <button 
-            onClick={onStart} 
+          <button
+            onClick={onStart}
             className="az-btn-primary google-shadow flex items-center justify-center gap-2"
             style={{ background: 'var(--google-blue)', color: 'white', border: 'none' }}
           >

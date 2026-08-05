@@ -377,6 +377,69 @@ export default function SessionWorkspacePage() {
     return () => window.removeEventListener("message", handleMessage);
   }, [id, queryClient, driveUrl, addJob]);
 
+  const handleDownloadSample = () => {
+    if (atsFormat === "json") {
+      const jsonContent = JSON.stringify([
+        {
+          "name": "Rohan Deshpande",
+          "email": "rohan.deshpande@example.com",
+          "phone": "+91 9988776655",
+          "location": "Mumbai",
+          "skills": "SEO;Google Ads;Power BI",
+          "experience_years": 2.5
+        },
+        {
+          "name": "Priya Sharma",
+          "email": "priya.sharma@example.com",
+          "phone": "+91 9876543210",
+          "location": "Bangalore",
+          "skills": "React;Node.js;TypeScript;Python",
+          "experience_years": 4.0
+        }
+      ], null, 2);
+
+      const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "sample_candidates_import.json");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else if (atsFormat === "excel") {
+      const excelContent = "Name\tEmail\tPhone\tLocation\tSkills\tExperience_Years\n" +
+        "Rohan Deshpande\trohan.deshpande@example.com\t+91 9988776655\tMumbai\tSEO;Google Ads;Power BI\t2.5\n" +
+        "Priya Sharma\tpriya.sharma@example.com\t+91 9876543210\tBangalore\tReact;Node.js;TypeScript;Python\t4.0";
+
+      const blob = new Blob([excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "sample_candidates_import.xls");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else {
+      // Default CSV
+      const csvContent = "name,email,phone,location,skills,experience_years\n" +
+        "Rohan Deshpande,rohan.deshpande@example.com,+91 9988776655,Mumbai,SEO;Google Ads;Power BI,2.5\n" +
+        "Priya Sharma,priya.sharma@example.com,+91 9876543210,Bangalore,React;Node.js;TypeScript;Python,4.0\n" +
+        "Amit Kumar,amit.kumar@example.com,+91 9123456789,Delhi,Java;Spring Boot;SQL;Docker,3.0";
+      
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "sample_candidates_import.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-6 max-w-6xl mx-auto">
@@ -802,33 +865,64 @@ export default function SessionWorkspacePage() {
                 </summary>
                 <div className="p-6 border-t border-gray-100 bg-white">
                   <div className="flex gap-3 mb-6">
-                    <span className="bg-[#2A2A2A] text-white text-xs px-4 py-1.5 rounded-full font-bold shadow-sm">CSV</span>
-                    <span className="text-gray-500 text-xs px-4 py-1.5 font-bold hover:bg-gray-100 rounded-full cursor-pointer transition-colors border border-gray-200 bg-white">JSON</span>
-                    <span className="text-gray-500 text-xs px-4 py-1.5 font-bold hover:bg-gray-100 rounded-full cursor-pointer transition-colors border border-gray-200 bg-white">Excel</span>
+                    {["csv", "json", "excel"].map((fmt) => (
+                      <button
+                        key={fmt}
+                        onClick={() => {
+                          setAtsFormat(fmt);
+                          setAtsFile(null);
+                        }}
+                        className={`text-xs px-4 py-1.5 rounded-full font-bold transition-all uppercase tracking-wider ${
+                          atsFormat === fmt
+                            ? "bg-[#2A2A2A] text-white shadow-sm"
+                            : "text-gray-500 hover:bg-gray-100 border border-gray-200 bg-white"
+                        }`}
+                      >
+                        {fmt}
+                      </button>
+                    ))}
                   </div>
                   <div className="bg-blue-50/50 border border-blue-200 text-blue-900 p-4 rounded-xl text-xs mb-5 shadow-sm">
-                    <strong className="block mb-1 text-sm">Expected columns:</strong>
-                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">name</span>
-                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">email</span>
-                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">phone</span>
-                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">location</span>
-                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">skills (semicolon-separated)</span>
-                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">experience_years</span>
+                    <strong className="block mb-1 text-sm">
+                      {atsFormat === "json" ? "Expected JSON Format (Array of Objects):" : "Expected Columns:"}
+                    </strong>
+                    {atsFormat === "json" ? (
+                      <pre className="font-mono text-[11px] bg-white p-2.5 rounded border border-blue-100 mt-1 overflow-x-auto text-blue-950">
+                        {`[
+  { "name": "Rohan Deshpande", "email": "rohan@example.com", "phone": "+91 9988776655", "location": "Mumbai", "skills": "SEO;Google Ads;Power BI", "experience_years": 2.5 }
+]`}
+                      </pre>
+                    ) : (
+                      <>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">name</span>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">email</span>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">phone</span>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">location</span>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">skills (semicolon-separated)</span>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">experience_years</span>
+                      </>
+                    )}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4 items-stretch h-32" {...getAtsProps()}>
                     <div className={`border-2 border-dashed rounded-xl flex-1 flex flex-col items-center justify-center cursor-pointer transition-colors ${atsFile ? 'border-accent bg-blue-50' : 'border-gray-300 bg-gray-50/50 hover:bg-gray-50'}`}>
                       <input {...getAtsInput()} />
                       <span className="text-2xl mb-2">📄</span>
-                      <span className="text-sm text-gray-500 font-bold">{atsFile ? atsFile.name : 'Drop CSV / Excel file here'}</span>
+                      <span className="text-sm text-gray-500 font-bold">{atsFile ? atsFile.name : `Drop ${atsFormat.toUpperCase()} file here`}</span>
                     </div>
                     <div className="flex flex-col justify-center gap-3 min-w-[200px]">
-                      <button className="text-accent font-bold text-xs border-2 border-accent bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors"><Download size={16} /> Download sample CSV</button>
+                      <button 
+                        type="button"
+                        onClick={handleDownloadSample}
+                        className="text-accent font-bold text-xs border-2 border-accent bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <Download size={16} /> Download sample {atsFormat.toUpperCase()}
+                      </button>
                       <button
                         onClick={async () => {
                           if (!atsFile) return;
                           try {
                             toast.success("Import processing...");
-                            const res = await ingestAPI.importATS(id, atsFile.name.endsWith(".json") ? "json" : atsFile.name.endsWith(".xlsx") ? "xlsx" : "csv", atsFile);
+                            const res = await ingestAPI.importATS(id, atsFile.name.endsWith(".json") ? "json" : atsFile.name.endsWith(".xlsx") || atsFile.name.endsWith(".xls") ? "xlsx" : "csv", atsFile);
                             toast.success(`Imported ${res.imported} records. Failed: ${res.failed}`);
                             setAtsFile(null);
                             queryClient.invalidateQueries({ queryKey: ["candidates", id] });

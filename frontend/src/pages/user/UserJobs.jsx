@@ -284,7 +284,10 @@ export default function UserJobs() {
     set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
   const filtered = jobs.filter((j) => {
-    if (activeTypes.length && !activeTypes.includes(j.employment_type)) return false;
+    if (activeTypes.length) {
+      const typeMatch = activeTypes.some(t => t.toLowerCase() === (j.employment_type || "").toLowerCase());
+      if (!typeMatch) return false;
+    }
     if (activeWorkplaces.length && !activeWorkplaces.includes(getWorkplaceType(j))) return false;
     
     // Salary Filter
@@ -431,7 +434,7 @@ export default function UserJobs() {
 
             <FilterGroup title="Job Type">
               {jobTypes.map((t) => {
-                const count = jobs.filter((j) => j.employment_type === t).length;
+                const count = jobs.filter((j) => (j.employment_type || "").toLowerCase() === t.toLowerCase()).length;
                 return (
                   <label key={t} className="flex cursor-pointer items-center justify-between py-1.5 text-sm">
                     <span className="flex items-center gap-2">

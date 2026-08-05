@@ -302,9 +302,7 @@ export default function SettingsPage() {
 
   const tabItems = [
     { id: 'profile', label: 'Company profile', icon: Building },
-    { id: 'api-keys', label: 'API keys', icon: Key },
     { id: 'billing', label: 'Billing & Plan', icon: CreditCard },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'account', label: 'Account', icon: User },
   ];
 
@@ -314,7 +312,7 @@ export default function SettingsPage() {
       {/* HEADER */}
       <div>
         <h1 className="text-3xl font-black text-charcoal tracking-tight">Settings</h1>
-        <p className="text-sm font-medium text-gray-500 mt-1">Manage your account, API keys, and company profile.</p>
+        <p className="text-sm font-medium text-gray-500 mt-1">Manage your account and company profile.</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -571,31 +569,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === 'notifications' && (
-            <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.03)] border border-gray-100 p-8 space-y-6">
-              <h2 className="text-md font-bold text-charcoal flex items-center gap-2 pb-4 border-b border-gray-100">
-                <Bell className="w-5 h-5 text-accent" /> Notifications
-              </h2>
-              <div className="divide-y divide-gray-100">
-                {[
-                  { id: "new_candidate", label: "New candidate applied", desc: "Get notified when a candidate joins a session.", defaultVal: true },
-                  { id: "weekly_digest", label: "Weekly digest", desc: "A summary of activity across sessions.", defaultVal: false },
-                ].map((it, i) => (
-                  <div key={i} className="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0">
-                    <div>
-                      <div className="font-bold text-sm text-charcoal">{it.label}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{it.desc}</div>
-                    </div>
-                    <ToggleSwitch 
-                      storageKey={`workly_notif_${it.id}`} 
-                      defaultOn={it.defaultVal} 
-                      label={it.label}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+
 
           {activeTab === 'account' && (
             <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.03)] border border-gray-100 p-8 space-y-6">

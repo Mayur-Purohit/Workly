@@ -167,6 +167,7 @@ else:
         CORS_ALLOWED_ORIGINS = [origin.strip() for origin in allowed_origins_str.split(",") if origin.strip()]
     else:
         CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:3000", "https://between.indevs.in"]
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -179,6 +180,8 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
     'x-api-key',
     'X-API-Key',
+    'x-embed-token',
+    'X-Embed-Token',
 ]
 
 # Custom directory configs for uploading/photos

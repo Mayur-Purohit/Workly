@@ -1,7 +1,7 @@
 (function(window) {
   'use strict';
 
-  var API_BASE = 'http://127.0.0.1:8000/api/v1';
+  var API_BASE = 'http://127.0.0.1:8000/api';
 
   var WorklySDK = {
     init: function(config) {
@@ -83,13 +83,40 @@
             resultBox.style.display = 'block';
             resultBox.innerHTML = '<div style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 16px; border-radius: 12px; font-size: 13px; font-weight: 600; text-align: center;">⚡ Processing ' + file.name + ' with Workly AI Parsing Agent...</div>';
 
-            setTimeout(function() {
-              resultBox.innerHTML = '<div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 16px; border-radius: 12px; font-size: 13px;">' +
-                '<div style="font-weight: 800; font-size: 15px; margin-bottom: 6px;">✅ Candidate Parsed & Ingested Successfully</div>' +
-                '<div><strong>Resume File:</strong> ' + file.name + '</div>' +
-                '<div style="margin-top: 6px; font-size: 12px;"><strong>AI Status:</strong> Parsed, Normalized & Synchronized to Workly DB</div>' +
+            var formData = new FormData();
+            formData.append('file', file);
+
+            fetch(API_BASE + '/developer/embed/parse', {
+              method: 'POST',
+              headers: {
+                'X-Embed-Token': config.token
+              },
+              body: formData
+            })
+            .then(function(parseRes) { return parseRes.json(); })
+            .then(function(parseData) {
+              if (!parseData.success) {
+                resultBox.innerHTML = '<div style="background: #fef2f2; border: 1px solid #fca5a5; color: #ef4444; padding: 16px; border-radius: 12px; font-size: 13px;">❌ Parsing Failed: ' + (parseData.error || 'Unknown error') + '</div>';
+                return;
+              }
+
+              var d = parseData.data;
+              var skillBadges = (d.skills || []).map(function(s) {
+                return '<span style="background: #e0e7ff; color: #3730a3; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; margin-right: 4px; display: inline-block; margin-top: 4px;">' + s + '</span>';
+              }).join('');
+
+              resultBox.innerHTML = '<div style="background: #f0fdf4; border: 1.5px solid #86efac; color: #166534; padding: 18px; border-radius: 16px; font-size: 13px;">' +
+                '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
+                  '<div style="font-weight: 800; font-size: 15px; color: #14532d;">✅ Candidate Parsed & Ingested</div>' +
+                '</div>' +
+                '<div style="margin-bottom: 6px;"><strong>Candidate:</strong> ' + d.candidate_name + '</div>' +
+                '<div style="margin-bottom: 8px;"><strong>Detected Skills:</strong><br />' + skillBadges + '</div>' +
+                '<div style="font-size: 11px; color: #15803d; border-top: 1px dashed #bbf7d0; pt-2; margin-top: 8px;"><strong>Status:</strong> Synchronized & Stored in Workly DB</div>' +
               '</div>';
-            }, 1200);
+            })
+            .catch(function(err) {
+              resultBox.innerHTML = '<div style="background: #fef2f2; border: 1px solid #fca5a5; color: #ef4444; padding: 16px; border-radius: 12px; font-size: 13px;">❌ Upload error: ' + err.message + '</div>';
+            });
           });
         }
       })

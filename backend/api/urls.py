@@ -197,6 +197,7 @@ urlpatterns = [
     path('api/developer/embed/tokens/<str:token_id>', dev_embed.revoke_embed_token, name='dev-embed-revoke-direct'),
     path('api/developer/embed/tokens/<str:token_id>/revoke', dev_embed.revoke_embed_token, name='dev-embed-revoke'),
     path('api/developer/embed/validate', dev_embed.validate_embed_token, name='dev-embed-validate'),
+    path('api/developer/embed/parse', dev_embed.parse_embed_resume, name='dev-embed-parse'),
 
     # ── Public Job Seeker Portal ───────────────────────────────────────────────
     path('api/v1/public/jobs', jobs.list_public_jobs, name='public-jobs-list'),

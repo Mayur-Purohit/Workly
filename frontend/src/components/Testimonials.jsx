@@ -141,7 +141,44 @@ function getRoleFallbacks(roleFilter) {
   return JOB_SEEKER_FALLBACKS;
 }
 
-/* ─── Single testimonial card (matches screenshot layout exactly) ────────── */
+/* ─── Avatar Component with Fallback ─── */
+const AuthorAvatar = ({ avatar, name, initials, accent }) => {
+  const [imgError, setImgError] = useState(false);
+
+  const getAvatarUrl = (url) => {
+    if (!url || typeof url !== 'string' || !url.trim()) return null;
+    const cleanUrl = url.trim();
+    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://') || cleanUrl.startsWith('data:')) {
+      return cleanUrl;
+    }
+    return `http://127.0.0.1:8000/${cleanUrl.replace(/^\//, '')}`;
+  };
+
+  const formattedUrl = getAvatarUrl(avatar);
+  const displayInitials = initials || (name ? name.charAt(0).toUpperCase() : 'W');
+
+  if (formattedUrl && !imgError) {
+    return (
+      <img
+        src={formattedUrl}
+        alt={name || 'User'}
+        onError={() => setImgError(true)}
+        className="h-9 w-9 rounded-full object-cover border border-border shrink-0"
+      />
+    );
+  }
+
+  return (
+    <div
+      className="grid h-9 w-9 place-items-center rounded-full text-xs font-semibold text-white shrink-0 uppercase"
+      style={{ background: accent }}
+    >
+      {displayInitials}
+    </div>
+  );
+};
+
+/* ─── Single testimonial card ────────────────────────────────────────────── */
 const TestimonialCard = ({ t, accent, onEdit, onDelete }) => (
   <div className="rounded-2xl border border-border bg-card p-5 relative group shadow-sm hover:shadow-md transition-all">
     {/* Coloured quote icon */}
@@ -154,20 +191,12 @@ const TestimonialCard = ({ t, accent, onEdit, onDelete }) => (
 
     {/* Author row */}
     <figcaption className="mt-4 flex items-center gap-3">
-      {t.author_avatar ? (
-        <img
-          src={t.author_avatar}
-          alt={t.author_name}
-          className="h-9 w-9 rounded-full object-cover border border-border shrink-0"
-        />
-      ) : (
-        <div
-          className="grid h-9 w-9 place-items-center rounded-full text-xs font-semibold text-white shrink-0"
-          style={{ background: accent }}
-        >
-          {t.initials || 'W'}
-        </div>
-      )}
+      <AuthorAvatar 
+        avatar={t.author_avatar} 
+        name={t.author_name} 
+        initials={t.initials} 
+        accent={accent} 
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-0.5">
           <span className="text-xs font-semibold truncate text-foreground">{t.author_name}</span>
