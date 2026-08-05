@@ -508,68 +508,85 @@ export default function UserApplications() {
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-xs text-muted-foreground mt-1">
+                                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 flex-wrap">
                                       Status: <span className={statusColor}>{roundStatus}</span>
                                       {round.interviewer && round.interviewer.trim() !== "" && round.interviewer.trim().toLowerCase() !== "not assigned" && (
                                         <span className="ml-3 border-l border-border pl-3 text-muted-foreground/75">
                                           Interviewer: <span className="font-medium text-foreground/80">{round.interviewer}</span>
                                         </span>
                                       )}
+                                      {(isActive || isCompleted) && round.passing_score != null && (
+                                        <span className="ml-3 border-l border-border pl-3 inline-flex items-center gap-1">
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                            Min. Passing: {round.passing_score}%
+                                          </span>
+                                        </span>
+                                      )}
                                     </p>
-                                    {isActive && app.test_link && (
-                                      <div className="mt-2.5 flex flex-wrap gap-2 items-center">
-                                        <a
-                                          href={SHOW_MOCK_TESTING_CONTROLS 
-                                            ? (app.test_link.includes('?') ? `${app.test_link}&is_mock_test=true` : `${app.test_link}?is_mock_test=true`)
-                                            : app.test_link
-                                          }
-                                          onClick={(e) => e.stopPropagation()}
-                                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-1.5 text-xs transition shadow-sm"
-                                          style={{ textDecoration: 'none' }}
-                                        >
-                                          Start {app.test_round_name || "Assessment"} →
-                                        </a>
-                                        {SHOW_MOCK_TESTING_CONTROLS && (
-                                          <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                            <button
-                                              onClick={async (e) => {
-                                                e.preventDefault();
-                                                const token = getTestToken(app.test_link);
-                                                if (!token) return toast.error("No valid token found");
-                                                const tId = toast.loading("Submitting mock pass (85%)...");
-                                                try {
-                                                  await testAPI.mockSubmit(token, 85);
-                                                  toast.success("Mock pass submitted!", { id: tId });
-                                                  fetchApplications();
-                                                } catch (err) {
-                                                  toast.error(err.message || "Failed mock submit", { id: tId });
-                                                }
-                                              }}
-                                              className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition"
+                                    {isActive && app.status !== "rejected" && app.status !== "hired" && (
+                                      <>
+                                        {app.test_link ? (
+                                          <div className="mt-2.5 flex flex-wrap gap-2 items-center">
+                                            <a
+                                              href={SHOW_MOCK_TESTING_CONTROLS 
+                                                ? (app.test_link.includes('?') ? `${app.test_link}&is_mock_test=true` : `${app.test_link}?is_mock_test=true`)
+                                                : app.test_link
+                                              }
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-1.5 text-xs transition shadow-sm"
+                                              style={{ textDecoration: 'none' }}
                                             >
-                                              Mock Pass
-                                            </button>
-                                            <button
-                                              onClick={async (e) => {
-                                                e.preventDefault();
-                                                const token = getTestToken(app.test_link);
-                                                if (!token) return toast.error("No valid token found");
-                                                const tId = toast.loading("Submitting mock fail (30%)...");
-                                                try {
-                                                  await testAPI.mockSubmit(token, 30);
-                                                  toast.success("Mock fail submitted!", { id: tId });
-                                                  fetchApplications();
-                                                } catch (err) {
-                                                  toast.error(err.message || "Failed mock submit", { id: tId });
-                                                }
-                                              }}
-                                              className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition"
-                                            >
-                                              Mock Fail
-                                            </button>
+                                              Start {app.test_round_name || "Assessment"} →
+                                            </a>
+                                            {SHOW_MOCK_TESTING_CONTROLS && (
+                                              <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                  onClick={async (e) => {
+                                                    e.preventDefault();
+                                                    const token = getTestToken(app.test_link);
+                                                    if (!token) return toast.error("No valid token found");
+                                                    const tId = toast.loading("Submitting mock pass (85%)...");
+                                                    try {
+                                                      await testAPI.mockSubmit(token, 85);
+                                                      toast.success("Mock pass submitted!", { id: tId });
+                                                      fetchApplications();
+                                                    } catch (err) {
+                                                      toast.error(err.message || "Failed mock submit", { id: tId });
+                                                    }
+                                                  }}
+                                                  className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition"
+                                                >
+                                                  Mock Pass
+                                                </button>
+                                                <button
+                                                  onClick={async (e) => {
+                                                    e.preventDefault();
+                                                    const token = getTestToken(app.test_link);
+                                                    if (!token) return toast.error("No valid token found");
+                                                    const tId = toast.loading("Submitting mock fail (30%)...");
+                                                    try {
+                                                      await testAPI.mockSubmit(token, 30);
+                                                      toast.success("Mock fail submitted!", { id: tId });
+                                                      fetchApplications();
+                                                    } catch (err) {
+                                                      toast.error(err.message || "Failed mock submit", { id: tId });
+                                                    }
+                                                  }}
+                                                  className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition"
+                                                >
+                                                  Mock Fail
+                                                </button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <div className="mt-2.5">
+                                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-muted text-muted-foreground font-medium px-3 py-1.5 text-[11px] border border-border">
+                                              <Clock className="h-3 w-3" /> Wait for evaluation
+                                            </span>
                                           </div>
                                         )}
-                                      </div>
+                                      </>
                                     )}
                                   </div>
 

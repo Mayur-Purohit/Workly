@@ -67,7 +67,7 @@ export default function DeveloperEmbed() {
 
   const codeSnippets = (tokenVal) => ({
     HTML: `<div id="workly-panel"></div>
-<script src="https://cdn.workly.indevs.in/embed.js"></script>
+<script src="http://localhost:5173/embed.js"></script>
 <script>
 Workly.init({
   token: "${tokenVal || "YOUR_EMBED_TOKEN"}",

@@ -443,10 +443,11 @@ export const seekerAPI = {
 // ── PUBLIC API (no auth required) ──────────────────────────────────────────────
 // For browsing jobs/companies without logging in
 
-async function publicReq(method, path) {
+async function publicReq(method, path, body = null, isFile = false) {
   const opts = {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: isFile ? {} : { 'Content-Type': 'application/json' },
+    body: body ? (isFile ? body : JSON.stringify(body)) : undefined,
   };
   const res = await fetch(`${API_HOST}${path}`, opts);
   const data = await safeParseJson(res);
@@ -480,6 +481,7 @@ export const publicAPI = {
         return data.data;
       });
   },
+  sendContactMessage: (payload) => publicReq('POST', '/api/v1/public/contact', payload),
 };
 
 // ── Reviews API (sends multi-role auth for list/create/update/delete) ────────

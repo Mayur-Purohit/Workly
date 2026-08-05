@@ -290,6 +290,19 @@ def create_session_rounds(request, session_id):
     for idx, r in enumerate(rounds_list):
         round_type = r.get("round_type")
         name = r.get("name", f"Round {idx+1}")
+        name_lower = name.lower()
+        
+        # If no explicit round_type, infer from the round name
+        if not round_type or round_type not in ["mcq", "coding", "interview", "manual"]:
+            if "aptitude" in name_lower or "mcq" in name_lower:
+                round_type = "mcq"
+            elif "coding" in name_lower or "technical coding" in name_lower or "programming" in name_lower:
+                round_type = "coding"
+            elif "ai interview" in name_lower:
+                round_type = "interview"
+            else:
+                round_type = "manual"
+        
         time_limit = int(r.get("time_limit_minutes", 30))
 
         custom_question_ids = r.get("custom_question_ids", [])
@@ -1282,31 +1295,35 @@ def transcribe_audio(request):
     if not audio_file:
         return JsonResponse(error_response("No audio file found"), status=400)
 
-    groq_key = os.environ.get("GROQ_API_KEY")
-    if not groq_key:
+    from agents.llm import get_groq_keys
+    groq_keys = get_groq_keys()
+    if not groq_keys:
         return JsonResponse(error_response("Groq API key not configured"), status=500)
 
-    try:
-        client = OpenAI(
-            api_key=groq_key,
-            base_url="https://api.groq.com/openai/v1"
-        )
-        
-        # Read the file data
-        file_bytes = audio_file.read()
-        file_name = audio_file.name or "audio.webm"
+    file_bytes = audio_file.read()
+    file_name = audio_file.name or "audio.webm"
+    
+    last_err = None
+    for key in groq_keys:
+        try:
+            client = OpenAI(
+                api_key=key,
+                base_url="https://api.groq.com/openai/v1",
+                max_retries=0
+            )
+            transcription = client.audio.transcriptions.create(
+                file=(file_name, file_bytes, "audio/webm"),
+                model="whisper-large-v3-turbo",
+                language="en"
+            )
+            return JsonResponse(success_response({"text": transcription.text}))
+        except Exception as e:
+            last_err = str(e)
+            logger.warning(f"Groq whisper failed on key {key[:8]}...: {e}")
+            continue
 
-        # Call Groq Whisper API
-        transcription = client.audio.transcriptions.create(
-            file=(file_name, file_bytes, "audio/webm"),
-            model="whisper-large-v3-turbo",
-            language="en"
-        )
-        
-        return JsonResponse(success_response({"text": transcription.text}))
-    except Exception as e:
-        logger.error("Audio transcription failed: %s", e)
-        return JsonResponse(error_response(f"Transcription failed: {str(e)}"), status=500)
+    logger.error("Audio transcription failed on all Groq keys: %s", last_err)
+    return JsonResponse(error_response(f"Transcription failed: {last_err}"), status=500)
 
 
 @csrf_exempt
@@ -1443,7 +1460,7 @@ def mock_submit(request):
         attempt.coding_score = score
     elif attempt.round.round_type == "interview":
         attempt.interview_score = score
-        attempt.interview_recommendation = "Proceed" if score >= 50.0 else "Reject"
+        attempt.interview_recommendation = "Proceed" if score >= (attempt.round.passing_score or 50) else "Reject"
         attempt.interview_summary = "Mock interview submission for testing."
 
     attempt.submitted_at = timezone.now()
@@ -2083,27 +2100,36 @@ def seeker_transcribe_audio(request):
         if not audio_file:
             return JsonResponse(error_response("No audio file found"), status=400)
 
-        groq_key = os.environ.get("GROQ_API_KEY")
-        if not groq_key:
+        from agents.llm import get_groq_keys
+        groq_keys = get_groq_keys()
+        if not groq_keys:
             return JsonResponse(error_response("Groq API key not configured"), status=500)
 
-        try:
-            import io
-            client = OpenAI(
-                api_key=groq_key,
-                base_url="https://api.groq.com/openai/v1"
-            )
-            file_bytes = audio_file.read()
-            file_name = audio_file.name or "audio.webm"
-            transcription = client.audio.transcriptions.create(
-                file=(file_name, file_bytes, "audio/webm"),
-                model="whisper-large-v3-turbo",
-                language="en"
-            )
-            return JsonResponse(success_response({"text": transcription.text}))
-        except Exception as e:
-            logger.error("Audio transcription failed: %s", e)
-            return JsonResponse(error_response("Audio transcription failed. Please check network connectivity."), status=500)
+        file_bytes = audio_file.read()
+        file_name = audio_file.name or "audio.webm"
+        
+        last_err = None
+        for key in groq_keys:
+            try:
+                import io
+                client = OpenAI(
+                    api_key=key,
+                    base_url="https://api.groq.com/openai/v1",
+                    max_retries=0
+                )
+                transcription = client.audio.transcriptions.create(
+                    file=(file_name, file_bytes, "audio/webm"),
+                    model="whisper-large-v3-turbo",
+                    language="en"
+                )
+                return JsonResponse(success_response({"text": transcription.text}))
+            except Exception as e:
+                last_err = str(e)
+                logger.warning(f"Groq whisper failed on key {key[:8]}...: {e}")
+                continue
+
+        logger.error("Audio transcription failed on all Groq keys: %s", last_err)
+        return JsonResponse(error_response("Audio transcription failed. Please check network connectivity."), status=500)
     return _inner(request)
 
 

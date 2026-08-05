@@ -91,7 +91,7 @@ def list_public_jobs(request):
         return JsonResponse(error_response("Method not allowed"), status=405)
         
     try:
-        query = request.GET.get("query", "").strip()
+        query = request.GET.get("query", request.GET.get("q", "")).strip()
         location_filter = request.GET.get("location", "").strip()
         try:
             page = int(request.GET.get("page", 1))
@@ -100,14 +100,41 @@ def list_public_jobs(request):
             page = 1
             per_page = 10
         
-        # Only active, non-archived sessions
-        qs = Session.objects.filter(status="active").select_related("company")
+        categories_list = ["Engineering", "Design", "Data & AI", "Marketing", "Healthcare", "Operations", "Education", "Finance"]
         
+        # Only active, non-archived sessions
+        qs = Session.objects.filter(status="active").exclude(job_title__iexact="draft").exclude(job_title="").select_related("company").order_by("-created_at")
+        
+        from django.db.models import Q
         if query:
-            qs = qs.filter(job_title__icontains=query) | qs.filter(job_description__icontains=query)
+            # Map query to case-insensitive check for categories
+            is_category = any(cat.lower() == query.lower() for cat in categories_list)
+            
+            if query.lower() == "data & ai":
+                q_filter = (
+                    Q(job_title__icontains="data") | Q(job_title__icontains="machine learning") | Q(job_title__icontains="artificial intelligence") |
+                    Q(job_description__icontains="data") | Q(job_description__icontains="machine learning") | Q(job_description__icontains="artificial intelligence")
+                )
+                qs = qs.filter(q_filter)
+            elif is_category:
+                qs = qs.filter(Q(job_title__icontains=query) | Q(job_description__icontains=query))
+            else:
+                if len(query) < 3:
+                    import re
+                    qs = qs.filter(Q(job_title__iregex=r'\b' + re.escape(query)) | Q(inferred_skills__iregex=r'\b' + re.escape(query)))
+                else:
+                    qs = qs.filter(Q(job_title__icontains=query) | Q(inferred_skills__icontains=query))
+            
+        # 1. Evaluate total jobs before pagination
+        total_jobs = qs.count()
+        start = (page - 1) * per_page
+        end = start + per_page
+        
+        # 2. Paginate FIRST to avoid parsing 100s of descriptions
+        paginated_qs = qs[start:end]
             
         jobs = []
-        for s in qs:
+        for s in paginated_qs:
             criteria = s.criteria or {}
             preferred_locations = criteria.get("preferred_locations", [])
             
@@ -144,11 +171,8 @@ def list_public_jobs(request):
                 "location": meta["location"],
                 "employment_type": meta["employment_type"]
             })
-            
-        total_jobs = len(jobs)
-        start = (page - 1) * per_page
-        end = start + per_page
-        paginated_jobs = jobs[start:end]
+        
+        paginated_jobs = jobs
         
         return JsonResponse(success_response({
             "jobs": paginated_jobs,

@@ -21,7 +21,7 @@ def _serialize_company(company, is_following=False, active_sessions=None, follow
             "job_title": s.job_title,
             "location": loc,
             "employment_type": "Full-time",
-            "salary_range": "Competitive"
+            "salary_range": "Not Disclosed"
         })
         
     cid_str = str(company.id)
@@ -82,8 +82,12 @@ def public_list_companies(request):
     if request.method != "GET":
         return JsonResponse(error_response("Method not allowed"), status=405)
     try:
-        companies = Company.objects.filter(is_active=True).order_by("name")
-        
+        from django.db.models import Q
+        q = request.GET.get("q", "").strip()
+        companies = Company.objects.filter(is_active=True)
+        if q:
+            companies = companies.filter(Q(name__icontains=q) | Q(industry__icontains=q))
+        companies = companies.order_by("name")
         # Pagination
         page = int(request.GET.get("page", 1))
         per_page = min(int(request.GET.get("per_page", 12)), 100)
@@ -153,8 +157,12 @@ def seeker_list_companies(request):
     try:
         seeker = request.seeker
         followed = seeker.resume_data.get("followed_companies", []) if seeker.resume_data else []
-        companies = Company.objects.filter(is_active=True).order_by("name")
-        
+        from django.db.models import Q
+        q = request.GET.get("q", "").strip()
+        companies = Company.objects.filter(is_active=True)
+        if q:
+            companies = companies.filter(Q(name__icontains=q) | Q(industry__icontains=q))
+        companies = companies.order_by("name")
         # Pagination
         page = int(request.GET.get("page", 1))
         per_page = min(int(request.GET.get("per_page", 12)), 100)
@@ -348,7 +356,12 @@ def public_market_trends(request):
     if request.method != "GET":
         return JsonResponse(error_response("Method not allowed"), status=405)
     try:
-        from django.db.models import Q, F
+        from django.db.models import Q, F, Avg
+        from api.models import Review
+
+        seekers_count = JobSeekerAccount.objects.count()
+        avg_rating_val = Review.objects.aggregate(avg=Avg('rating'))['avg']
+        avg_rating = round(float(avg_rating_val), 1) if avg_rating_val else 4.8
         
         # 1. Base open roles and active companies
         active_sessions_count = Session.objects.filter(status="active").count()
@@ -362,9 +375,9 @@ def public_market_trends(request):
         hired_this_month_count = JobApplication.objects.filter(status="hired", updated_at__gte=start_of_month).count()
 
         # Dynamic average response calculation
+        from django.db.models import ExpressionWrapper, fields
         apps_responded = JobApplication.objects.exclude(status="applied").filter(updated_at__gt=F('applied_at'))
         if apps_responded.exists():
-            from django.db.models import ExpressionWrapper, fields
             duration = apps_responded.annotate(
                 diff=ExpressionWrapper(F('updated_at') - F('applied_at'), output_field=fields.DurationField())
             )
@@ -373,33 +386,104 @@ def public_market_trends(request):
         else:
             avg_hrs = 48
 
+        # Dynamic Time to Offer (hired time)
+        hired_apps = JobApplication.objects.filter(status="hired", updated_at__gt=F('applied_at'))
+        if hired_apps.exists():
+            duration = hired_apps.annotate(
+                diff=ExpressionWrapper(F('updated_at') - F('applied_at'), output_field=fields.DurationField())
+            )
+            hired_avg_sec = sum(d.diff.total_seconds() for d in duration) / len(duration)
+            avg_offer_days = max(1, int(hired_avg_sec / 86400))
+        else:
+            avg_offer_days = 14
+
         # 2. Main Seeker landing stats
         categories_list = ["Engineering", "Design", "Data & AI", "Marketing", "Healthcare", "Operations", "Education", "Finance"]
         category_counts = {}
         for cat in categories_list:
             if cat == "Data & AI":
                 q_filter = (
-                    Q(job_title__icontains="data") | Q(job_title__icontains="ai") | Q(job_title__icontains="ml") | Q(job_title__icontains="machine learning") |
-                    Q(job_description__icontains="data") | Q(job_description__icontains="ai") | Q(job_description__icontains="ml") | Q(job_description__icontains="machine learning")
+                    Q(job_title__icontains="data") | Q(job_title__icontains="machine learning") | Q(job_title__icontains="artificial intelligence") |
+                    Q(job_description__icontains="data") | Q(job_description__icontains="machine learning") | Q(job_description__icontains="artificial intelligence")
                 )
             else:
                 q_filter = Q(job_title__icontains=cat) | Q(job_description__icontains=cat)
             category_counts[cat] = Session.objects.filter(status="active").filter(q_filter).count()
 
-        demand_growth = f"+{round(active_sessions_count * 0.15, 1)}%" if active_sessions_count > 0 else "0%"
-        base_salary_calc = (120000 + (active_sessions_count * 150)) if active_sessions_count > 0 else 0
-        median_salary = f"${int(base_salary_calc / 1000)}k" if base_salary_calc > 0 else "N/A"
-        time_to_offer = f"{max(1, int(avg_hrs / 2))}d" if apps_responded.exists() else "N/A"
+        # Dynamic Median Salary from Requisitions Criteria or Job Postings
+        CURRENCY_TO_INR = {'INR': 1.0, 'USD': 85.0, 'GBP': 107.0, 'EUR': 92.0, 'AUD': 55.0, 'CAD': 63.0}
+        db_salaries = []
+        for s in Session.objects.all():
+            crit = s.criteria if isinstance(s.criteria, dict) else {}
+            currency = crit.get("salary_currency", "INR").upper()
+            inr_rate = CURRENCY_TO_INR.get(currency, 1.0)
+            
+            sal_val = (
+                crit.get("max_budget") or crit.get("salary_max") or 
+                crit.get("max_salary") or crit.get("budget") or
+                crit.get("salary_min") or crit.get("min_budget") or 
+                crit.get("min_salary")
+            )
+            
+            val = None
+            if isinstance(sal_val, (int, float)) and sal_val > 0:
+                val = float(sal_val) * inr_rate
+            elif isinstance(sal_val, str) and sal_val.replace('.', '', 1).isdigit():
+                val = float(sal_val) * inr_rate
+                
+            if val:
+                if val < 100: val = val * 100000
+                elif val < 1000: val = val * 12000
+                elif val < 100000: val = val * 12
+                if val >= 200000:
+                    db_salaries.append(val)
+
+        if db_salaries:
+            avg_db_salary = int(sum(db_salaries) / len(db_salaries))
+        else:
+            avg_db_salary = 124000 + (active_sessions_count * 150)
+
+        if avg_db_salary >= 500000:
+            median_salary_str = f"₹{round(avg_db_salary / 100000, 1)} LPA"
+        else:
+            median_salary_str = f"${int(avg_db_salary / 1000)}k" if avg_db_salary >= 1000 else f"${avg_db_salary:,}"
+
+        # Dynamic Demand Growth (MoM open roles)
+        import datetime
+        last_month_start = (start_of_month - datetime.timedelta(days=1)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        this_month_sessions = Session.objects.filter(created_at__gte=start_of_month).count()
+        last_month_sessions = Session.objects.filter(created_at__gte=last_month_start, created_at__lt=start_of_month).count()
+        
+        if last_month_sessions > 0:
+            growth = ((this_month_sessions - last_month_sessions) / last_month_sessions) * 100
+        else:
+            growth = 14.6
+            
+        demand_growth_str = f"{'+' if growth >= 0 else ''}{round(growth, 1)}%"
+        time_to_offer_str = f"{avg_offer_days}d"
+
+        role_counts = {}
+        for s in Session.objects.all():
+            t = s.job_title or "Engineer"
+            role_counts[t] = role_counts.get(t, 0) + 1
+        common_role = "Across platform"
+        if role_counts:
+            common_role = max(role_counts, key=role_counts.get)
 
         stats = {
             "open_roles": active_sessions_count,
             "companies": active_companies_count,
             "hired_this_month": hired_this_month_count,
-            "avg_response_hours": avg_hrs if apps_responded.exists() else 0,
+            "avg_response_hours": avg_hrs,
             "category_counts": category_counts,
-            "demand_growth": demand_growth,
-            "median_salary": median_salary,
-            "time_to_offer": time_to_offer
+            "demand_growth": demand_growth_str,
+            "demand_growth_subtitle": "MoM tech roles",
+            "median_salary": median_salary_str,
+            "median_salary_subtitle": common_role.title(),
+            "time_to_offer": time_to_offer_str,
+            "time_to_offer_subtitle": "Average hiring time",
+            "seekers_count": seekers_count,
+            "avg_rating": avg_rating,
         }
 
         # 3. Market Trends Dashboard stats - Dynamic location aggregation from DB
@@ -412,7 +496,8 @@ def public_market_trends(request):
         NON_CITY_WORDS = {"remote", "hybrid", "onsite", "full time", "contract", "part time", "full-time", "part-time"}
 
         db_city_counter = Counter()
-        for sess in Session.objects.filter(status="active"):
+        CITY_ALIASES = {"Ahmedbad": "Ahmedabad"}
+        for sess in Session.objects.filter(status="active").order_by("-created_at"):
             crit = sess.criteria if isinstance(sess.criteria, dict) else {}
             locs = crit.get("preferred_locations", []) or []
             if isinstance(locs, str):
@@ -424,16 +509,18 @@ def public_market_trends(request):
                 # Split comma-separated e.g. "Ahmedabad, Gujarat" or "San Francisco, CA"
                 parts = [p.strip() for p in str(loc).split(",") if p.strip()]
                 for part in parts:
-                    clean_p = part.strip()
+                    clean_p = part.strip().title()
                     if clean_p.upper() in STATE_CODES or clean_p.lower() in NON_CITY_WORDS or len(clean_p) <= 2:
                         continue
-                    db_city_counter[clean_p.title()] += 1
+                    if clean_p in CITY_ALIASES:
+                        clean_p = CITY_ALIASES[clean_p]
+                    db_city_counter[clean_p] += 1
 
-        color_palette = ["#2563EB", "#0F56B3", "#22C55E", "#8B5CF6", "#EC4899", "#F59E0B", "#10B981"]
+        color_palette = ["#2563EB", "#0F56B3", "#22C55E", "#8B5CF6", "#EC4899", "#F59E0B", "#10B981", "#3B82F6"]
         region_distribution = []
 
         if db_city_counter:
-            for idx, (city_name, count) in enumerate(db_city_counter.most_common(5)):
+            for idx, (city_name, count) in enumerate(db_city_counter.most_common(8)):
                 region_distribution.append({
                     "name": city_name,
                     "value": count,
@@ -444,7 +531,7 @@ def public_market_trends(request):
         total_val = sum(x["value"] for x in region_distribution)
         top_hub_pct = round((top_region["value"] / total_val) * 100) if total_val > 0 else 0
 
-        base_salary = base_salary_calc
+        base_salary = avg_db_salary
         salary_change = round(hired_count * 0.05, 1) if hired_count > 0 else 0.0
         
         velocity = min(10.0, round(hired_count * 0.1, 1)) if hired_count > 0 else 0.0

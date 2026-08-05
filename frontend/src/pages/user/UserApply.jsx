@@ -62,8 +62,13 @@ export default function UserApply() {
         });
       })
       .catch((err) => {
-        console.error(err);
-        toast.error("Failed to load job details");
+        const msg = (err?.message || err || "").toString().toLowerCase();
+        if (err?.status === 404 || msg.includes("404") || msg.includes("not found") || msg.includes("no longer active")) {
+          console.warn("Job not found (404): It may have been removed.");
+        } else {
+          console.error("Job details fetch error:", err);
+          toast.error("Failed to load job details");
+        }
       });
 
     // Load seeker profile to check if they have a resume

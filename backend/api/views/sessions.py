@@ -236,16 +236,18 @@ def session_detail(request, session_id):
                     name_lower = name.lower()
                     
                     explicit_type = r.get("round_type")
-                    if explicit_type in ["mcq", "coding", "interview"]:
+                    if explicit_type in ["mcq", "coding", "interview", "manual"]:
                         rtype = explicit_type
                     elif "aptitude" in name_lower or "mcq" in name_lower:
                         rtype = "mcq"
-                    elif "coding" in name_lower or "technical" in name_lower or "programming" in name_lower:
+                    elif "coding" in name_lower or "technical coding" in name_lower or "programming" in name_lower:
                         rtype = "coding"
-                    else:
+                    elif "ai interview" in name_lower:
                         rtype = "interview"
+                    else:
+                        rtype = "manual"
                     
-                    time_limit = 20 if rtype == "mcq" else (45 if rtype == "coding" else 25)
+                    time_limit = 20 if rtype == "mcq" else (45 if rtype == "coding" else (25 if rtype == "interview" else 0))
                     coding_problems = []
                     if rtype == "coding":
                         coding_problems = [

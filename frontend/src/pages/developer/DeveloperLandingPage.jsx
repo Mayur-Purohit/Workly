@@ -36,6 +36,7 @@ import useDocumentTitle from "../../hooks/useDocumentTitle";
 import { DEVELOPER_PLANS } from "../../lib/constants";
 import ThemeToggle from "../../components/ThemeToggle";
 import Testimonials from "../../components/Testimonials";
+import SharedFooter from "../../components/SharedFooter";
 
 /* ═══════════════════ Framer Motion Animation System ═══════════════════ */
 const fadeInUpVariants = {
@@ -558,8 +559,8 @@ export default function DeveloperLandingPage() {
   const codeSnippets = {
     Python: `import requests
 
-url = "https://api.between.indevs.in/api/v1/parse"
-headers = {"X-API-Key": "between_live_your_key"}
+url = "https://api.workly.indevs.in/api/v1/parse"
+headers = {"X-API-Key": "workly_live_your_key"}
 files = {"file": open("resume.pdf", "rb")}
 
 response = requests.post(url, headers=headers, files=files)
@@ -572,16 +573,16 @@ import fs from 'fs';
 const form = new FormData();
 form.append('file', fs.createReadStream('resume.pdf'));
 
-const res = await fetch('https://api.between.indevs.in/api/v1/parse', {
+const res = await fetch('https://api.workly.indevs.in/api/v1/parse', {
   method: 'POST',
-  headers: { 'X-API-Key': 'between_live_your_key' },
+  headers: { 'X-API-Key': 'workly_live_your_key' },
   body: form
 });
 const data = await res.json();
 console.log(data);`,
     cURL: `curl -X POST \\
-  https://api.between.indevs.in/api/v1/parse \\
-  -H "X-API-Key: between_live_your_key" \\
+  https://api.workly.indevs.in/api/v1/parse \\
+  -H "X-API-Key: workly_live_your_key" \\
   -F "file=@resume.pdf"`
   };
 
@@ -608,8 +609,8 @@ console.log(data);`,
     <div className="min-h-screen font-sans text-foreground bg-background dark:text-zinc-100 dark:bg-[#09090b]">
       {/* ════════════════ NAVBAR ════════════════ */}
       <nav
-        className={`fixed top-0 left-0 right-0 w-full z-50 transition-all duration-300 bg-background/98 dark:bg-[#09090b]/98 backdrop-blur-xl border-b border-border shadow-sm ${
-          scrolled ? "py-2.5 shadow-md" : "py-3.5"
+        className={`fixed top-0 left-0 right-0 w-full z-50 transition-all duration-300 bg-background/70 dark:bg-[#09090b]/70 backdrop-blur-xl border-b border-border/50 shadow-sm ${
+          scrolled ? "py-2.5 shadow-md bg-background/85 dark:bg-[#09090b]/85" : "py-3.5"
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
@@ -939,34 +940,7 @@ console.log(data);`,
       <Testimonials userTypeFilter="developer" title="What Developers Say" label="Developer Reviews" />
 
       {/* ════════════════ FOOTER ════════════════ */}
-      <footer className="bg-card border-t border-border text-muted-foreground py-16">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex flex-col items-center md:items-start gap-2">
-            <div className="flex items-center gap-2 text-foreground">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-display font-bold text-xs bg-[var(--google-blue)] p-1 shadow-sm">
-                <svg viewBox="0 0 100 100" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <line x1="32" y1="68" x2="68" y2="32" stroke="white" strokeWidth="14" strokeLinecap="round" />
-                  <circle cx="32" cy="68" r="16" fill="white" />
-                  <circle cx="68" cy="32" r="24" fill="white" />
-                </svg>
-              </div>
-              <span className="font-display text-lg font-bold tracking-tight text-foreground">Workly</span>
-            </div>
-            <p className="text-xs mt-1">Built for high performance resume parsing & intelligence.</p>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-8 text-sm font-medium">
-            <Link to="/privacy" className="hover:text-[var(--google-blue)] transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-[var(--google-blue)] transition-colors">Terms of Service</Link>
-            <Link to="/contact" className="hover:text-[var(--google-blue)] transition-colors">Contact Support</Link>
-          </div>
-
-          <div className="flex flex-col items-center md:items-end gap-4">
-            <SocialTooltip items={socialLinks} className="justify-center md:justify-end" />
-            <div className="text-xs">© {new Date().getFullYear()} Workly Developer Hub.</div>
-          </div>
-        </div>
-      </footer>
+      <SharedFooter />
     </div>
   );
 }

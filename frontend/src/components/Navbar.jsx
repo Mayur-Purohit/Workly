@@ -4,10 +4,18 @@ import { Building2, Briefcase, Code2 } from 'lucide-react';
 import './Navbar.css';
 
 const Navbar = ({ onSignIn, isLoggedIn }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
   const [appsOpen, setAppsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const appsDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 15);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -35,7 +43,7 @@ const Navbar = ({ onSignIn, isLoggedIn }) => {
 
   return (
     <>
-      <header className="az-nav">
+      <header className={`az-nav ${isScrolled ? 'scrolled' : ''}`}>
         <div className="az-nav-inner">
           {/* Logo — left */}
           <Link to="/" className="az-logo no-underline">

@@ -1,8 +1,21 @@
-# ==============================================================================
-# WORKLY PRODUCTION GITIGNORE
-# ==============================================================================
+# Environment variables and secrets (CRITICAL for deployed projects)
+.env
+.env.*
+*.env
+backend/.env
+backend/.env.*
+backend/.env.local
+frontend/.env
+frontend/.env.*
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+*.pem
+*.key
+*.secret
 
-# --- Python & Django ---
+# Python & Django
 __pycache__/
 *.py[cod]
 *$py.class
@@ -12,102 +25,73 @@ __pycache__/
 dist/
 build/
 *.whl
-*.pyc
-
-# Virtual Environments
-venv/
-.venv/
-env/
-ENV/
 backend/venv/
 backend/.venv/
 backend/env/
-
-# Django Databases & Storage
-*.sqlite3
-*.sqlite3-journal
-db.sqlite3
-db.sqlite3-journal
+venv/
+.venv/
+env/
 backend/db.sqlite3
 backend/db.sqlite3-journal
 backend/uploads/
 backend/photos/
-backend/scratch/
+backend/media/
 dump.rdb
 
-# Environment Variables & Secrets
-.env
-.env.*
-!.env.example
-backend/.env
-backend/.env.*
-frontend/.env
-frontend/.env.*
-frontend/.env.local
-frontend/.env.development.local
-frontend/.env.test.local
-frontend/.env.production.local
-
-# --- Node.js & Frontend ---
+# Node.js & Frontend (Vite/React)
 node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/dist_ssr/
+frontend/.vite/
+.vite/
 .eslintcache
 frontend/.eslintcache
-.vite/
-frontend/.vite/
-
-# Logs
-*.log
-*.log.*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# IDEs, OS & Tooling
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+*.log.*
+/tmp/
 backend_output.log
 /backend_output.log
+.gemini/
+.antigravity/
+.agentic/
+.agents/
 
-# --- ML Models & Heavy Datasets ---
+# Testing & Coverage
+celerybeat-schedule
+celerybeat.pid
+.coverage
+.pytest_cache/
+htmlcov/
+dummy.pdf
+backend/test_resume_2col.pdf
+backend/scratch/
+/*.pdf
+*.pdf
+testsprite_tests/tmp/config.json
+
+# ML Model artifacts & heavy datasets
 backend/models/*.pkl
 backend/models/ner_resume_parser/
 backend/datasets/Salary.csv
 backend/datasets/DSL-StrongPasswordData.csv
 backend/datasets/Resume/
 
-# --- Testing & Celery ---
-celerybeat-schedule
-celerybeat.pid
-.coverage
-.pytest_cache/
-htmlcov/
-testsprite_tests/tmp/
-
-# --- IDEs, Editors & OS Files ---
-.vscode/
-.idea/
-*.swp
-*.swo
-*.sublime-project
-*.sublime-workspace
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# --- Agent & Temporary Tools ---
-.gemini/
-.antigravity/
-tmp/
-/tmp/
-
-# --- Document & Reference Files ---
-*.pdf
-*.pptx
-*.csv
-*.xlsx
-dummy.pdf
+# Excluded design & legacy folders per workspace rules
 inspiration_ui/
-alwayzz-zen-landing-main/
 OK/
 OLD ONES/
 TESTINAL/
+
+# Ignore markdown files per workspace rules
+*.md
