@@ -533,31 +533,34 @@ export default function SessionWorkspacePage() {
             {/* Status & Round Badges */}
             <div className="flex items-center gap-3">
               <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${session.status === "completed" ? "bg-[color-mix(in_oklab,var(--google-blue)_10%,transparent)] text-[var(--google-blue)]" :
-                  session.status === "archived" ? "bg-muted text-muted-foreground" :
-                    "bg-[color-mix(in_oklab,var(--google-green)_10%,transparent)] text-[var(--google-green)]"
+                session.status === "archived" ? "bg-muted text-muted-foreground" :
+                  "bg-[color-mix(in_oklab,var(--google-green)_10%,transparent)] text-[var(--google-green)]"
                 }`}>
                 {session.status === "completed" ? <CheckCircle2 size={14} /> : session.status === "archived" ? <Archive size={14} /> : <div className="w-2 h-2 rounded-full bg-[var(--google-green)] animate-pulse"></div>}
                 {session.status || "Active"}
               </span>
-              <span className="bg-card text-foreground px-3 py-1.5 rounded-full border border-border text-xs font-bold shadow-sm flex items-center gap-1.5">
+              <span 
+                className="bg-card text-foreground px-3 py-1.5 rounded-full border border-border text-xs font-bold shadow-sm flex items-center gap-1.5"
+                title={`${session.rounds?.length || 1} total rounds in this session`}
+              >
                 <Layers size={14} className="text-muted-foreground" />
-                Round {currentRoundIndex + 1} of {session.rounds?.length || 1}
+                {session.rounds?.length || 1} {session.rounds?.length === 1 ? 'Round' : 'Rounds'} Configured
               </span>
             </div>
-            
+
             {/* Action Buttons Sequence */}
             <div className="flex items-center gap-2.5 overflow-x-auto hide-scrollbar pb-2 -mx-2 px-2 xl:mx-0 xl:px-0 xl:pb-0">
               <button onClick={handleMatchAll} className="whitespace-nowrap bg-[var(--google-blue)] hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 shadow-sm shrink-0 cursor-pointer">
                 <Zap size={16} fill="currentColor" /> Match All
               </button>
-              
+
               <Link
                 to={`/dashboard/sessions/${id}/results`}
                 className="whitespace-nowrap border border-[var(--google-green)] text-[var(--google-green)] hover:bg-[color-mix(in_oklab,var(--google-green)_5%,transparent)] px-4 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 bg-card shadow-sm shrink-0 cursor-pointer"
               >
                 <BarChart3 size={16} /> View Assessment Results
               </Link>
-              
+
               <div className="h-6 w-px bg-border mx-1 shrink-0 hidden sm:block"></div>
 
               <button
@@ -566,7 +569,7 @@ export default function SessionWorkspacePage() {
               >
                 <Settings size={16} /> Edit Session
               </button>
-              
+
               <button
                 onClick={() => {
                   const url = exportAPI.candidatesUrl(id);
@@ -576,7 +579,7 @@ export default function SessionWorkspacePage() {
               >
                 <Download size={16} /> Export Hired
               </button>
-              
+
               <button
                 onClick={() => {
                   const url = `${window.location.origin}/jobs/${id}`;
@@ -587,7 +590,7 @@ export default function SessionWorkspacePage() {
               >
                 <LinkIcon size={16} /> Copy Apply Link
               </button>
-              
+
               <div className="h-6 w-px bg-border mx-1 shrink-0 hidden sm:block"></div>
 
               {session.status !== "completed" && (
@@ -595,7 +598,7 @@ export default function SessionWorkspacePage() {
                   <X size={16} /> End Session
                 </button>
               )}
-              
+
               <button
                 onClick={async () => {
                   if (window.confirm(`Permanently delete session "${session.name}"? This will delete all candidates and cannot be undone.`)) {
@@ -800,8 +803,8 @@ export default function SessionWorkspacePage() {
                       <button
                         onClick={() => setGoogleType("drive")}
                         className={`text-sm pb-[13px] -mb-[14px] transition-all font-semibold ${googleType === "drive"
-                            ? "font-black text-charcoal border-b-2 border-accent"
-                            : "text-gray-400 hover:text-gray-600"
+                          ? "font-black text-charcoal border-b-2 border-accent"
+                          : "text-gray-400 hover:text-gray-600"
                           }`}
                       >
                         Drive
@@ -809,8 +812,8 @@ export default function SessionWorkspacePage() {
                       <button
                         onClick={() => setGoogleType("form")}
                         className={`text-sm pb-[13px] -mb-[14px] transition-all font-semibold ${googleType === "form"
-                            ? "font-black text-charcoal border-b-2 border-accent"
-                            : "text-gray-400 hover:text-gray-600"
+                          ? "font-black text-charcoal border-b-2 border-accent"
+                          : "text-gray-400 hover:text-gray-600"
                           }`}
                       >
                         Google Form
@@ -1660,13 +1663,13 @@ export default function SessionWorkspacePage() {
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="p-6 border-b border-gray-100 bg-white flex flex-col sm:flex-row gap-4 justify-between items-center">
               <div className="relative w-full sm:w-96">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search by name, email, or skills..." 
+                <input
+                  type="text"
+                  placeholder="Search by name, email, or skills..."
                   value={leaderboardSearch}
                   onChange={e => setLeaderboardSearch(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
@@ -1674,7 +1677,7 @@ export default function SessionWorkspacePage() {
               </div>
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Filter size={16} className="text-gray-400" />
-                <select 
+                <select
                   value={leaderboardFilter}
                   onChange={e => setLeaderboardFilter(e.target.value)}
                   className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 cursor-pointer w-full sm:w-auto"
@@ -1704,73 +1707,72 @@ export default function SessionWorkspacePage() {
                     {[...allCandidatesList]
                       .sort((a, b) => (b.match_score || 0) - (a.match_score || 0))
                       .filter(c => {
-                         if (leaderboardFilter !== "All") {
-                           const s = c.application_status?.toLowerCase() || "active";
-                           if (leaderboardFilter === "Active" && (s === "hired" || s === "rejected")) return false;
-                           if (leaderboardFilter === "Hired" && s !== "hired") return false;
-                           if (leaderboardFilter === "Rejected" && s !== "rejected") return false;
-                         }
-                         if (leaderboardSearch) {
-                           const q = leaderboardSearch.toLowerCase();
-                           return c.name?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || (c.skills && c.skills.some(sk => sk.toLowerCase().includes(q)));
-                         }
-                         return true;
+                        if (leaderboardFilter !== "All") {
+                          const s = c.application_status?.toLowerCase() || "active";
+                          if (leaderboardFilter === "Active" && (s === "hired" || s === "rejected")) return false;
+                          if (leaderboardFilter === "Hired" && s !== "hired") return false;
+                          if (leaderboardFilter === "Rejected" && s !== "rejected") return false;
+                        }
+                        if (leaderboardSearch) {
+                          const q = leaderboardSearch.toLowerCase();
+                          return c.name?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || (c.skills && c.skills.some(sk => sk.toLowerCase().includes(q)));
+                        }
+                        return true;
                       })
                       .map((cand, i) => (
-                      <tr key={cand.id} className="border-b last:border-b-0 border-gray-50 hover:bg-blue-50/20 transition-colors group">
-                        <td className="p-4 pl-6">
-                          {i === 0 ? <div className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center font-black shadow-sm">🥇</div> :
-                           i === 1 ? <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center font-black shadow-sm">🥈</div> :
-                           i === 2 ? <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-black shadow-sm">🥉</div> :
-                           <div className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center font-bold text-xs">#{i + 1}</div>}
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">
-                              {cand.name ? cand.name.charAt(0).toUpperCase() : '?'}
+                        <tr key={cand.id} className="border-b last:border-b-0 border-gray-50 hover:bg-blue-50/20 transition-colors group">
+                          <td className="p-4 pl-6">
+                            {i === 0 ? <div className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center font-black shadow-sm">🥇</div> :
+                              i === 1 ? <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center font-black shadow-sm">🥈</div> :
+                                i === 2 ? <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-black shadow-sm">🥉</div> :
+                                  <div className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center font-bold text-xs">#{i + 1}</div>}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">
+                                {cand.name ? cand.name.charAt(0).toUpperCase() : '?'}
+                              </div>
+                              <div>
+                                <div className="font-bold text-charcoal">{cand.name || 'Unknown Candidate'}</div>
+                                <div className="text-xs text-gray-500">{cand.email || 'No email provided'}</div>
+                              </div>
                             </div>
-                            <div>
-                              <div className="font-bold text-charcoal">{cand.name || 'Unknown Candidate'}</div>
-                              <div className="text-xs text-gray-500">{cand.email || 'No email provided'}</div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 bg-gray-100 h-2 rounded-full overflow-hidden">
+                                <div className="bg-accent h-full rounded-full" style={{ width: `${cand.match_score || 0}%` }}></div>
+                              </div>
+                              <span className="font-bold text-charcoal">{cand.match_score || 0}%</span>
                             </div>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 bg-gray-100 h-2 rounded-full overflow-hidden">
-                              <div className="bg-accent h-full rounded-full" style={{ width: `${cand.match_score || 0}%` }}></div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-1.5 text-gray-500 text-xs font-medium">
+                              <MapPin size={14} className="text-gray-400" />
+                              {cand.location || 'Unknown'}
                             </div>
-                            <span className="font-bold text-charcoal">{cand.match_score || 0}%</span>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-1.5 text-gray-500 text-xs font-medium">
-                            <MapPin size={14} className="text-gray-400" />
-                            {cand.location || 'Unknown'}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                            cand.application_status === 'hired' ? 'bg-green-100 text-green-700' :
-                            cand.application_status === 'rejected' ? 'bg-red-100 text-red-700' :
-                            'bg-blue-100 text-blue-700'
-                          }`}>
-                            {cand.application_status === 'hired' ? 'Hired' : cand.application_status === 'rejected' ? 'Rejected' : 'Active'}
-                          </span>
-                        </td>
-                        <td className="p-4 pr-6 text-right">
-                          <button 
-                            onClick={() => {
-                              setIsLeaderboardOpen(false);
-                              setActiveDetailCandidate(cand);
-                            }}
-                            className="text-xs font-bold text-accent hover:text-white bg-blue-50 hover:bg-accent px-4 py-2 rounded-lg transition-colors border border-blue-100 hover:border-transparent shadow-sm"
-                          >
-                            View Details
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="p-4">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${cand.application_status === 'hired' ? 'bg-green-100 text-green-700' :
+                                cand.application_status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                  'bg-blue-100 text-blue-700'
+                              }`}>
+                              {cand.application_status === 'hired' ? 'Hired' : cand.application_status === 'rejected' ? 'Rejected' : 'Active'}
+                            </span>
+                          </td>
+                          <td className="p-4 pr-6 text-right">
+                            <button
+                              onClick={() => {
+                                setIsLeaderboardOpen(false);
+                                setActiveDetailCandidate(cand);
+                              }}
+                              className="text-xs font-bold text-accent hover:text-white bg-blue-50 hover:bg-accent px-4 py-2 rounded-lg transition-colors border border-blue-100 hover:border-transparent shadow-sm"
+                            >
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>

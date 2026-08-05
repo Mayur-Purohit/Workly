@@ -82,8 +82,12 @@ def public_list_companies(request):
     if request.method != "GET":
         return JsonResponse(error_response("Method not allowed"), status=405)
     try:
-        companies = Company.objects.filter(is_active=True).order_by("name")
-        
+        from django.db.models import Q
+        q = request.GET.get("q", "").strip()
+        companies = Company.objects.filter(is_active=True)
+        if q:
+            companies = companies.filter(Q(name__icontains=q) | Q(industry__icontains=q))
+        companies = companies.order_by("name")
         # Pagination
         page = int(request.GET.get("page", 1))
         per_page = min(int(request.GET.get("per_page", 12)), 100)
@@ -153,8 +157,12 @@ def seeker_list_companies(request):
     try:
         seeker = request.seeker
         followed = seeker.resume_data.get("followed_companies", []) if seeker.resume_data else []
-        companies = Company.objects.filter(is_active=True).order_by("name")
-        
+        from django.db.models import Q
+        q = request.GET.get("q", "").strip()
+        companies = Company.objects.filter(is_active=True)
+        if q:
+            companies = companies.filter(Q(name__icontains=q) | Q(industry__icontains=q))
+        companies = companies.order_by("name")
         # Pagination
         page = int(request.GET.get("page", 1))
         per_page = min(int(request.GET.get("per_page", 12)), 100)

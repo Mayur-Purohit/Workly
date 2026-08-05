@@ -23,30 +23,32 @@ export default function UserCompanies() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchCompanies = () => {
+  useEffect(() => {
     setLoading(true);
-    publicAPI.listCompanies({ page, per_page: 9 })
-      .then((data) => {
-        setCompanies(data.companies || []);
-        setTotalPages(data.total_pages || 1);
-      })
-      .catch((err) => {
-        console.error(err);
-        toast.error("Failed to load companies");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    const timer = setTimeout(() => {
+      publicAPI.listCompanies({ page, per_page: 9, q: search })
+        .then((data) => {
+          setCompanies(data.companies || []);
+          setTotalPages(data.total_pages || 1);
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("Failed to load companies");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [page, search]);
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setPage(1);
   };
 
-  useEffect(() => {
-    fetchCompanies();
-  }, [page]);
-
-  const filtered = companies.filter((c) => {
-    const term = search.toLowerCase();
-    return c.name.toLowerCase().includes(term) || (c.industry && c.industry.toLowerCase().includes(term));
-  });
+  const filtered = companies;
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,7 +67,7 @@ export default function UserCompanies() {
               <input 
                 placeholder="Search company name or industry..." 
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={handleSearchChange}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" 

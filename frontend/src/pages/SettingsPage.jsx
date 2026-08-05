@@ -308,16 +308,16 @@ export default function SettingsPage() {
 
   return (
     <>
-    <PageTransition className="max-w-6xl mx-auto py-8 px-4 w-full overflow-y-auto h-full space-y-8">
-      {/* HEADER */}
-      <div>
-        <h1 className="text-3xl font-black text-charcoal tracking-tight">Settings</h1>
-        <p className="text-sm font-medium text-gray-500 mt-1">Manage your account and company profile.</p>
-      </div>
+    <PageTransition className="max-w-[1400px] mx-auto pt-4 pb-24 px-4 w-full space-y-10">
+      {/* HEADER - Material 3 Style */}
+      <header className="mb-10">
+        <h1 className="font-display text-[32px] sm:text-[36px] font-bold text-charcoal tracking-tight leading-tight">Settings</h1>
+        <p className="text-gray-500 text-[15px] mt-1.5 max-w-2xl">Manage your account, API keys, billing, and company profile.</p>
+      </header>
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        {/* LEFT TAB BAR */}
-        <div className="w-full lg:w-64 bg-white border border-gray-100 rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.03)] shrink-0 flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible">
+      <div className="flex flex-col lg:flex-row gap-8 items-start relative z-10">
+        {/* LEFT TAB BAR - Elevated Tonal Surface */}
+        <div className="w-full lg:w-72 bg-white border border-gray-100 rounded-[28px] p-4 shadow-[0_2px_24px_rgba(0,0,0,0.02)] shrink-0 flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible">
           {tabItems.map((tab) => {
             const Icon = tab.icon;
             const isSelected = activeTab === tab.id;
@@ -325,40 +325,42 @@ export default function SettingsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs tracking-wide transition-all text-left whitespace-nowrap lg:whitespace-normal w-full ${
+                className={`flex items-center gap-3.5 px-5 py-3.5 rounded-[20px] font-bold text-[14px] tracking-wide transition-all duration-300 text-left whitespace-nowrap lg:whitespace-normal w-full ${
                   isSelected 
-                    ? 'bg-blue-50 text-accent border border-blue-100/50' 
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-charcoal'
+                    ? 'bg-blue-50/70 text-indigo-700 shadow-sm' 
+                    : 'text-gray-500 hover:bg-[#F8F9FA] hover:text-charcoal'
                 }`}
               >
-                <Icon size={16} className={isSelected ? 'text-accent' : 'text-gray-400'} />
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
+                   <Icon size={16} />
+                </div>
                 <span>{tab.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* RIGHT CONTENT CARD */}
-        <div className="flex-1 w-full">
+        {/* RIGHT CONTENT CARD - Filled Elevated Container */}
+        <div className="flex-1 w-full bg-white rounded-[32px] shadow-[0_2px_24px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden min-h-[500px]">
           {activeTab === 'profile' && (
-            <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.03)] border border-gray-100 p-8 space-y-6">
-              <h2 className="text-md font-bold text-charcoal flex items-center gap-2 pb-4 border-b border-gray-100">
-                <Building className="w-5 h-5 text-accent" /> Company profile
+            <div className="p-8 sm:p-10 space-y-8">
+              <h2 className="text-[20px] font-display font-bold text-charcoal flex items-center gap-3 pb-6 border-b border-gray-100">
+                <div className="w-10 h-10 rounded-[12px] bg-indigo-50 text-indigo-600 flex items-center justify-center"><Building size={18} /></div> Company Profile
               </h2>
               
-              <div className="space-y-5 max-w-lg">
+              <div className="space-y-6 max-w-2xl">
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Admin Email</label>
-                  <div className="flex items-center gap-2">
-                    <input type="text" value={company?.email || 'N/A'} readOnly className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 font-medium focus:outline-none" />
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Admin Email</label>
+                  <div className="flex items-center gap-3">
+                    <input type="text" value={company?.email || 'N/A'} readOnly className="flex-1 p-4 bg-[#F8F9FA] border-none rounded-[20px] text-[15px] text-gray-500 font-medium focus:outline-none" />
                     {company?.email_verified ? (
-                      <span className="shrink-0 inline-flex items-center px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30 gap-1">
-                        <Check className="w-3 h-3" /> Verified
+                      <span className="shrink-0 inline-flex items-center px-4 py-4 rounded-[20px] text-[13px] font-bold bg-emerald-50 text-emerald-600 gap-2">
+                        <Check size={16} /> Verified
                       </span>
                     ) : (
                       <button
                         onClick={() => setVerifyTarget({ type: 'email', value: company?.email })}
-                        className="shrink-0 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all focus:outline-none"
+                        className="shrink-0 px-5 py-4 text-[13px] font-bold rounded-[20px] bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors focus:outline-none"
                       >
                         Verify Email
                       </button>
@@ -366,18 +368,18 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Company Name</label>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Company Name</label>
                   <input 
                     type="text" 
                     value={companyName} 
                     onChange={(e) => setCompanyName(e.target.value)} 
-                    className="w-full p-3 bg-white border border-gray-200 focus:border-accent rounded-xl text-sm font-bold text-charcoal focus:outline-none transition-colors" 
+                    className="w-full p-4 bg-[#F8F9FA] hover:bg-gray-100 focus:bg-white border border-transparent focus:border-accent/30 focus:ring-4 focus:ring-accent/10 rounded-[20px] text-[15px] font-bold text-charcoal outline-none transition-all" 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Company Logo / Profile Image</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 relative group shadow-inner">
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Company Logo</label>
+                  <div className="flex items-center gap-6">
+                    <div className="w-24 h-24 rounded-[24px] border border-gray-100 bg-[#F8F9FA] flex items-center justify-center overflow-hidden shrink-0 relative group shadow-sm">
                       {logo ? (
                         <>
                           <img src={logo} alt="Preview" className="w-full h-full object-cover" />
@@ -387,16 +389,16 @@ export default function SettingsPage() {
                             className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                             title="Remove logo"
                           >
-                            <X size={16} />
+                            <X size={24} />
                           </button>
                         </>
                       ) : (
-                        <Building className="w-8 h-8 text-gray-300" />
+                        <Building size={32} className="text-gray-300" />
                       )}
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="cursor-pointer bg-gray-50 hover:bg-gray-100 text-charcoal border border-gray-200 px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm inline-block w-max">
-                        <Upload size={12} className="inline mr-1.5" /> Upload Image
+                    <div className="flex flex-col gap-2">
+                      <label className="cursor-pointer bg-white hover:bg-gray-50 text-charcoal border border-gray-200 px-6 py-3 rounded-full text-[14px] font-bold transition-all shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md inline-flex items-center gap-2 w-max">
+                        <Upload size={16} /> Upload Image
                         <input 
                           type="file" 
                           accept="image/*" 
@@ -404,34 +406,36 @@ export default function SettingsPage() {
                           className="hidden" 
                         />
                       </label>
-                      <span className="text-[9px] text-gray-400 font-medium">PNG, JPG, JPEG, SVG or WEBP up to 5MB</span>
+                      <span className="text-[11px] text-gray-400 font-medium ml-1">PNG, JPG, SVG or WEBP up to 5MB</span>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Industry</label>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Industry</label>
                   <input 
                     type="text" 
                     value={industry} 
                     placeholder="e.g. Technology, Healthcare, Finance"
                     onChange={(e) => setIndustry(e.target.value)} 
-                    className="w-full p-3 bg-white border border-gray-200 focus:border-accent rounded-xl text-sm font-bold text-charcoal focus:outline-none transition-colors" 
+                    className="w-full p-4 bg-[#F8F9FA] hover:bg-gray-100 focus:bg-white border border-transparent focus:border-accent/30 focus:ring-4 focus:ring-accent/10 rounded-[20px] text-[15px] font-bold text-charcoal outline-none transition-all" 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">HQ / Location</label>
-                  <LocationSelector 
-                    value={hqLocation} 
-                    onChange={setHqLocation} 
-                  />
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">HQ / Location</label>
+                  <div className="relative bg-[#F8F9FA] rounded-[20px] p-2 hover:bg-gray-100 transition-colors focus-within:bg-white focus-within:ring-4 focus-within:ring-accent/10">
+                    <LocationSelector 
+                      value={hqLocation} 
+                      onChange={setHqLocation} 
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-5">
                   <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Company Size</label>
+                    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Company Size</label>
                     <select
                       value={companySize}
                       onChange={(e) => setCompanySize(e.target.value)}
-                      className="w-full p-3 bg-white border border-gray-200 focus:border-accent rounded-xl text-sm font-bold text-charcoal focus:outline-none transition-colors appearance-none"
+                      className="w-full p-4 bg-[#F8F9FA] hover:bg-gray-100 focus:bg-white border border-transparent focus:border-accent/30 focus:ring-4 focus:ring-accent/10 rounded-[20px] text-[15px] font-bold text-charcoal outline-none transition-all appearance-none cursor-pointer"
                     >
                       <option value="">Select size...</option>
                       <option value="1-10">1-10 employees</option>
@@ -443,44 +447,44 @@ export default function SettingsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Founded Year</label>
+                    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Founded Year</label>
                     <input 
                       type="number" 
                       value={foundedYear} 
                       placeholder="e.g. 2020"
                       onChange={(e) => setFoundedYear(e.target.value)} 
-                      className="w-full p-3 bg-white border border-gray-200 focus:border-accent rounded-xl text-sm font-bold text-charcoal focus:outline-none transition-colors" 
+                      className="w-full p-4 bg-[#F8F9FA] hover:bg-gray-100 focus:bg-white border border-transparent focus:border-accent/30 focus:ring-4 focus:ring-accent/10 rounded-[20px] text-[15px] font-bold text-charcoal outline-none transition-all" 
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Website URL</label>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Website URL</label>
                   <input 
                     type="url" 
                     value={websiteUrl} 
                     placeholder="https://example.com"
                     onChange={(e) => setWebsiteUrl(e.target.value)} 
-                    className="w-full p-3 bg-white border border-gray-200 focus:border-accent rounded-xl text-sm font-bold text-charcoal focus:outline-none transition-colors" 
+                    className="w-full p-4 bg-[#F8F9FA] hover:bg-gray-100 focus:bg-white border border-transparent focus:border-accent/30 focus:ring-4 focus:ring-accent/10 rounded-[20px] text-[15px] font-bold text-charcoal outline-none transition-all" 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">About / Overview</label>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">About / Overview</label>
                   <textarea 
                     value={about} 
                     placeholder="Provide a brief overview of your company..."
                     onChange={(e) => setAbout(e.target.value)} 
                     rows={4}
-                    className="w-full p-3 bg-white border border-gray-200 focus:border-accent rounded-xl text-sm font-medium text-charcoal focus:outline-none transition-colors resize-none" 
+                    className="w-full p-4 bg-[#F8F9FA] hover:bg-gray-100 focus:bg-white border border-transparent focus:border-accent/30 focus:ring-4 focus:ring-accent/10 rounded-[24px] text-[15px] font-medium text-charcoal outline-none transition-all resize-none" 
                   />
                 </div>
-                <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Account Tier</label>
-                  <span className="inline-block bg-blue-50 border border-blue-100 text-accent font-black px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-widest">
-                    {company?.tier || 'Free'}
-                  </span>
-                </div>
-                <div className="pt-4">
-                  <button onClick={handleSave} className="bg-[#2A2A2A] hover:bg-black text-white px-6 py-3 rounded-xl text-xs font-bold shadow-md transition-colors w-full sm:w-auto">
+                <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 block ml-1">Account Tier</label>
+                    <span className="inline-block bg-indigo-50 text-indigo-700 font-black px-4 py-2 rounded-full text-[11px] uppercase tracking-widest shadow-sm">
+                      {company?.tier || 'Free'}
+                    </span>
+                  </div>
+                  <button onClick={handleSave} className="bg-charcoal hover:bg-black text-white px-8 py-4 rounded-full text-[15px] font-bold shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:shadow-lg hover:-translate-y-0.5 transition-all w-full sm:w-auto">
                     Save Changes
                   </button>
                 </div>
@@ -489,56 +493,56 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'api-keys' && (
-            <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.03)] border border-gray-100 p-8 space-y-6">
+            <div className="p-8 sm:p-10 space-y-8">
               {/* Header */}
-              <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-                <h2 className="text-md font-bold text-charcoal flex items-center gap-2">
-                  <Key className="w-5 h-5 text-accent" /> API keys
+              <div className="flex justify-between items-center pb-6 border-b border-gray-100">
+                <h2 className="text-[20px] font-display font-bold text-charcoal flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-[12px] bg-indigo-50 text-indigo-600 flex items-center justify-center"><Key size={18} /></div> API Keys
                 </h2>
                 <button 
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 bg-accent hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm active:scale-95"
+                  className="flex items-center gap-2 bg-accent hover:bg-blue-700 text-white px-6 py-3 rounded-full text-[14px] font-bold transition-all shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.35)] hover:-translate-y-0.5"
                 >
-                  <Plus size={14} /> Create key
+                  <Plus size={18} /> Create Key
                 </button>
               </div>
 
               {/* Keys List */}
               {keys.length > 0 ? (
-                <div className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden shadow-inner">
+                <div className="space-y-4">
                   {keys.map((key, i) => (
-                    <div key={key.id || i} className="flex items-center justify-between p-4 hover:bg-gray-50/30 transition-colors">
+                    <div key={key.id || i} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-[#F8F9FA] rounded-[24px] hover:bg-white hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-transparent hover:border-gray-100 transition-all gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-9 h-9 rounded-xl bg-blue-50 text-accent flex items-center justify-center shrink-0">
-                          <Key size={16} />
+                        <div className="w-12 h-12 rounded-[16px] bg-white border border-gray-100 text-accent flex items-center justify-center shrink-0 shadow-sm">
+                          <Key size={20} />
                         </div>
                         <div>
-                          <span className="font-bold text-sm text-charcoal">{key.key_name || 'API Key'}</span>
-                          <div className="text-[11px] text-gray-500 font-mono mt-0.5 tracking-tight">
+                          <span className="font-bold text-[16px] text-charcoal">{key.key_name || 'API Key'}</span>
+                          <div className="text-[13px] text-gray-500 font-mono mt-1 tracking-tight bg-white px-3 py-1.5 rounded-[10px] border border-gray-100 inline-block shadow-sm">
                             {key.secret_key ? `${key.secret_key.slice(0, 16)}••••••••${key.secret_key.slice(-4)}` : `${key.public_key?.slice(0, 16)}...`}
                           </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-4 shrink-0">
+                      <div className="flex items-center gap-5 shrink-0 ml-auto">
                         <div className="text-right hidden sm:block">
-                          <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
-                            key.environment === 'production' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-yellow-50 text-yellow-600 border-yellow-100'
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border shadow-sm ${
+                            key.environment === 'production' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'
                           }`}>
                             {key.environment || 'production'}
                           </span>
-                          <div className="text-[9px] text-gray-400 font-medium mt-1">
+                          <div className="text-[11px] text-gray-400 font-medium mt-2">
                             Created {key.created_at ? new Date(key.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'recently'}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2 bg-white p-1 rounded-full border border-gray-200 shadow-sm">
                           <button 
                             onClick={() => handleCopyKey(key.secret_key || key.public_key, key.id)}
-                            className="p-2 text-gray-400 hover:text-charcoal hover:bg-gray-100 rounded-lg transition-colors"
+                            className="p-2 text-gray-500 hover:text-charcoal hover:bg-gray-100 rounded-full transition-colors"
                             title="Copy API key"
                           >
-                            {copiedKeyId === key.id ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                            {copiedKeyId === key.id ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
                           </button>
                           <button 
                             onClick={async () => {
@@ -550,10 +554,10 @@ export default function SettingsPage() {
                                 } catch(e) { toast.error(e.message); }
                               }
                             }}
-                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-2 text-gray-500 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors"
                             title="Revoke key"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </div>
@@ -561,104 +565,131 @@ export default function SettingsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-gray-400 text-sm py-12 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
-                  <p className="font-semibold text-gray-500">No API keys generated yet.</p>
-                  <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">Generate a credentials pair to authenticate your developer platform calls.</p>
+                <div className="text-center text-gray-400 py-16 bg-[#F8F9FA] rounded-[32px] border border-dashed border-gray-200 flex flex-col items-center justify-center">
+                  <div className="w-16 h-16 rounded-[20px] bg-white border border-gray-100 shadow-sm flex items-center justify-center mb-4">
+                     <Key size={24} className="text-gray-300" />
+                  </div>
+                  <h3 className="font-display font-bold text-[20px] text-charcoal mb-2">No API keys found</h3>
+                  <p className="text-[14px] text-gray-500 max-w-sm mx-auto leading-relaxed">Generate a credentials pair to authenticate your developer platform calls securely.</p>
                 </div>
               )}
             </div>
           )}
 
-
+          {activeTab === 'notifications' && (
+            <div className="p-8 sm:p-10 space-y-8">
+              <h2 className="text-[20px] font-display font-bold text-charcoal flex items-center gap-3 pb-6 border-b border-gray-100">
+                <div className="w-10 h-10 rounded-[12px] bg-indigo-50 text-indigo-600 flex items-center justify-center"><Bell size={18} /></div> Notifications
+              </h2>
+              <div className="divide-y divide-gray-100 bg-[#F8F9FA] rounded-[24px] p-2">
+                {[
+                  { id: "new_candidate", label: "New Candidate Applications", desc: "Get notified when a candidate successfully joins a session.", defaultVal: true },
+                  { id: "weekly_digest", label: "Weekly Account Digest", desc: "A summary of activity and stats across all your recruitment sessions.", defaultVal: false },
+                ].map((it, i) => (
+                  <div key={i} className="flex items-center justify-between gap-6 p-6 hover:bg-white rounded-[20px] transition-colors">
+                    <div>
+                      <div className="font-bold text-[15px] text-charcoal">{it.label}</div>
+                      <div className="text-[13px] text-gray-500 mt-1">{it.desc}</div>
+                    </div>
+                    <ToggleSwitch 
+                      storageKey={`workly_notif_${it.id}`} 
+                      defaultOn={it.defaultVal} 
+                      label={it.label}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {activeTab === 'account' && (
-            <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.03)] border border-gray-100 p-8 space-y-6">
-              <h2 className="text-md font-bold text-charcoal flex items-center gap-2 pb-4 border-b border-gray-100">
-                <User className="w-5 h-5 text-accent" /> Account
+            <div className="p-8 sm:p-10 space-y-8">
+              <h2 className="text-[20px] font-display font-bold text-charcoal flex items-center gap-3 pb-6 border-b border-gray-100">
+                <div className="w-10 h-10 rounded-[12px] bg-indigo-50 text-indigo-600 flex items-center justify-center"><User size={18} /></div> Account Preferences
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Admin Full name</label>
-                  <input type="text" className="w-full p-3 bg-white border border-gray-200 focus:border-accent rounded-xl text-sm font-bold text-charcoal focus:outline-none transition-colors" defaultValue={company?.name ? `${company.name} Administrator` : "Admin"} />
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Admin Full Name</label>
+                  <input type="text" className="w-full p-4 bg-[#F8F9FA] border-none rounded-[20px] text-[15px] font-bold text-charcoal focus:bg-white focus:ring-4 focus:ring-accent/10 transition-all outline-none" defaultValue={company?.name ? `${company.name} Administrator` : "Admin"} />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Email</label>
-                  <input type="text" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 font-medium focus:outline-none" defaultValue={company?.email || "admin@company.com"} readOnly />
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Email</label>
+                  <input type="text" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-[20px] text-[15px] text-gray-400 font-medium outline-none" defaultValue={company?.email || "admin@company.com"} readOnly />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Role</label>
-                  <input type="text" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 font-medium focus:outline-none" defaultValue="Owner / Admin" readOnly />
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Role</label>
+                  <input type="text" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-[20px] text-[15px] text-gray-400 font-medium outline-none" defaultValue="Owner / Admin" readOnly />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block pl-0.5">Language</label>
-                  <input type="text" className="w-full p-3 bg-white border border-gray-200 focus:border-accent rounded-xl text-sm font-bold text-charcoal focus:outline-none transition-colors" defaultValue="English (US)" />
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Language</label>
+                  <input type="text" className="w-full p-4 bg-[#F8F9FA] border-none rounded-[20px] text-[15px] font-bold text-charcoal focus:bg-white focus:ring-4 focus:ring-accent/10 transition-all outline-none" defaultValue="English (US)" />
                 </div>
               </div>
-              <div className="border-t border-gray-100 pt-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="border border-red-100 bg-red-50/30 rounded-[24px] p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mt-8">
                 <div>
-                  <div className="font-bold text-sm text-charcoal">Sign out of workspace</div>
-                  <div className="text-xs text-gray-500 mt-0.5">You'll need to sign in again to access the dashboard.</div>
+                  <div className="font-bold text-[16px] text-charcoal">Sign Out of Workspace</div>
+                  <div className="text-[13px] text-gray-500 mt-1">You'll need to re-authenticate to access the dashboard.</div>
                 </div>
                 <button 
                   onClick={handleLogout}
-                  className="px-4 py-2 rounded-xl border border-red-200 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                  className="px-8 py-3.5 rounded-full bg-white border border-red-200 text-[14px] font-bold text-red-600 hover:bg-red-50 hover:border-red-300 shadow-sm hover:shadow transition-all shrink-0 w-full sm:w-auto"
                 >
-                  Sign out
+                  Sign Out
                 </button>
               </div>
             </div>
           )}
 
           {activeTab === 'billing' && (
-            <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.03)] border border-gray-100 p-8 space-y-6">
-              <h2 className="text-md font-bold text-charcoal flex items-center gap-2 pb-4 border-b border-gray-100">
-                <CreditCard className="w-5 h-5 text-accent" /> Recruiter subscription
+            <div className="p-8 sm:p-10 space-y-8">
+              <h2 className="text-[20px] font-display font-bold text-charcoal flex items-center gap-3 pb-6 border-b border-gray-100">
+                <div className="w-10 h-10 rounded-[12px] bg-indigo-50 text-indigo-600 flex items-center justify-center"><CreditCard size={18} /></div> Subscription & Billing
               </h2>
 
               {/* Current plan card */}
-              <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-accent"></div>
-                <div className="flex flex-col gap-2 pl-2">
-                  <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest pl-0.5">Current Plan</span>
-                  <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-black text-charcoal flex items-center gap-3">
-                      <CreditCard size={24} className="text-accent" /> {plans.find(p=>p.id===activePlan)?.name || (activePlan.charAt(0).toUpperCase() + activePlan.slice(1)) + " Plan"}
+              <div className="bg-[#F8F9FA] border border-gray-100 rounded-[28px] p-8 sm:p-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-8 relative overflow-hidden group hover:bg-white hover:shadow-[0_4px_24px_rgba(0,0,0,0.04)] transition-all">
+                <div className="absolute top-0 left-0 w-2 h-full bg-accent"></div>
+                <div className="flex flex-col gap-3 pl-2">
+                  <span className="text-gray-400 text-[11px] font-black uppercase tracking-widest pl-0.5">Current Active Plan</span>
+                  <div className="flex items-center gap-5">
+                    <h2 className="text-[28px] font-display font-black text-charcoal flex items-center gap-3">
+                      <CreditCard size={28} className="text-accent" /> {plans.find(p=>p.id===activePlan)?.name || (activePlan.charAt(0).toUpperCase() + activePlan.slice(1)) + " Plan"}
                     </h2>
-                    <span className="bg-green-100 text-green-700 text-[9px] uppercase font-black px-2 py-0.5 rounded-full">● {currentSub?.status || "Active"}</span>
+                    <span className="bg-emerald-100 text-emerald-700 text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-sm">● {currentSub?.status || "Active"}</span>
                   </div>
                   {activePlan !== "free" && (
-                    <p className="text-gray-500 font-medium text-xs mt-1">₹{plans.find(p=>p.id===activePlan)?.price.toLocaleString()}/month. Status is active.</p>
+                    <p className="text-gray-500 font-medium text-[14px] mt-1">₹{plans.find(p=>p.id===activePlan)?.price.toLocaleString()}/month. Status is currently active.</p>
                   )}
                 </div>
                 {activePlan !== "free" && (
-                  <button onClick={() => setCancelModal(true)} className="px-5 py-2.5 text-xs font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">Cancel Plan</button>
+                  <button onClick={() => setCancelModal(true)} className="px-6 py-3 text-[14px] font-bold text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-all border border-transparent hover:border-rose-100 bg-white shadow-sm">Cancel Plan</button>
                 )}
               </div>
 
               {/* Comparison grid */}
-              <div>
-                <h3 className="font-bold text-md text-charcoal mb-4">Available recruiter plans</h3>
+              <div className="pt-4">
+                <h3 className="font-display font-bold text-[22px] text-charcoal mb-6">Available Plans</h3>
                 <div className="grid md:grid-cols-3 gap-6">
                   {plans.map(p => {
                     const isActive = activePlan === p.id;
                     return (
-                      <div key={p.id} className={`flex flex-col border rounded-2xl p-6 bg-white transition-all relative overflow-hidden ${isActive ? "border-accent shadow-[0_4px_20px_rgba(59,130,246,0.15)]" : "border-gray-100"}`}>
-                        {isActive && <div className="absolute top-0 left-0 w-full h-1 bg-accent"></div>}
+                      <div key={p.id} className={`flex flex-col border rounded-[32px] p-8 transition-all duration-300 relative overflow-hidden bg-white ${isActive ? "border-accent shadow-[0_8px_30px_rgba(37,99,235,0.12)]" : "border-gray-100 shadow-sm hover:shadow-md"}`}>
+                        {isActive && <div className="absolute top-0 left-0 w-full h-2 bg-accent"></div>}
                         
-                        <div className="flex justify-between items-center mb-3">
-                          <h3 className="text-sm font-bold text-charcoal">{p.name}</h3>
-                          {isActive && <span className="bg-blue-50 text-accent text-[9px] font-black uppercase px-2 py-0.5 rounded-md">Current</span>}
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-[18px] font-bold text-charcoal">{p.name}</h3>
+                          {isActive && <span className="bg-blue-50 text-accent text-[10px] font-black uppercase px-3 py-1 rounded-full border border-blue-100">Current</span>}
                         </div>
                         
-                        <div className="mb-4 pb-4 border-b border-gray-100">
-                           <span className="text-3xl font-black text-charcoal">₹{p.price}</span>
-                           <span className="text-gray-500 font-medium text-xs">/month</span>
+                        <div className="mb-6 pb-6 border-b border-gray-100">
+                           <span className="text-[36px] font-display font-black text-charcoal">₹{p.price}</span>
+                           <span className="text-gray-500 font-medium text-[14px]">/mo</span>
                         </div>
                         
-                        <ul className="flex flex-col gap-2.5 font-medium text-xs text-gray-500 mb-6 flex-1">
+                        <ul className="flex flex-col gap-4 font-medium text-[13px] text-gray-600 mb-8 flex-1">
                           {p.features.map(f => (
-                            <li key={f} className="flex gap-2 items-start">
-                              <Check size={14} className="text-green-500 shrink-0 mt-0.5" /> 
+                            <li key={f} className="flex gap-3 items-start">
+                              <Check size={16} className="text-emerald-500 shrink-0 mt-0.5" /> 
                               <span>{f}</span>
                             </li>
                           ))}
@@ -668,14 +699,14 @@ export default function SettingsPage() {
                           <button 
                             disabled={loadingPlan === p.id}
                             onClick={() => handleUpgrade(p.id)} 
-                            className="w-full py-2.5 rounded-xl font-bold text-xs bg-charcoal text-white hover:bg-black transition-all disabled:opacity-50"
+                            className="w-full py-4 rounded-full font-bold text-[14px] bg-charcoal text-white hover:bg-black transition-all shadow-md hover:shadow-lg disabled:opacity-50 hover:-translate-y-0.5"
                           >
                             {loadingPlan === p.id ? "Processing..." : `Upgrade to ${p.name.split(" ")[0]}`}
                           </button>
                         )}
                         {isActive && (
-                          <div className="w-full py-2.5 rounded-xl font-bold text-xs bg-gray-50 text-gray-400 text-center cursor-default">
-                            Current Plan
+                          <div className="w-full py-4 rounded-full font-bold text-[14px] bg-[#F8F9FA] text-gray-400 text-center cursor-default border border-gray-100">
+                            Currently Active
                           </div>
                         )}
                       </div>
@@ -687,17 +718,17 @@ export default function SettingsPage() {
               {/* Cancel Modal */}
               {cancelModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40 backdrop-blur-sm">
-                  <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative p-6 space-y-4">
-                    <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center"><AlertTriangle size={24}/></div>
+                  <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden relative p-8 space-y-6">
+                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-[20px] flex items-center justify-center border border-red-100 shadow-sm"><AlertTriangle size={32}/></div>
                     <div>
-                      <h2 className="text-lg font-black text-charcoal">Cancel Subscription?</h2>
-                      <p className="text-gray-500 font-medium text-xs leading-relaxed mt-1">
+                      <h2 className="text-[24px] font-display font-black text-charcoal leading-tight">Cancel Subscription?</h2>
+                      <p className="text-gray-500 font-medium text-[15px] leading-relaxed mt-2">
                         Downgrading will revert your account to the Starter Plan tier. You will lose access to premium active sessions and increased resume capacity.
                       </p>
                     </div>
-                    <div className="flex gap-3 pt-2">
-                      <button onClick={()=>setCancelModal(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 text-xs transition-colors">Keep Plan</button>
-                      <button onClick={handleCancel} className="flex-1 py-2.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 text-xs transition-colors shadow-md shadow-red-500/20">Yes, Cancel</button>
+                    <div className="flex gap-4 pt-2">
+                      <button onClick={()=>setCancelModal(false)} className="flex-1 py-4 bg-[#F8F9FA] text-gray-600 font-bold rounded-full hover:bg-gray-100 text-[14px] transition-colors border border-gray-200">Keep Plan</button>
+                      <button onClick={handleCancel} className="flex-1 py-4 bg-red-500 text-white font-bold rounded-full hover:bg-red-600 text-[14px] transition-colors shadow-[0_4px_14px_rgba(239,68,68,0.3)] hover:shadow-lg">Yes, Cancel</button>
                     </div>
                   </div>
                 </div>
@@ -709,43 +740,43 @@ export default function SettingsPage() {
 
       {/* NEW API KEY GENERATION MODAL */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-6">
+        <div className="fixed inset-0 bg-charcoal/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[32px] max-w-md w-full p-8 shadow-2xl border border-gray-100 space-y-6">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-lg font-bold text-charcoal">Create New API Key</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Generate credentials for your external client calls.</p>
+                <h3 className="text-[22px] font-display font-bold text-charcoal">Create API Key</h3>
+                <p className="text-[14px] text-gray-500 mt-1">Generate credentials for external API integration.</p>
               </div>
               <button 
                 onClick={() => setShowCreateModal(false)}
-                className="p-1 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-charcoal transition-colors"
+                className="p-2 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-400 hover:text-charcoal transition-colors"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateKey} className="space-y-4">
+            <form onSubmit={handleCreateKey} className="space-y-6 pt-2">
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Key Name</label>
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Key Name</label>
                 <input 
                   type="text" 
-                  placeholder="e.g. Production Client, Staging Key"
+                  placeholder="e.g. Production Client"
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
-                  className="w-full p-3 bg-white border border-gray-200 focus:border-accent rounded-xl text-sm font-bold text-charcoal focus:outline-none transition-colors"
+                  className="w-full p-4 bg-[#F8F9FA] border-none rounded-[20px] text-[15px] font-bold text-charcoal focus:bg-white focus:ring-4 focus:ring-accent/10 transition-all outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Environment</label>
-                <div className="grid grid-cols-2 gap-3">
+                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Environment</label>
+                <div className="grid grid-cols-2 gap-4">
                   <button
                     type="button"
                     onClick={() => setNewKeyEnv('production')}
-                    className={`py-2 px-4 rounded-xl border text-xs font-bold transition-all ${
+                    className={`py-3.5 px-4 rounded-[20px] text-[14px] font-bold transition-all border ${
                       newKeyEnv === 'production' 
-                        ? 'border-accent bg-blue-50 text-accent' 
+                        ? 'border-accent bg-blue-50/50 text-accent shadow-sm' 
                         : 'border-gray-200 text-gray-500 bg-white hover:bg-gray-50'
                     }`}
                   >
@@ -754,28 +785,28 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setNewKeyEnv('test')}
-                    className={`py-2 px-4 rounded-xl border text-xs font-bold transition-all ${
+                    className={`py-3.5 px-4 rounded-[20px] text-[14px] font-bold transition-all border ${
                       newKeyEnv === 'test' 
-                        ? 'border-accent bg-blue-50 text-accent' 
+                        ? 'border-accent bg-blue-50/50 text-accent shadow-sm' 
                         : 'border-gray-200 text-gray-500 bg-white hover:bg-gray-50'
                     }`}
                   >
-                    Test / Sandbox
+                    Sandbox / Test
                   </button>
                 </div>
               </div>
 
-              <div className="pt-4 flex justify-end gap-3">
+              <div className="pt-6 border-t border-gray-100 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="py-2.5 px-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs font-bold text-gray-500 transition-colors"
+                  className="py-3.5 px-6 rounded-full bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-[14px] font-bold text-gray-600 transition-colors shadow-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="py-2.5 px-5 bg-accent hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-bold shadow-md transition-colors"
+                  className="py-3.5 px-8 bg-accent hover:bg-blue-700 text-white rounded-full text-[14px] font-bold shadow-[0_4px_14px_rgba(37,99,235,0.25)] hover:shadow-lg transition-all"
                 >
                   Generate Key
                 </button>

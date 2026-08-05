@@ -225,15 +225,22 @@ def list_jobs(request):
         from django.db.models import Count, Q
         import re
 
-        sessions = Session.objects.filter(status="active").exclude(job_title__iexact="draft").exclude(job_title="").select_related("company").annotate(applicant_count=Count("seeker_applications")).order_by("-created_at")
+        categories_list = ["Engineering", "Design", "Data & AI", "Marketing", "Healthcare", "Operations", "Education", "Finance"]
+
+        # Removed .annotate(applicant_count=Count("seeker_applications")) to prevent extremely slow OUTER JOIN queries over the entire database
+        sessions = Session.objects.filter(status="active").exclude(job_title__iexact="draft").exclude(job_title="").select_related("company").order_by("-created_at")
 
         if q:
+            is_category = any(cat.lower() == q.lower() for cat in categories_list)
+            
             if q.lower() == "data & ai":
                 q_filter = (
                     Q(job_title__icontains="data") | Q(job_title__icontains="machine learning") | Q(job_title__icontains="artificial intelligence") |
                     Q(job_description__icontains="data") | Q(job_description__icontains="machine learning") | Q(job_description__icontains="artificial intelligence")
                 )
                 sessions = sessions.filter(q_filter)
+            elif is_category:
+                sessions = sessions.filter(Q(job_title__icontains=q) | Q(job_description__icontains=q))
             else:
                 if len(q) < 3:
                     # Word boundary search for short queries like "F"

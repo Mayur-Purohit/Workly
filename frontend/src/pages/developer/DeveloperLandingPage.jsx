@@ -559,8 +559,8 @@ export default function DeveloperLandingPage() {
   const codeSnippets = {
     Python: `import requests
 
-url = "https://api.between.indevs.in/api/v1/parse"
-headers = {"X-API-Key": "between_live_your_key"}
+url = "https://api.workly.indevs.in/api/v1/parse"
+headers = {"X-API-Key": "workly_live_your_key"}
 files = {"file": open("resume.pdf", "rb")}
 
 response = requests.post(url, headers=headers, files=files)
@@ -573,16 +573,16 @@ import fs from 'fs';
 const form = new FormData();
 form.append('file', fs.createReadStream('resume.pdf'));
 
-const res = await fetch('https://api.between.indevs.in/api/v1/parse', {
+const res = await fetch('https://api.workly.indevs.in/api/v1/parse', {
   method: 'POST',
-  headers: { 'X-API-Key': 'between_live_your_key' },
+  headers: { 'X-API-Key': 'workly_live_your_key' },
   body: form
 });
 const data = await res.json();
 console.log(data);`,
     cURL: `curl -X POST \\
-  https://api.between.indevs.in/api/v1/parse \\
-  -H "X-API-Key: between_live_your_key" \\
+  https://api.workly.indevs.in/api/v1/parse \\
+  -H "X-API-Key: workly_live_your_key" \\
   -F "file=@resume.pdf"`
   };
 
