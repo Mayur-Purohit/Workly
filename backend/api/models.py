@@ -409,6 +409,7 @@ class RoundType(models.TextChoices):
     MCQ = 'mcq', 'Aptitude/MCQ Round'
     CODING = 'coding', 'Coding Round'
     INTERVIEW = 'interview', 'AI Interview Round'
+    MANUAL = 'manual', 'Manual/HR Round'
 
 
 class SessionRound(models.Model):

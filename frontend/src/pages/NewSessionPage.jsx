@@ -110,7 +110,7 @@ export default function NewSessionPage() {
   const [lastAnalyzedJD, setLastAnalyzedJD] = useState("");
   const [mcqEnabled, setMcqEnabled] = useState(false);
   const [codingEnabled, setCodingEnabled] = useState(false);
-  const [interviewEnabled, setInterviewEnabled] = useState(true);
+  const [interviewEnabled, setInterviewEnabled] = useState(false);
   const [recommending, setRecommending] = useState(false);
 
   const toggleRoundInList = (name, enabled) => {
@@ -151,7 +151,7 @@ export default function NewSessionPage() {
             const types = res.recommended_rounds.map((r) => r.type);
             const hasMcq = types.includes("mcq");
             const hasCoding = types.includes("coding");
-            const hasInterview = types.includes("interview") || true;
+            const hasInterview = types.includes("interview");
 
             setMcqEnabled(hasMcq);
             setCodingEnabled(hasCoding);
@@ -403,18 +403,20 @@ export default function NewSessionPage() {
 
       // Save assessment rounds config dynamically from formData.rounds
       const assessmentRounds = formData.rounds.map((round) => {
-        let type = "interview";
+        let type = "manual";
         const nameLower = (round.name || "").toLowerCase();
         if (nameLower.includes("aptitude") || nameLower.includes("mcq")) {
           type = "mcq";
-        } else if (nameLower.includes("coding") || nameLower.includes("technical") || nameLower.includes("programming")) {
+        } else if (nameLower.includes("coding") || nameLower.includes("technical coding") || nameLower.includes("programming")) {
           type = "coding";
+        } else if (nameLower.includes("ai interview")) {
+          type = "interview";
         }
         
         const rPayload = {
           round_type: type,
-          name: round.name || (type === "mcq" ? "Aptitude Assessment Round" : type === "coding" ? "Technical Coding Round" : "AI Interview Round"),
-          time_limit_minutes: type === "mcq" ? 20 : (type === "coding" ? 45 : 25),
+          name: round.name || (type === "mcq" ? "Aptitude Assessment Round" : type === "coding" ? "Technical Coding Round" : type === "interview" ? "AI Interview Round" : "Manual Round"),
+          time_limit_minutes: type === "mcq" ? 20 : (type === "coding" ? 45 : (type === "interview" ? 25 : 0)),
           passing_score: round.passing_score !== undefined ? round.passing_score : 50,
           result_announcement_date: round.result_announcement_date || null,
           order: round.order

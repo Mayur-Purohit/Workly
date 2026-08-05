@@ -290,6 +290,19 @@ def create_session_rounds(request, session_id):
     for idx, r in enumerate(rounds_list):
         round_type = r.get("round_type")
         name = r.get("name", f"Round {idx+1}")
+        name_lower = name.lower()
+        
+        # If no explicit round_type, infer from the round name
+        if not round_type or round_type not in ["mcq", "coding", "interview", "manual"]:
+            if "aptitude" in name_lower or "mcq" in name_lower:
+                round_type = "mcq"
+            elif "coding" in name_lower or "technical coding" in name_lower or "programming" in name_lower:
+                round_type = "coding"
+            elif "ai interview" in name_lower:
+                round_type = "interview"
+            else:
+                round_type = "manual"
+        
         time_limit = int(r.get("time_limit_minutes", 30))
 
         custom_question_ids = r.get("custom_question_ids", [])

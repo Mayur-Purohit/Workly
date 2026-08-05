@@ -737,8 +737,9 @@ def my_applications(request):
                         )
                 
                 if active_attempt and active_attempt.status in ["pending", "in_progress"]:
-                    test_link = f"/test/entry?token={active_attempt.access_token}"
-                    test_round_name = active_attempt.round.name
+                    if active_attempt.round.round_type in ["mcq", "coding", "interview"]:
+                        test_link = f"/test/entry?token={active_attempt.access_token}"
+                        test_round_name = active_attempt.round.name
 
             # Calculate rejection reason if rejected
             rejection_reason = None
