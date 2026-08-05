@@ -101,7 +101,7 @@ def list_public_jobs(request):
             per_page = 10
         
         # Only active, non-archived sessions
-        qs = Session.objects.filter(status="active").select_related("company")
+        qs = Session.objects.filter(status="active").exclude(job_title__iexact="draft").exclude(job_title="").select_related("company")
         
         from django.db.models import Q
         if query:
@@ -112,7 +112,11 @@ def list_public_jobs(request):
                 )
                 qs = qs.filter(q_filter)
             else:
-                qs = qs.filter(Q(job_title__icontains=query) | Q(job_description__icontains=query))
+                if len(query) < 3:
+                    import re
+                    qs = qs.filter(Q(job_title__iregex=r'\b' + re.escape(query)) | Q(inferred_skills__iregex=r'\b' + re.escape(query)))
+                else:
+                    qs = qs.filter(Q(job_title__icontains=query) | Q(inferred_skills__icontains=query))
             
         jobs = []
         for s in qs:

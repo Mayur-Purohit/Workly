@@ -124,6 +124,9 @@ export default function SessionWorkspacePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showNameSuggestions, setShowNameSuggestions] = useState(false);
   const [showSkillSuggestions, setShowSkillSuggestions] = useState(false);
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [leaderboardSearch, setLeaderboardSearch] = useState("");
+  const [leaderboardFilter, setLeaderboardFilter] = useState("All");
 
   useEffect(() => {
     if (session && isEditModalOpen) {
@@ -1268,7 +1271,10 @@ export default function SessionWorkspacePage() {
               <div className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden mt-8">
                 <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                   <h3 className="font-black text-charcoal text-lg">Leading Candidates</h3>
-                  <button className="text-xs font-bold text-accent hover:text-accent-dark transition-colors px-3 py-1.5 bg-blue-50 rounded-lg">View Full Leaderboard</button>
+                  <button onClick={() => setIsLeaderboardOpen(true)} className="text-xs font-bold text-accent hover:text-accent-dark transition-colors px-3 py-1.5 bg-blue-50 rounded-lg flex items-center gap-1.5 shadow-sm hover:shadow">
+                    <span>🏆</span>
+                    View Full Leaderboard
+                  </button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm whitespace-nowrap">
@@ -1536,14 +1542,146 @@ export default function SessionWorkspacePage() {
       )}
 
       {activeDetailCandidate && (
-        <div className="hidden">
-          <CandidateCard
-            candidate={activeDetailCandidate}
-            sessionId={id}
-            rounds={session?.rounds || []}
-            forceOpenDetails={true}
-            onCloseDetails={() => setActiveDetailCandidate(null)}
-          />
+        <CandidateCard
+          candidate={activeDetailCandidate}
+          sessionId={id}
+          rounds={session?.rounds || []}
+          forceOpenDetails={true}
+          onCloseDetails={() => setActiveDetailCandidate(null)}
+        />
+      )}
+
+      {isLeaderboardOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 sm:p-6 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-white/20">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-xl shadow-inner">🏆</div>
+                <div>
+                  <h2 className="text-xl font-black text-charcoal">Full Candidate Leaderboard</h2>
+                  <p className="text-sm text-gray-500 font-medium">Ranked by AI Match Score</p>
+                </div>
+              </div>
+              <button onClick={() => setIsLeaderboardOpen(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 border-b border-gray-100 bg-white flex flex-col sm:flex-row gap-4 justify-between items-center">
+              <div className="relative w-full sm:w-96">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search by name, email, or skills..." 
+                  value={leaderboardSearch}
+                  onChange={e => setLeaderboardSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+                />
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Filter size={16} className="text-gray-400" />
+                <select 
+                  value={leaderboardFilter}
+                  onChange={e => setLeaderboardFilter(e.target.value)}
+                  className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/20 cursor-pointer w-full sm:w-auto"
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="Active">Active</option>
+                  <option value="Hired">Hired</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto bg-gray-50/30 p-6" style={{ scrollbarWidth: 'thin' }}>
+              <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-gray-50/80 text-gray-500 font-bold border-b border-gray-100 uppercase tracking-wider text-[10px]">
+                    <tr>
+                      <th className="p-4 pl-6 w-20">Rank</th>
+                      <th className="p-4">Candidate Profile</th>
+                      <th className="p-4">Match Score</th>
+                      <th className="p-4">Location</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4 text-right pr-6">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...allCandidatesList]
+                      .sort((a, b) => (b.match_score || 0) - (a.match_score || 0))
+                      .filter(c => {
+                         if (leaderboardFilter !== "All") {
+                           const s = c.application_status?.toLowerCase() || "active";
+                           if (leaderboardFilter === "Active" && (s === "hired" || s === "rejected")) return false;
+                           if (leaderboardFilter === "Hired" && s !== "hired") return false;
+                           if (leaderboardFilter === "Rejected" && s !== "rejected") return false;
+                         }
+                         if (leaderboardSearch) {
+                           const q = leaderboardSearch.toLowerCase();
+                           return c.name?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || (c.skills && c.skills.some(sk => sk.toLowerCase().includes(q)));
+                         }
+                         return true;
+                      })
+                      .map((cand, i) => (
+                      <tr key={cand.id} className="border-b last:border-b-0 border-gray-50 hover:bg-blue-50/20 transition-colors group">
+                        <td className="p-4 pl-6">
+                          {i === 0 ? <div className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center font-black shadow-sm">🥇</div> :
+                           i === 1 ? <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center font-black shadow-sm">🥈</div> :
+                           i === 2 ? <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-black shadow-sm">🥉</div> :
+                           <div className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center font-bold text-xs">#{i + 1}</div>}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">
+                              {cand.name ? cand.name.charAt(0).toUpperCase() : '?'}
+                            </div>
+                            <div>
+                              <div className="font-bold text-charcoal">{cand.name || 'Unknown Candidate'}</div>
+                              <div className="text-xs text-gray-500">{cand.email || 'No email provided'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 bg-gray-100 h-2 rounded-full overflow-hidden">
+                              <div className="bg-accent h-full rounded-full" style={{ width: `${cand.match_score || 0}%` }}></div>
+                            </div>
+                            <span className="font-bold text-charcoal">{cand.match_score || 0}%</span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-1.5 text-gray-500 text-xs font-medium">
+                            <MapPin size={14} className="text-gray-400" />
+                            {cand.location || 'Unknown'}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                            cand.application_status === 'hired' ? 'bg-green-100 text-green-700' :
+                            cand.application_status === 'rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-blue-100 text-blue-700'
+                          }`}>
+                            {cand.application_status === 'hired' ? 'Hired' : cand.application_status === 'rejected' ? 'Rejected' : 'Active'}
+                          </span>
+                        </td>
+                        <td className="p-4 pr-6 text-right">
+                          <button 
+                            onClick={() => {
+                              setIsLeaderboardOpen(false);
+                              setActiveDetailCandidate(cand);
+                            }}
+                            className="text-xs font-bold text-accent hover:text-white bg-blue-50 hover:bg-accent px-4 py-2 rounded-lg transition-colors border border-blue-100 hover:border-transparent shadow-sm"
+                          >
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

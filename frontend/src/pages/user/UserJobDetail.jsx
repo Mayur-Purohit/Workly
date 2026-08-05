@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useLocation } from "react-router-dom";
 import { Header, Footer } from "../../components/user/site-chrome";
 import { CompanyLogo } from "../../components/user/company-logo";
 import { seekerAPI } from "../../lib/api";
 import LoadingSkeleton from "../../components/LoadingSkeleton";
-import { ArrowLeft, Bookmark, Share2, MapPin, Clock, Briefcase, DollarSign, CheckCircle2, Star, BookOpen, TrendingUp, Award } from "lucide-react";
+import { ArrowLeft, Bookmark, Share2, MapPin, Clock, Briefcase, DollarSign, CheckCircle2, Star, BookOpen, TrendingUp, Award, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { BookmarkIconButton } from "../../components/ui/bookmark-icon-button";
 
@@ -14,6 +14,9 @@ export default function UserJobDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [related, setRelated] = useState([]);
+  
+  const location = useLocation();
+  const passedJobInfo = location.state?.jobInfo;
 
   useEffect(() => {
     if (!jobId) return;
@@ -69,8 +72,12 @@ export default function UserJobDetail() {
         setJob(mappedJob);
       })
       .catch((err) => {
-        console.error(err);
-        toast.error("Failed to load job details");
+        if (err.status === 404 || err.message?.toLowerCase().includes("not found")) {
+          console.warn("Job not found (404): It may have been removed.");
+        } else {
+          console.error(err);
+          toast.error("Failed to load job details");
+        }
       })
       .finally(() => {
         setLoading(false);
@@ -145,9 +152,50 @@ export default function UserJobDetail() {
     return (
       <div className="min-h-screen bg-background flex flex-col justify-between">
         <Header />
-        <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
-          <p>Job not found or failed to load.</p>
-          <Link to="/jobs/search" className="text-primary underline mt-2">Back to jobs</Link>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12">
+          <div className="w-full max-w-md bg-card border border-border rounded-3xl p-8 text-center space-y-6 shadow-sm">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 mb-2">
+              <XCircle className="h-8 w-8 text-red-500" />
+            </div>
+            
+            {passedJobInfo ? (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center gap-3">
+                  <CompanyLogo name={passedJobInfo.company} logoPath={passedJobInfo.logoPath} color="#4F46E5" size={48} />
+                  <div>
+                    <h2 className="text-xl font-display font-semibold">{passedJobInfo.title}</h2>
+                    <p className="text-sm text-muted-foreground">{passedJobInfo.company}</p>
+                  </div>
+                </div>
+                
+                {passedJobInfo.status && (
+                  <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Status: {passedJobInfo.status}
+                  </div>
+                )}
+                
+                <p className="text-sm text-muted-foreground leading-relaxed pt-2">
+                  This job posting was closed or unpublished by the recruiter. Your status in the pipeline is recorded safely, but detailed requirements for this past listing are no longer accessible.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <h2 className="text-xl font-display font-semibold">Position No Longer Available</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  This job listing has been removed or closed by the employer. It may still show in your applications history.
+                </p>
+              </div>
+            )}
+            
+            <div className="pt-4 flex flex-col sm:flex-row gap-3 w-full justify-center">
+              <Link to="/jobs/dashboard" className="pill bg-muted text-foreground px-6 py-2.5 text-sm font-medium hover:bg-muted/80 transition-colors">
+                ← My Applications
+              </Link>
+              <Link to="/jobs/search" className="pill bg-primary text-primary-foreground px-6 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity">
+                Find New Jobs →
+              </Link>
+            </div>
+          </div>
         </div>
         <Footer />
       </div>

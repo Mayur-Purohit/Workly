@@ -223,7 +223,9 @@ def list_jobs(request):
             per_page = 10
 
         from django.db.models import Count, Q
-        sessions = Session.objects.filter(status="active").select_related("company").annotate(applicant_count=Count("seeker_applications")).order_by("-created_at")
+        import re
+
+        sessions = Session.objects.filter(status="active").exclude(job_title__iexact="draft").exclude(job_title="").select_related("company").annotate(applicant_count=Count("seeker_applications")).order_by("-created_at")
 
         if q:
             if q.lower() == "data & ai":
@@ -233,7 +235,13 @@ def list_jobs(request):
                 )
                 sessions = sessions.filter(q_filter)
             else:
-                sessions = sessions.filter(Q(job_title__icontains=q) | Q(job_description__icontains=q))
+                if len(q) < 3:
+                    # Word boundary search for short queries like "F"
+                    sessions = sessions.filter(Q(job_title__iregex=r'\b' + re.escape(q)) | Q(inferred_skills__iregex=r'\b' + re.escape(q)))
+                else:
+                    # To prevent false positives (like 'Backend Engineer' matching 'Frontend Developer' just because it's mentioned in the description),
+                    # we restrict the search to job_title and inferred_skills.
+                    sessions = sessions.filter(Q(job_title__icontains=q) | Q(inferred_skills__icontains=q))
         if location:
             sessions = sessions.filter(job_description__icontains=location)
 

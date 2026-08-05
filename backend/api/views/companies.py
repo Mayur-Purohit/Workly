@@ -392,17 +392,32 @@ def public_market_trends(request):
             category_counts[cat] = Session.objects.filter(status="active").filter(q_filter).count()
 
         # Dynamic Median Salary from Requisitions Criteria or Job Postings
+        CURRENCY_TO_INR = {'INR': 1.0, 'USD': 85.0, 'GBP': 107.0, 'EUR': 92.0, 'AUD': 55.0, 'CAD': 63.0}
         db_salaries = []
         for s in Session.objects.all():
             crit = s.criteria if isinstance(s.criteria, dict) else {}
+            currency = crit.get("salary_currency", "INR").upper()
+            inr_rate = CURRENCY_TO_INR.get(currency, 1.0)
+            
             sal_val = (
                 crit.get("max_budget") or crit.get("salary_max") or 
-                crit.get("max_salary") or crit.get("min_budget")
+                crit.get("max_salary") or crit.get("budget") or
+                crit.get("salary_min") or crit.get("min_budget") or 
+                crit.get("min_salary")
             )
+            
+            val = None
             if isinstance(sal_val, (int, float)) and sal_val > 0:
-                db_salaries.append(float(sal_val))
+                val = float(sal_val) * inr_rate
             elif isinstance(sal_val, str) and sal_val.replace('.', '', 1).isdigit():
-                db_salaries.append(float(sal_val))
+                val = float(sal_val) * inr_rate
+                
+            if val:
+                if val < 100: val = val * 100000
+                elif val < 1000: val = val * 12000
+                elif val < 100000: val = val * 12
+                if val >= 200000:
+                    db_salaries.append(val)
 
         if db_salaries:
             avg_db_salary = int(sum(db_salaries) / len(db_salaries))
@@ -441,7 +456,8 @@ def public_market_trends(request):
         NON_CITY_WORDS = {"remote", "hybrid", "onsite", "full time", "contract", "part time", "full-time", "part-time"}
 
         db_city_counter = Counter()
-        for sess in Session.objects.filter(status="active"):
+        CITY_ALIASES = {"Ahmedbad": "Ahmedabad"}
+        for sess in Session.objects.filter(status="active").order_by("-created_at"):
             crit = sess.criteria if isinstance(sess.criteria, dict) else {}
             locs = crit.get("preferred_locations", []) or []
             if isinstance(locs, str):
@@ -453,16 +469,18 @@ def public_market_trends(request):
                 # Split comma-separated e.g. "Ahmedabad, Gujarat" or "San Francisco, CA"
                 parts = [p.strip() for p in str(loc).split(",") if p.strip()]
                 for part in parts:
-                    clean_p = part.strip()
+                    clean_p = part.strip().title()
                     if clean_p.upper() in STATE_CODES or clean_p.lower() in NON_CITY_WORDS or len(clean_p) <= 2:
                         continue
-                    db_city_counter[clean_p.title()] += 1
+                    if clean_p in CITY_ALIASES:
+                        clean_p = CITY_ALIASES[clean_p]
+                    db_city_counter[clean_p] += 1
 
-        color_palette = ["#2563EB", "#0F56B3", "#22C55E", "#8B5CF6", "#EC4899", "#F59E0B", "#10B981"]
+        color_palette = ["#2563EB", "#0F56B3", "#22C55E", "#8B5CF6", "#EC4899", "#F59E0B", "#10B981", "#3B82F6"]
         region_distribution = []
 
         if db_city_counter:
-            for idx, (city_name, count) in enumerate(db_city_counter.most_common(5)):
+            for idx, (city_name, count) in enumerate(db_city_counter.most_common(8)):
                 region_distribution.append({
                     "name": city_name,
                     "value": count,
