@@ -14,6 +14,7 @@ import json
 import uuid
 import secrets
 import logging
+import re
 from datetime import timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -48,12 +49,33 @@ def _parse_announcement_date(date_str):
 def _parse_job_description_meta(description: str) -> dict:
     """Parses salary, location, and employment type from job description text."""
     meta = {
-        "salary_range": "Competitive",
-        "location": "Remote",
+        "salary_range": "Not Disclosed",
+        "location": "On-site",
         "employment_type": "Full-time"
     }
     if not description:
         return meta
+        
+    desc_lower = description.lower()
+    
+    # Smarter employment type detection
+    if "part-time" in desc_lower or "part time" in desc_lower:
+        meta["employment_type"] = "Part-time"
+    elif "internship" in desc_lower or "intern" in desc_lower:
+        meta["employment_type"] = "Internship"
+    elif "contract" in desc_lower or "contractor" in desc_lower or "freelance" in desc_lower:
+        meta["employment_type"] = "Contract"
+        
+    # Smarter location type detection
+    if "remote" in desc_lower or "work from home" in desc_lower:
+        meta["location"] = "Remote"
+    elif "hybrid" in desc_lower:
+        meta["location"] = "Hybrid"
+
+    # Search for salary string
+    salary_match = re.search(r'([$₹£€]\s*[\d,]+(?:\s*k|\s*lpa|\s*pa)?(?:\s*[-–to]+\s*[$₹£€]?\s*[\d,]+(?:\s*k|\s*lpa|\s*pa)?)?)', desc_lower, re.IGNORECASE)
+    if salary_match:
+        meta["salary_range"] = salary_match.group(1).upper()
     
     for line in description.splitlines():
         line = line.strip()
@@ -70,7 +92,11 @@ def _parse_job_description_meta(description: str) -> dict:
             elif key == "location":
                 meta["location"] = val
             elif key in ["type", "employment type", "employment_type"]:
-                meta["employment_type"] = val
+                if "part" in val.lower(): meta["employment_type"] = "Part-time"
+                elif "intern" in val.lower(): meta["employment_type"] = "Internship"
+                elif "contract" in val.lower(): meta["employment_type"] = "Contract"
+                elif "full" in val.lower(): meta["employment_type"] = "Full-time"
+                else: meta["employment_type"] = val
     return meta
 
 
@@ -89,16 +115,16 @@ def _get_salary_range(session) -> str:
         "EUR": "€",
         "GBP": "£",
     }
-    symbol = currency_symbols.get(salary_currency, salary_currency + " ")
+    sym = currency_symbols.get(salary_currency, "$")
     
     if salary_min is not None and salary_max is not None:
         try:
-            return f"{symbol}{int(float(salary_min)):,} - {symbol}{int(float(salary_max)):,}"
+            return f"{sym}{int(float(salary_min)):,} - {sym}{int(float(salary_max)):,}"
         except (ValueError, TypeError):
             pass
     elif salary_min is not None:
         try:
-            return f"{symbol}{int(float(salary_min)):,}+"
+            return f"{sym}{int(float(salary_min)):,}+"
         except (ValueError, TypeError):
             pass
             
@@ -196,11 +222,26 @@ def list_jobs(request):
             page = 1
             per_page = 10
 
-        from django.db.models import Count
-        sessions = Session.objects.filter(status="active").select_related("company").annotate(applicant_count=Count("seeker_applications")).order_by("-created_at")
+        from django.db.models import Count, Q
+        import re
+
+        sessions = Session.objects.filter(status="active").exclude(job_title__iexact="draft").exclude(job_title="").select_related("company").annotate(applicant_count=Count("seeker_applications")).order_by("-created_at")
 
         if q:
-            sessions = sessions.filter(job_title__icontains=q)
+            if q.lower() == "data & ai":
+                q_filter = (
+                    Q(job_title__icontains="data") | Q(job_title__icontains="machine learning") | Q(job_title__icontains="artificial intelligence") |
+                    Q(job_description__icontains="data") | Q(job_description__icontains="machine learning") | Q(job_description__icontains="artificial intelligence")
+                )
+                sessions = sessions.filter(q_filter)
+            else:
+                if len(q) < 3:
+                    # Word boundary search for short queries like "F"
+                    sessions = sessions.filter(Q(job_title__iregex=r'\b' + re.escape(q)) | Q(inferred_skills__iregex=r'\b' + re.escape(q)))
+                else:
+                    # To prevent false positives (like 'Backend Engineer' matching 'Frontend Developer' just because it's mentioned in the description),
+                    # we restrict the search to job_title and inferred_skills.
+                    sessions = sessions.filter(Q(job_title__icontains=q) | Q(inferred_skills__icontains=q))
         if location:
             sessions = sessions.filter(job_description__icontains=location)
 
@@ -217,7 +258,7 @@ def list_jobs(request):
         )
 
         jobs = []
-        for s in sessions[:200]:
+        for s in sessions[:max(per_page, 200)]:
             score = _compute_match_score(seeker.skills, s.inferred_skills)
             is_applied = str(s.id) in applied_ids
             is_saved = str(s.id) in saved_ids
@@ -639,14 +680,23 @@ def my_applications(request):
             if match_score is None:
                 match_score = _compute_match_score(seeker.skills, session.inferred_skills)
 
-            # Format rounds
+            # Format rounds — include passing_score from SessionRound model
+            session_round_map = {}
+            try:
+                for sr in SessionRound.objects.filter(session=session).only("round_number", "passing_score"):
+                    session_round_map[sr.round_number] = sr.passing_score
+            except Exception:
+                pass  # graceful fallback if no SessionRound rows exist
+
             ui_rounds = []
             for r in sorted_rounds:
+                order = int(r.get("order", 1))
                 ui_rounds.append({
                     "name": r.get("name"),
                     "interviewer": r.get("interviewer"),
-                    "order": r.get("order"),
-                    "result_announcement_date": r.get("result_announcement_date")
+                    "order": order,
+                    "result_announcement_date": r.get("result_announcement_date"),
+                    "passing_score": session_round_map.get(order),
                 })
 
             # Compute offer letter URL relative path if present

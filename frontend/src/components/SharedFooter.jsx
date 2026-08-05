@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Briefcase, Globe, Building2, Code2, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Briefcase, Globe, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 
@@ -52,41 +51,6 @@ export default function SharedFooter() {
     };
   }, []);
 
-  const bentoCards = [
-    {
-      title: 'Workly Talent',
-      subtitle: 'Find Your Dream Job',
-      description: 'Browse thousands of opportunities, build stunning resumes, and get matched with roles you\'ll love.',
-      icon: Briefcase,
-      accentColor: '#1a73e8',
-      accentBg: 'rgba(26, 115, 232, 0.08)',
-      glowBg: 'rgba(26, 115, 232, 0.04)',
-      link: tokens.seeker ? '/jobs/dashboard' : '/jobs',
-      features: ['AI Matching', 'Resume Builder', 'Market Insights'],
-    },
-    {
-      title: 'Workly Business',
-      subtitle: 'Hire Top Talent',
-      description: 'Smart recruiting tools, fraud detection, and analytics to build your dream team efficiently.',
-      icon: Building2,
-      accentColor: '#1e8e3e',
-      accentBg: 'rgba(30, 142, 62, 0.08)',
-      glowBg: 'rgba(30, 142, 62, 0.04)',
-      link: tokens.recruiter ? '/dashboard' : '/login',
-      features: ['Smart Analyzer', 'ATS Screening', 'Fraud Protection'],
-    },
-    {
-      title: 'Workly Developers',
-      subtitle: 'Build with Our API',
-      description: 'Enterprise-grade APIs, webhooks, and embeddable widgets for seamless talent integration.',
-      icon: Code2,
-      accentColor: '#7c3aed',
-      accentBg: 'rgba(124, 58, 237, 0.08)',
-      glowBg: 'rgba(124, 58, 237, 0.04)',
-      link: tokens.developer ? '/developer/portal/dashboard' : '/developer',
-      features: ['RESTful API', 'Webhooks', 'SDKs & Docs'],
-    },
-  ];
 
   // 100% real working routes synced with App.jsx routes
   const quickLinks = [
@@ -157,80 +121,6 @@ export default function SharedFooter() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 relative z-10">
 
-        {/* ══════════ BENTO BOX CARDS ══════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-14">
-          {bentoCards.map((card, index) => {
-            const Icon = card.icon;
-            return (
-              <motion.div
-                key={card.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                viewport={{ once: true }}
-              >
-                <Link
-                  to={card.link}
-                  className="group relative block bg-card border border-border rounded-2xl p-6 shadow-google-1 hover:shadow-google-2 transition-all duration-300 overflow-hidden h-full"
-                >
-                  {/* Gradient Background Wash */}
-                  <div
-                    className="absolute inset-0 opacity-50 group-hover:opacity-80 transition-opacity duration-300"
-                    style={{ background: `linear-gradient(135deg, ${card.glowBg} 0%, transparent 70%)` }}
-                  />
-
-                  {/* Content */}
-                  <div className="relative z-10 flex flex-col h-full">
-                    {/* Icon */}
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
-                      style={{ background: card.accentBg }}
-                    >
-                      <Icon className="h-6 w-6" style={{ color: card.accentColor }} />
-                    </div>
-
-                    {/* Title & Subtitle */}
-                    <h3 className="text-base font-display font-bold text-foreground mb-0.5 group-hover:text-primary transition-colors">
-                      {card.title}
-                    </h3>
-                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                      {card.subtitle}
-                    </p>
-
-                    {/* Description */}
-                    <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-1">
-                      {card.description}
-                    </p>
-
-                    {/* Features as Pills */}
-                    <div className="flex flex-wrap gap-1.5 mb-4">
-                      {card.features.map((feature) => (
-                        <span
-                          key={feature}
-                          className="pill text-[10px] font-bold px-2.5 py-1 bg-muted text-muted-foreground border border-border"
-                        >
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Arrow Link */}
-                    <div className="flex items-center gap-1.5 text-sm font-semibold text-primary group-hover:gap-3 transition-all">
-                      <span>Explore</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </div>
-                  </div>
-
-                  {/* Corner Glow on Hover */}
-                  <div
-                    className="absolute -bottom-12 -right-12 w-32 h-32 rounded-full opacity-0 group-hover:opacity-60 blur-2xl transition-opacity duration-500"
-                    style={{ background: card.accentBg }}
-                  />
-                </Link>
-              </motion.div>
-            );
-          })}
-        </div>
 
         {/* ══════════ QUICK LINKS GRID ══════════ */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-12">

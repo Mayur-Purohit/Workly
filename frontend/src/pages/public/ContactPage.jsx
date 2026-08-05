@@ -3,19 +3,24 @@ import { Header, Footer } from '../../components/user/site-chrome';
 import { motion } from 'framer-motion';
 import { MapPin, Mail, Phone, Clock, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { publicAPI } from '../../lib/api';
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setTimeout(() => {
-      toast.success("Message sent successfully! We'll get back to you within 24 hours.");
+    try {
+      const res = await publicAPI.sendContactMessage(form);
+      toast.success(res?.message || "Message sent successfully! We'll get back to you within 24 hours.");
       setForm({ name: '', email: '', message: '' });
+    } catch (err) {
+      toast.error(err.message || "Failed to send message. Please try again.");
+    } finally {
       setSubmitting(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -91,7 +96,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <span className="font-bold text-foreground block mb-0.5">Contact Number</span>
-                    <span className="text-muted-foreground text-sm">+91 88495 38117</span>
+                    <span className="text-muted-foreground text-sm">+91 98765 43210</span>
                   </div>
                 </div>
               </div>

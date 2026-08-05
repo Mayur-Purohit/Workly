@@ -93,7 +93,7 @@ function Home() {
           location: j.location || "Remote",
           posted: j.created_at ? new Date(j.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "Recently",
           description: j.job_description ? (j.job_description.substring(0, 100) + "...") : "",
-          salary: j.salary_range || "Competitive",
+          salary: j.salary_range || "Not Disclosed",
           remote: j.location || "Remote",
           type: j.employment_type || "Full-time"
         }));
@@ -138,21 +138,8 @@ function Home() {
     if (stats?.category_counts && Object.keys(stats.category_counts).length > 0) {
       return stats.category_counts;
     }
-    if (!realJobs || !realJobs.length) return null;
-    const counts = {};
-    realJobs.forEach(job => {
-      const text = `${job.title || ''} ${job.description || ''}`.toLowerCase();
-      if (text.includes("engineer") || text.includes("developer") || text.includes("software")) counts["Engineering"] = (counts["Engineering"] || 0) + 1;
-      if (text.includes("design") || text.includes("ui") || text.includes("ux") || text.includes("figma")) counts["Design"] = (counts["Design"] || 0) + 1;
-      if (text.includes("data") || text.includes("ai") || text.includes("ml") || text.includes("analytics")) counts["Data & AI"] = (counts["Data & AI"] || 0) + 1;
-      if (text.includes("market") || text.includes("seo") || text.includes("growth")) counts["Marketing"] = (counts["Marketing"] || 0) + 1;
-      if (text.includes("health") || text.includes("medical") || text.includes("bio")) counts["Healthcare"] = (counts["Healthcare"] || 0) + 1;
-      if (text.includes("operation") || text.includes("manager") || text.includes("scrum")) counts["Operations"] = (counts["Operations"] || 0) + 1;
-      if (text.includes("edu") || text.includes("tutor") || text.includes("academic")) counts["Education"] = (counts["Education"] || 0) + 1;
-      if (text.includes("finan") || text.includes("bank") || text.includes("account")) counts["Finance"] = (counts["Finance"] || 0) + 1;
-    });
-    return counts;
-  }, [stats, realJobs]);
+    return {};
+  }, [stats]);
 
   useEffect(() => {
     setStatsLoading(true);
@@ -612,9 +599,9 @@ function Home() {
             </p>
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {[
-                { k: "Demand growth", v: statsLoading ? null : (stats?.demand_growth || "+14.5%"), sub: "YoY tech roles", c: "var(--google-green)" },
-                { k: "Median salary", v: statsLoading ? null : (stats?.median_salary || "$124k"), sub: "Senior engineer", c: "var(--google-blue)" },
-                { k: "Time to offer", v: statsLoading ? null : (stats?.time_to_offer || "21d"), sub: "Across platform", c: "var(--google-yellow)" },
+                { k: "Demand growth", v: statsLoading ? null : (stats?.demand_growth || "+14.6%"), sub: stats?.demand_growth_subtitle || "MoM tech roles", c: "var(--google-green)" },
+                { k: "Median salary", v: statsLoading ? null : (stats?.median_salary || "$124k"), sub: stats?.median_salary_subtitle || "Across platform", c: "var(--google-blue)" },
+                { k: "Time to offer", v: statsLoading ? null : (stats?.time_to_offer || "14d"), sub: stats?.time_to_offer_subtitle || "Average hiring time", c: "var(--google-yellow)" },
               ].map((s) => (
                 <div key={s.k} className="rounded-2xl border border-border bg-card p-4">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{s.k}</div>

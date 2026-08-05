@@ -70,7 +70,7 @@ export default function JobsTrendsPage() {
             ) : (
               <>
                 <div className="text-3xl font-black text-foreground">{trends?.hiring_velocity} / 10</div>
-                <div className="text-xs text-green-500 font-semibold flex items-center">&uarr; {trends?.hiring_velocity_days} days faster closures</div>
+                <div className="text-xs text-green-500 font-semibold flex items-center">⚡ Avg response time: {trends?.hiring_velocity_days || 1.8} days</div>
               </>
             )}
           </div>
@@ -148,8 +148,8 @@ export default function JobsTrendsPage() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f5f4ef" />
                     <XAxis dataKey="year" stroke="#9CA3AF" fontSize={11} />
-                    <YAxis stroke="#9CA3AF" fontSize={11} />
-                    <Tooltip contentStyle={{ borderRadius: 8 }} />
+                    <YAxis stroke="#9CA3AF" fontSize={11} tickFormatter={(value) => `₹${(value/100000).toFixed(1)}L`} />
+                    <Tooltip formatter={(value) => [`₹${(value/100000).toFixed(1)} LPA`, "Base Salary"]} contentStyle={{ borderRadius: 8 }} />
                     <Area type="monotone" dataKey="salary" stroke="#2563EB" strokeWidth={2} fillOpacity={1} fill="url(#salaryGrad)" />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -201,11 +201,11 @@ export default function JobsTrendsPage() {
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip contentStyle={{ fontSize: 10 }} />
+                        <Tooltip formatter={(value) => [`${value} openings`, "Volume"]} contentStyle={{ fontSize: 10 }} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="md:col-span-6 space-y-3">
+                  <div className="md:col-span-6 space-y-3 max-h-48 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                     {trends.region_distribution.map((region, idx) => (
                       <div key={idx} className="flex items-center justify-between text-xs font-semibold">
                         <div className="flex items-center space-x-2">

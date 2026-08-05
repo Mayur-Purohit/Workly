@@ -508,7 +508,12 @@ export default function ResumeEditor() {
             setJobInfo(job);
             setTargetJobDescription(job.job_description || "");
           } catch (jobErr) {
-            console.error("Failed to load job details for tailoring:", jobErr);
+            const msg = (jobErr?.message || jobErr || "").toString().toLowerCase();
+            if (jobErr?.status === 404 || msg.includes("404") || msg.includes("not found") || msg.includes("no longer active")) {
+              console.warn("Job not found (404) for tailoring: It may have been removed.");
+            } else {
+              console.error("Failed to load job details for tailoring:", jobErr);
+            }
           }
         }
 

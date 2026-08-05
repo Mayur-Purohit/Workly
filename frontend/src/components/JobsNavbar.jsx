@@ -112,9 +112,9 @@ export default function JobsNavbar({ onUploadClick }) {
 
   return (
     <div className="sticky top-0 z-40 w-full transition-all duration-300 p-0 pointer-events-none">
-      <nav className={`mx-auto transition-all duration-300 flex items-center justify-between pointer-events-auto backdrop-blur-md ${isScrolled
-          ? "max-w-7xl mt-3 rounded-full border border-[#e6dfcd] bg-white/80 px-8 py-3 shadow-lg dark:bg-[#131316]/80 dark:border-[#222226]"
-          : "w-full bg-[#FFFFFF]/80 border-b border-[#e6dfcd] px-6 py-4 shadow-sm dark:bg-[#0b0b0c]/80 dark:border-[#222226]"
+      <nav className={`mx-auto transition-all duration-300 flex items-center justify-between pointer-events-auto backdrop-blur-xl ${isScrolled
+          ? "max-w-7xl mt-3 rounded-full border border-black/5 bg-white/75 px-8 py-3 shadow-lg dark:bg-zinc-900/80 dark:border-white/10"
+          : "w-full bg-white/70 border-b border-black/5 px-6 py-4 shadow-sm dark:bg-zinc-950/70 dark:border-white/10"
         }`}>
         {/* Brand logo */}
         <div className="flex items-center space-x-8">

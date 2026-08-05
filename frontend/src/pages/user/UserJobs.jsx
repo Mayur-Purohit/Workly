@@ -20,7 +20,7 @@ import { BookmarkIconButton } from "../../components/ui/bookmark-icon-button";
 
 // Robust Salary Parsing & Conversion Helpers
 const parseSalary = (salaryStr) => {
-  if (!salaryStr || salaryStr.toLowerCase().includes("competitive")) {
+  if (!salaryStr || salaryStr.toLowerCase().includes("competitive") || salaryStr.toLowerCase().includes("not disclosed")) {
     return { min: null, max: null, currency: null };
   }
 
@@ -75,7 +75,7 @@ const convertSalaryToCurrency = (val, fromCurrency, toCurrency) => {
   
   const toUSD = {
     USD: 1.0,
-    INR: 1.2 / 100, // INR Lakhs to USD Thousands (~$1.2k per Lakh)
+    INR: 1.2, // INR Lakhs to USD Thousands (~$1.2k per Lakh)
     GBP: 1.25, 
     EUR: 1.1,  
   };
@@ -86,7 +86,7 @@ const convertSalaryToCurrency = (val, fromCurrency, toCurrency) => {
 
 const salaryFilterFn = (salaryRange, minVal, filterCurrencyCode) => {
   if (!minVal || minVal === 0) return true;
-  if (!salaryRange || salaryRange.toLowerCase().includes("competitive")) return false;
+  if (!salaryRange || salaryRange.toLowerCase().includes("competitive") || salaryRange.toLowerCase().includes("not disclosed")) return false;
   
   const parsed = parseSalary(salaryRange);
   if (!parsed.min && !parsed.max) return false;
@@ -220,6 +220,7 @@ export default function UserJobs() {
   );
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const [allFetchedJobs, setAllFetchedJobs] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(searchParams.get("q") || searchParams.get("query") || searchParams.get("category") || "");
@@ -235,17 +236,12 @@ export default function UserJobs() {
   const [showLocSuggestions, setShowLocSuggestions] = useState(false);
 
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalJobs, setTotalJobs] = useState(0);
 
-  const fetchJobs = (resetPage = false) => {
+  const fetchJobs = () => {
     setLoading(true);
-    const targetPage = resetPage ? 1 : page;
-    if (resetPage) setPage(1);
-
     const params = {
-      page: targetPage,
-      per_page: 10
+      page: 1,
+      per_page: 500
     };
     if (search) params.q = search;
     if (location) params.location = location;
@@ -255,9 +251,7 @@ export default function UserJobs() {
     const apiCall = token ? seekerAPI.listJobs(params) : publicAPI.listJobs(params);
     apiCall
       .then((data) => {
-        setJobs(data.jobs || []);
-        setTotalPages(data.total_pages || 1);
-        setTotalJobs(data.total || 0);
+        setAllFetchedJobs(data.jobs || []);
       })
       .catch((err) => {
         console.error(err);
@@ -269,21 +263,23 @@ export default function UserJobs() {
   };
 
   useEffect(() => {
-    fetchJobs();
-  }, [page]);
-
-  useEffect(() => {
     const params = {};
     if (search) params.q = search;
     if (location) params.location = location;
     setSearchParams(params, { replace: true });
-    fetchJobs(true);
+    
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPage(1);
+    fetchJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, location]);
 
-  const toggle = (arr, set, v) =>
+  const toggle = (arr, set, v) => {
+    setPage(1);
     set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+  };
 
-  const filtered = jobs.filter((j) => {
+  const filtered = allFetchedJobs.filter((j) => {
     if (activeTypes.length) {
       const typeMatch = activeTypes.some(t => t.toLowerCase() === (j.employment_type || "").toLowerCase());
       if (!typeMatch) return false;
@@ -297,6 +293,10 @@ export default function UserJobs() {
     
     return true;
   });
+
+  const totalFilteredJobs = filtered.length;
+  const computedTotalPages = Math.ceil(totalFilteredJobs / 10) || 1;
+  const currentJobs = filtered.slice((page - 1) * 10, page * 10);
 
   const activeFilters = [
     ...activeTypes.map((t) => ({ k: "type", v: t })),
@@ -315,7 +315,7 @@ export default function UserJobs() {
   const handleSave = async (jobId, isSaved) => {
     try {
       await seekerAPI.saveJob(jobId, !isSaved);
-      setJobs(jobs.map((j) => j.id === jobId ? { ...j, applied: j.applied, is_saved: !isSaved } : j));
+      setAllFetchedJobs(allFetchedJobs.map((j) => j.id === jobId ? { ...j, applied: j.applied, is_saved: !isSaved } : j));
       toast.success(isSaved ? "Job unsaved" : "Job saved!");
     } catch (err) {
       toast.error(err.message || "Failed to save job");
@@ -330,7 +330,7 @@ export default function UserJobs() {
           <div className="max-w-2xl">
             <div className="text-[11px] font-medium uppercase tracking-wider text-[var(--google-blue)]">Jobs</div>
             <h1 className="mt-1.5 font-display text-2xl font-semibold tracking-tight sm:text-3xl">Find your perfect role</h1>
-            <p className="mt-1 text-xs text-muted-foreground">Showing {filtered.length} of {totalJobs} roles</p>
+            <p className="mt-1 text-xs text-muted-foreground">Showing {totalFilteredJobs} roles</p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto relative z-20">
             <div className="relative flex-1 sm:w-[240px]">
@@ -349,7 +349,7 @@ export default function UserJobs() {
                 <div className="absolute left-0 right-0 mt-1.5 bg-background border border-border rounded-2xl shadow-lg z-50 max-h-48 overflow-y-auto py-1">
                   {(() => {
                     const filteredList = Array.from(new Set(
-                      jobs
+                      allFetchedJobs
                         .map(j => j.job_title || j.title)
                         .filter(Boolean)
                         .filter(title => !search || title.toLowerCase().includes(search.toLowerCase()))
@@ -391,7 +391,7 @@ export default function UserJobs() {
                 <div className="absolute left-0 right-0 mt-1.5 bg-background border border-border rounded-2xl shadow-lg z-50 max-h-48 overflow-y-auto py-1">
                   {(() => {
                     const filteredList = Array.from(new Set(
-                      jobs
+                      allFetchedJobs
                         .map(j => j.location)
                         .filter(Boolean)
                         .filter(loc => !location || loc.toLowerCase().includes(location.toLowerCase()))
@@ -434,7 +434,7 @@ export default function UserJobs() {
 
             <FilterGroup title="Job Type">
               {jobTypes.map((t) => {
-                const count = jobs.filter((j) => (j.employment_type || "").toLowerCase() === t.toLowerCase()).length;
+                const count = allFetchedJobs.filter((j) => (j.employment_type || "").toLowerCase() === t.toLowerCase()).length;
                 return (
                   <label key={t} className="flex cursor-pointer items-center justify-between py-1.5 text-sm">
                     <span className="flex items-center gap-2">
@@ -454,7 +454,7 @@ export default function UserJobs() {
 
             <FilterGroup title="Workplace Location">
               {workplaces.map((t) => {
-                const count = jobs.filter((j) => getWorkplaceType(j) === t).length;
+                const count = allFetchedJobs.filter((j) => getWorkplaceType(j) === t).length;
                 return (
                   <label key={t} className="flex cursor-pointer items-center justify-between py-1.5 text-sm">
                     <span className="flex items-center gap-2">
@@ -542,7 +542,7 @@ export default function UserJobs() {
                     if (f.k === "type") setActiveTypes(activeTypes.filter((x) => x !== f.v));
                     if (f.k === "workplace") setActiveWorkplaces(activeWorkplaces.filter((x) => x !== f.v));
                     if (f.k === "exp") setActiveExp("");
-                    if (f.k === "salary") setSalary([currency.min]);
+                    if (f.k === "salary") { setSalary([currency.min]); setPage(1); }
                   }}
                   className="pill inline-flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs"
                 >
@@ -553,7 +553,7 @@ export default function UserJobs() {
           )}
 
           <div className="mb-4 flex items-center justify-between text-sm text-muted-foreground">
-            <span>{totalJobs} roles</span>
+            <span>{totalFilteredJobs} roles</span>
             <span>Sort: Best match</span>
           </div>
 
@@ -579,7 +579,7 @@ export default function UserJobs() {
             </div>
           ) : (
             <div className="grid gap-2.5">
-              {filtered.map((j) => (
+              {currentJobs.map((j) => (
                 <div
                   key={j.id}
                   className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 rounded-2xl border border-border bg-card p-4 transition hover:google-shadow"
@@ -626,7 +626,7 @@ export default function UserJobs() {
             </div>
           )}
 
-          {totalPages > 1 && (
+          {computedTotalPages > 1 && (
             <div className="mt-8 flex justify-center">
               <Pagination>
                 <PaginationContent>
@@ -635,7 +635,7 @@ export default function UserJobs() {
                       <PaginationPrevious onClick={() => setPage(p => p - 1)} />
                     </PaginationItem>
                   )}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  {Array.from({ length: computedTotalPages }, (_, i) => i + 1).map((p) => (
                     <PaginationItem key={p}>
                       <PaginationLink
                         isActive={p === page}
@@ -646,7 +646,7 @@ export default function UserJobs() {
                       </PaginationLink>
                     </PaginationItem>
                   ))}
-                  {page < totalPages && (
+                  {page < computedTotalPages && (
                     <PaginationItem>
                       <PaginationNext onClick={() => setPage(p => p + 1)} />
                     </PaginationItem>

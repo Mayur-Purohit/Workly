@@ -508,11 +508,18 @@ export default function UserApplications() {
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-xs text-muted-foreground mt-1">
+                                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 flex-wrap">
                                       Status: <span className={statusColor}>{roundStatus}</span>
                                       {round.interviewer && round.interviewer.trim() !== "" && round.interviewer.trim().toLowerCase() !== "not assigned" && (
                                         <span className="ml-3 border-l border-border pl-3 text-muted-foreground/75">
                                           Interviewer: <span className="font-medium text-foreground/80">{round.interviewer}</span>
+                                        </span>
+                                      )}
+                                      {(isActive || isCompleted) && round.passing_score != null && (
+                                        <span className="ml-3 border-l border-border pl-3 inline-flex items-center gap-1">
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                            Min. Passing: {round.passing_score}%
+                                          </span>
                                         </span>
                                       )}
                                     </p>

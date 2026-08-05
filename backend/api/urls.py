@@ -28,6 +28,7 @@ from api.views import (
     ml_views,
     verification,
     reviews,
+    contact_views,
 )
 from api.views.developer import (
     auth as dev_auth,
@@ -243,6 +244,10 @@ urlpatterns = [
     path('api/v1/seeker/notifications', seeker_jobs.get_notifications, name='seeker-notifications'),
     path('api/v1/seeker/notifications/read-all', seeker_jobs.mark_all_notifications_read, name='seeker-notifications-read-all'),
     path('api/v1/seeker/notifications/<str:notif_id>/read', seeker_jobs.mark_notification_read, name='seeker-notification-read'),
+
+    # ── Public Contact ────────────────────────────────────────────────────────
+    path('api/v1/public/contact', contact_views.contact_form_view, name='public-contact'),
+    path('api/v1/public/contact/', contact_views.contact_form_view, name='public-contact-slash'),
 
     # ── Public Companies ──────────────────────────────────────────────────────
     path('api/v1/public/companies', companies.public_list_companies, name='public-companies-list'),
