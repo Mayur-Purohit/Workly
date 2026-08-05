@@ -43,6 +43,8 @@ if _orig_require:
     pkg_resources.require = _safe_require
 
 import os
+import re
+from urllib.parse import urlparse
 from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
@@ -157,18 +159,30 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS Config
 CORS_ALLOW_CREDENTIALS = True
-
-if DEBUG:
-    # Local development: allow all origins to avoid port/hostname CORS mismatches
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    CORS_ALLOW_ALL_ORIGINS = False
-    allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "")
-    if allowed_origins_str:
-        CORS_ALLOWED_ORIGINS = [origin.strip() for origin in allowed_origins_str.split(",") if origin.strip()]
-    else:
-        CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:3000", "https://between.indevs.in"]
 CORS_ALLOW_ALL_ORIGINS = True
+
+allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "")
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOWED_ORIGIN_REGEXES = []
+
+if allowed_origins_str:
+    raw_origins = [o.strip() for o in allowed_origins_str.split(",") if o.strip()]
+else:
+    raw_origins = ["http://localhost:5173", "http://localhost:3000", "https://between.indevs.in"]
+
+for origin in raw_origins:
+    if "*" in origin:
+        regex_pattern = r"^" + re.escape(origin).replace(r"\*", r".*") + r"$"
+        regex_pattern = regex_pattern.replace(r"\/$", "")
+        CORS_ALLOWED_ORIGIN_REGEXES.append(regex_pattern)
+    else:
+        parsed = urlparse(origin)
+        if parsed.scheme and parsed.netloc:
+            CORS_ALLOWED_ORIGINS.append(f"{parsed.scheme}://{parsed.netloc}")
+        else:
+            cleaned = origin.rstrip("/")
+            if cleaned:
+                CORS_ALLOWED_ORIGINS.append(cleaned)
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
