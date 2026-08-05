@@ -1443,7 +1443,7 @@ def mock_submit(request):
         attempt.coding_score = score
     elif attempt.round.round_type == "interview":
         attempt.interview_score = score
-        attempt.interview_recommendation = "Proceed" if score >= 50.0 else "Reject"
+        attempt.interview_recommendation = "Proceed" if score >= (attempt.round.passing_score or 50) else "Reject"
         attempt.interview_summary = "Mock interview submission for testing."
 
     attempt.submitted_at = timezone.now()

@@ -680,14 +680,23 @@ def my_applications(request):
             if match_score is None:
                 match_score = _compute_match_score(seeker.skills, session.inferred_skills)
 
-            # Format rounds
+            # Format rounds — include passing_score from SessionRound model
+            session_round_map = {}
+            try:
+                for sr in SessionRound.objects.filter(session=session).only("round_number", "passing_score"):
+                    session_round_map[sr.round_number] = sr.passing_score
+            except Exception:
+                pass  # graceful fallback if no SessionRound rows exist
+
             ui_rounds = []
             for r in sorted_rounds:
+                order = int(r.get("order", 1))
                 ui_rounds.append({
                     "name": r.get("name"),
                     "interviewer": r.get("interviewer"),
-                    "order": r.get("order"),
-                    "result_announcement_date": r.get("result_announcement_date")
+                    "order": order,
+                    "result_announcement_date": r.get("result_announcement_date"),
+                    "passing_score": session_round_map.get(order),
                 })
 
             # Compute offer letter URL relative path if present
