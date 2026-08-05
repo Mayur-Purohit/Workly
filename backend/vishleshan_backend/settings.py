@@ -212,8 +212,8 @@ if os.getenv("EMAIL_HOST_USER") and os.getenv("EMAIL_HOST_PASSWORD"):
     DEFAULT_FROM_EMAIL = os.getenv("MAIL_FROM", f"Workly <{EMAIL_HOST_USER}>")
 elif ANYMAIL.get("BREVO_API_KEY"):
     EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
-    DEFAULT_FROM_EMAIL = os.getenv("MAIL_FROM", "Workly <noreply@workly.ai>")
+    DEFAULT_FROM_EMAIL = os.getenv("MAIL_FROM", "Workly <support@between.indevs.in>")
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-    DEFAULT_FROM_EMAIL = os.getenv("MAIL_FROM", "Workly <noreply@workly.ai>")
+    DEFAULT_FROM_EMAIL = os.getenv("MAIL_FROM", "Workly <support@between.indevs.in>")
 

@@ -609,8 +609,8 @@ console.log(data);`,
     <div className="min-h-screen font-sans text-foreground bg-background dark:text-zinc-100 dark:bg-[#09090b]">
       {/* ════════════════ NAVBAR ════════════════ */}
       <nav
-        className={`fixed top-0 left-0 right-0 w-full z-50 transition-all duration-300 bg-background/98 dark:bg-[#09090b]/98 backdrop-blur-xl border-b border-border shadow-sm ${
-          scrolled ? "py-2.5 shadow-md" : "py-3.5"
+        className={`fixed top-0 left-0 right-0 w-full z-50 transition-all duration-300 bg-background/70 dark:bg-[#09090b]/70 backdrop-blur-xl border-b border-border/50 shadow-sm ${
+          scrolled ? "py-2.5 shadow-md bg-background/85 dark:bg-[#09090b]/85" : "py-3.5"
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">

@@ -138,21 +138,8 @@ function Home() {
     if (stats?.category_counts && Object.keys(stats.category_counts).length > 0) {
       return stats.category_counts;
     }
-    if (!realJobs || !realJobs.length) return null;
-    const counts = {};
-    realJobs.forEach(job => {
-      const text = `${job.title || ''} ${job.description || ''}`.toLowerCase();
-      if (text.includes("engineer") || text.includes("developer") || text.includes("software")) counts["Engineering"] = (counts["Engineering"] || 0) + 1;
-      if (text.includes("design") || text.includes("ui") || text.includes("ux") || text.includes("figma")) counts["Design"] = (counts["Design"] || 0) + 1;
-      if (text.includes("data") || text.includes("ai") || text.includes("ml") || text.includes("analytics")) counts["Data & AI"] = (counts["Data & AI"] || 0) + 1;
-      if (text.includes("market") || text.includes("seo") || text.includes("growth")) counts["Marketing"] = (counts["Marketing"] || 0) + 1;
-      if (text.includes("health") || text.includes("medical") || text.includes("bio")) counts["Healthcare"] = (counts["Healthcare"] || 0) + 1;
-      if (text.includes("operation") || text.includes("manager") || text.includes("scrum")) counts["Operations"] = (counts["Operations"] || 0) + 1;
-      if (text.includes("edu") || text.includes("tutor") || text.includes("academic")) counts["Education"] = (counts["Education"] || 0) + 1;
-      if (text.includes("finan") || text.includes("bank") || text.includes("account")) counts["Finance"] = (counts["Finance"] || 0) + 1;
-    });
-    return counts;
-  }, [stats, realJobs]);
+    return {};
+  }, [stats]);
 
   useEffect(() => {
     setStatsLoading(true);

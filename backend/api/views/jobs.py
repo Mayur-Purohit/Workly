@@ -91,7 +91,7 @@ def list_public_jobs(request):
         return JsonResponse(error_response("Method not allowed"), status=405)
         
     try:
-        query = request.GET.get("query", "").strip()
+        query = request.GET.get("query", request.GET.get("q", "")).strip()
         location_filter = request.GET.get("location", "").strip()
         try:
             page = int(request.GET.get("page", 1))
@@ -103,8 +103,16 @@ def list_public_jobs(request):
         # Only active, non-archived sessions
         qs = Session.objects.filter(status="active").select_related("company")
         
+        from django.db.models import Q
         if query:
-            qs = qs.filter(job_title__icontains=query) | qs.filter(job_description__icontains=query)
+            if query.lower() == "data & ai":
+                q_filter = (
+                    Q(job_title__icontains="data") | Q(job_title__icontains="machine learning") | Q(job_title__icontains="artificial intelligence") |
+                    Q(job_description__icontains="data") | Q(job_description__icontains="machine learning") | Q(job_description__icontains="artificial intelligence")
+                )
+                qs = qs.filter(q_filter)
+            else:
+                qs = qs.filter(Q(job_title__icontains=query) | Q(job_description__icontains=query))
             
         jobs = []
         for s in qs:

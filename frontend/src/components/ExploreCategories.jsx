@@ -93,7 +93,7 @@ export default function ExploreCategories({
         {categories.map((cat) => {
           const Icon = cat.icon;
           const liveCount = categoryCounts?.[cat.title];
-          const countText = liveCount !== undefined && liveCount !== null ? `${Number(liveCount).toLocaleString()} open` : cat.count;
+          const countText = liveCount !== undefined && liveCount !== null ? `${Number(liveCount).toLocaleString()} open` : "0 open";
 
           return (
             <motion.div key={cat.id || cat.title} variants={itemVariants} className="flex">

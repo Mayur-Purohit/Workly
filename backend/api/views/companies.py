@@ -384,8 +384,8 @@ def public_market_trends(request):
         for cat in categories_list:
             if cat == "Data & AI":
                 q_filter = (
-                    Q(job_title__icontains="data") | Q(job_title__icontains="ai") | Q(job_title__icontains="ml") | Q(job_title__icontains="machine learning") |
-                    Q(job_description__icontains="data") | Q(job_description__icontains="ai") | Q(job_description__icontains="ml") | Q(job_description__icontains="machine learning")
+                    Q(job_title__icontains="data") | Q(job_title__icontains="machine learning") | Q(job_title__icontains="artificial intelligence") |
+                    Q(job_description__icontains="data") | Q(job_description__icontains="machine learning") | Q(job_description__icontains="artificial intelligence")
                 )
             else:
                 q_filter = Q(job_title__icontains=cat) | Q(job_description__icontains=cat)
@@ -473,7 +473,7 @@ def public_market_trends(request):
         total_val = sum(x["value"] for x in region_distribution)
         top_hub_pct = round((top_region["value"] / total_val) * 100) if total_val > 0 else 0
 
-        base_salary = base_salary_calc
+        base_salary = avg_db_salary
         salary_change = round(hired_count * 0.05, 1) if hired_count > 0 else 0.0
         
         velocity = min(10.0, round(hired_count * 0.1, 1)) if hired_count > 0 else 0.0
