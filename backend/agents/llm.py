@@ -10,12 +10,25 @@ logger = logging.getLogger(__name__)
 _current_key_idx = 0
 _bad_keys = {}  # maps api_key string -> float timestamp of failure
 
+_current_groq_key_idx = 0
+_bad_groq_keys = {}
+
 def get_api_keys():
     """Reads Gemini API keys from environment variable."""
     keys_str = os.getenv("GEMINI_API_KEYS", "")
     keys = [k.strip() for k in keys_str.split(",") if k.strip()]
     if not keys:
         gkey = os.getenv("GEMINI_API_KEY")
+        if gkey:
+            keys.append(gkey)
+    return keys
+
+def get_groq_keys():
+    """Reads Groq API keys from environment variable."""
+    keys_str = os.getenv("GROQ_API_KEYS", "")
+    keys = [k.strip() for k in keys_str.split(",") if k.strip()]
+    if not keys:
+        gkey = os.getenv("GROQ_API_KEY")
         if gkey:
             keys.append(gkey)
     return keys
@@ -112,48 +125,59 @@ class RotateCompletions:
             print("[LLM ROTATION] All active Gemini API keys exhausted.", flush=True)
             logger.error("All active Gemini API keys exhausted.")
 
-        # Fallback to Groq if GROQ_API_KEY is configured
+        # Fallback to Groq if GROQ_API_KEYS are configured
         # Supports fallback to smaller models (like llama-3.1-8b-instant) if 70B is rate-limited (429)
-        groq_key = os.getenv("GROQ_API_KEY")
-        if groq_key:
-            client = OpenAI(
-                api_key=groq_key,
-                base_url="https://api.groq.com/openai/v1",
-                max_retries=0
-            )
-            groq_models = [
-                os.getenv("GROQ_MODEL", "llama-3.3-70b-specdec"),
-                "llama-3.3-70b-versatile",
-                "llama-3.1-8b-instant",
-                "llama3-8b-8192"
-            ]
-            
-            seen = set()
-            unique_models = []
-            for m in groq_models:
-                if m not in seen:
-                    unique_models.append(m)
-                    seen.add(m)
-                    
-            for model_name in unique_models:
-                print(f"[LLM ROTATION] Trying Groq model: {model_name} (timeout={fallback_timeout})", flush=True)
-                try:
-                    call_kwargs = {
-                        "model": model_name,
-                        "messages": messages,
-                        "temperature": temperature,
-                        "timeout": fallback_timeout
-                    }
-                    if response_format:
-                        call_kwargs["response_format"] = response_format
-                    if max_tokens:
-                        call_kwargs["max_tokens"] = min(max_tokens, 4096) if max_tokens else 4096
-                    res = client.chat.completions.create(**call_kwargs)
-                    print(f"[LLM ROTATION] Groq model {model_name} succeeded!", flush=True)
-                    return res
-                except Exception as e:
-                    print(f"[LLM ROTATION] Groq model {model_name} failed: {e}", flush=True)
-                    logger.error(f"Groq model {model_name} failed/rate-limited: {str(e)}")
+        groq_keys = get_groq_keys()
+        if groq_keys:
+            global _current_groq_key_idx
+            global _bad_groq_keys
+            active_groq_keys = [k for k in groq_keys if k not in _bad_groq_keys or now - _bad_groq_keys[k] > 60]
+
+            if active_groq_keys:
+                groq_models = [
+                    os.getenv("GROQ_MODEL", "llama-3.3-70b-specdec"),
+                    "llama-3.3-70b-versatile",
+                    "llama-3.1-8b-instant",
+                    "llama3-8b-8192"
+                ]
+                
+                seen = set()
+                unique_models = []
+                for m in groq_models:
+                    if m not in seen:
+                        unique_models.append(m)
+                        seen.add(m)
+                        
+                for model_name in unique_models:
+                    print(f"[LLM ROTATION] Trying Groq model: {model_name} (timeout={fallback_timeout})", flush=True)
+                    for attempt in range(len(active_groq_keys)):
+                        idx = (_current_groq_key_idx + attempt) % len(active_groq_keys)
+                        key = active_groq_keys[idx]
+                        masked_key = key[:8] + "..." + key[-4:] if len(key) > 12 else "..."
+                        try:
+                            client = OpenAI(
+                                api_key=key,
+                                base_url="https://api.groq.com/openai/v1",
+                                max_retries=0
+                            )
+                            call_kwargs = {
+                                "model": model_name,
+                                "messages": messages,
+                                "temperature": temperature,
+                                "timeout": fallback_timeout
+                            }
+                            if response_format:
+                                call_kwargs["response_format"] = response_format
+                            if max_tokens:
+                                call_kwargs["max_tokens"] = min(max_tokens, 4096) if max_tokens else 4096
+                            res = client.chat.completions.create(**call_kwargs)
+                            _current_groq_key_idx = idx
+                            print(f"[LLM ROTATION] Groq model {model_name} on key {masked_key} succeeded!", flush=True)
+                            return res
+                        except Exception as e:
+                            _bad_groq_keys[key] = time.time()
+                            print(f"[LLM ROTATION] Groq model {model_name} on key {masked_key} failed: {e}", flush=True)
+                            logger.error(f"Groq model {model_name} on key {masked_key} failed/rate-limited: {str(e)}")
 
         # Fallback to OpenAI client if OPENAI_API_KEY is configured
         openai_key = get_openai_fallback_key()

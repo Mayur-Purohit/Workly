@@ -9,21 +9,15 @@ import json
 import os
 import logging
 from openai import OpenAI
-from agents.llm import RotateLLMClient
+import time
+from agents.llm import RotateLLMClient, get_groq_keys
 
 logger = logging.getLogger(__name__)
 
-# Initialize Groq client if key exists, otherwise we will fallback to RotateLLMClient
-groq_key = os.environ.get("GROQ_API_KEY")
-if groq_key:
-    GROQ_CLIENT = OpenAI(
-        api_key=groq_key,
-        base_url="https://api.groq.com/openai/v1"
-    )
-else:
-    GROQ_CLIENT = None
-
 GROQ_MODEL = os.environ.get("GROQ_INTERVIEW_MODEL", "llama-3.3-70b-versatile")
+
+_current_groq_key_idx = 0
+_bad_groq_keys = {}
 
 
 class InterviewAgent:
@@ -32,18 +26,29 @@ class InterviewAgent:
 
     def _call_llm(self, prompt: str, json_mode: bool = True) -> str:
         """Helper to call Groq (if available) or fallback to RotateLLMClient"""
-        if GROQ_CLIENT:
-            try:
-                response = GROQ_CLIENT.chat.completions.create(
-                    model=GROQ_MODEL,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.2,
-                    response_format={"type": "json_object"} if json_mode else None,
-                    timeout=20
-                )
-                return response.choices[0].message.content
-            except Exception as e:
-                logger.error("Groq call failed, falling back to RotateLLMClient: %s", e)
+        global _current_groq_key_idx, _bad_groq_keys
+        groq_keys = get_groq_keys()
+        
+        if groq_keys:
+            now = time.time()
+            active_keys = [k for k in groq_keys if k not in _bad_groq_keys or now - _bad_groq_keys[k] > 60]
+            for attempt in range(len(active_keys)):
+                idx = (_current_groq_key_idx + attempt) % len(active_keys)
+                key = active_keys[idx]
+                try:
+                    client = OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1", max_retries=0)
+                    response = client.chat.completions.create(
+                        model=GROQ_MODEL,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.2,
+                        response_format={"type": "json_object"} if json_mode else None,
+                        timeout=20
+                    )
+                    _current_groq_key_idx = idx
+                    return response.choices[0].message.content
+                except Exception as e:
+                    _bad_groq_keys[key] = time.time()
+                    logger.error("Groq call failed, trying next key. Error: %s", e)
 
         # Fallback using RotateLLMClient
         try:
