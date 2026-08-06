@@ -74,26 +74,6 @@ Workly.init({
   container: "#workly-panel",
   theme: "light"
 });
-</script>`,
-    React: `import { WorklyPanel } from '@workly/react';
-
-export default function CandidateView() {
-  return (
-    <WorklyPanel
-      token="${tokenVal || "YOUR_EMBED_TOKEN"}"
-      theme="light"
-    />
-  );
-}`,
-    Vue: `<template>
-  <WorklyPanel
-    token="${tokenVal || "YOUR_EMBED_TOKEN"}"
-    theme="light"
-  />
-</template>
-
-<script setup>
-import { BetweenPanel } from '@between/vue';
 </script>`
   });
 

@@ -34,32 +34,39 @@ const parseSalary = (salaryStr) => {
     currency = "EUR";
   }
 
+  const isMonthly = salaryStr.toLowerCase().includes("month") || salaryStr.toLowerCase().includes("mo");
+  const isHourly = salaryStr.toLowerCase().includes("hour") || salaryStr.toLowerCase().includes("hr");
+  
   const cleanStr = salaryStr.replace(/,/g, "").replace(/[–—]/g, "-");
-  const pattern = /([0-9.]+)\s*([a-zA-Z]*)/g;
+  const pattern = /([0-9]+(?:\.[0-9]+)?)\s*(k|lpa|cr|m)?/gi;
   let match;
   const values = [];
 
   while ((match = pattern.exec(cleanStr)) !== null) {
-    const num = parseFloat(match[1]);
+    let num = parseFloat(match[1]);
     if (isNaN(num)) continue;
     
-    const suffix = (match[2] || "").toLowerCase().trim();
+    const suffix = (match[2] || "").toLowerCase();
     let val = num;
+    
+    if (isHourly) {
+       val = num * 2080;
+    } else if (isMonthly) {
+       val = num * 12;
+    }
 
     if (currency === "INR") {
-      if (suffix.includes("k")) {
-        // e.g. 18k/month -> (18 * 12) / 100 = 2.16 LPA
-        val = (num * 12) / 100;
-      } else if (num >= 1000) {
-        // e.g. 450000 -> 4.5 Lakhs
-        val = num / 100000;
-      }
+      if (suffix === "k") val *= 1000;
+      else if (suffix === "cr") val *= 10000000;
+      else if (suffix === "lpa" || suffix === "l") val *= 100000;
+      else if (suffix === "m") val *= 1000000;
+      
+      if (val >= 1000) val /= 100000; 
     } else {
-      if (suffix.includes("k")) {
-        val = num;
-      } else if (num >= 1000) {
-        val = num / 1000;
-      }
+      if (suffix === "k") val *= 1000;
+      else if (suffix === "m") val *= 1000000;
+      
+      if (val >= 1000) val /= 1000;
     }
     values.push(val);
   }
@@ -92,9 +99,9 @@ const salaryFilterFn = (salaryRange, minVal, filterCurrencyCode) => {
   if (!parsed.min && !parsed.max) return false;
   
   const jobCurrency = parsed.currency || "USD";
-  const convertedMax = convertSalaryToCurrency(parsed.max || parsed.min, jobCurrency, filterCurrencyCode);
+  const convertedMin = convertSalaryToCurrency(parsed.min || parsed.max, jobCurrency, filterCurrencyCode);
   
-  return convertedMax >= minVal;
+  return convertedMin >= minVal;
 };
 
 // Currency configurations

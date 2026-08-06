@@ -434,6 +434,9 @@ def apply_job(request, session_id):
                 candidate.status = "new"
                 candidate.current_round_index = first_round_order
                 candidate.save()
+                
+                # IMPORTANT: Delete any previous round attempts so the candidate can start fresh
+                ApplicantRoundAttempt.objects.filter(candidate=candidate).delete()
             else:
                 candidate = Candidate.objects.create(
                     session=session,
