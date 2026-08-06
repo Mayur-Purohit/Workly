@@ -760,7 +760,7 @@ export default function SessionWorkspacePage() {
                       <div className="flex items-center gap-2 text-green-700 font-bold text-sm mb-1 bg-white px-3 py-1.5 rounded-lg border border-green-200 self-start">
                         <Check size={16} strokeWidth={3} /> {session.gmail_address}
                       </div>
-                      <p className="text-[11px] font-semibold text-green-600/70 mb-4 mt-2 pl-1">Last synced: {session.last_gmail_sync ? new Date(session.last_gmail_sync).toLocaleString() : 'Never'}</p>
+
                       <button onClick={async () => {
                         try {
                           const { job_id } = await ingestAPI.syncGmail({ session_id: id });

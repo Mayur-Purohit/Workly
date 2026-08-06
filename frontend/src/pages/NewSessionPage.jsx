@@ -119,7 +119,7 @@ export default function NewSessionPage() {
       if (enabled) {
         if (!updatedRounds.some(r => r.name === name)) {
           const nextId = Math.max(...updatedRounds.map(r => r.id), 0) + 1;
-          const nextOrder = updatedRounds.length + 1;
+          const nextOrder = Math.max(...updatedRounds.map(r => r.order || 0), 0) + 1;
           updatedRounds.push({
             id: nextId,
             name: name,
@@ -168,7 +168,7 @@ export default function NewSessionPage() {
               roundsToAdd.forEach(name => {
                 if (!updatedRounds.some(r => r.name === name)) {
                   const nextId = Math.max(...updatedRounds.map(r => r.id), 0) + 1;
-                  const nextOrder = updatedRounds.length + 1;
+                  const nextOrder = Math.max(...updatedRounds.map(r => r.order || 0), 0) + 1;
                   updatedRounds.push({
                     id: nextId,
                     name: name,
@@ -423,9 +423,11 @@ export default function NewSessionPage() {
         };
         
         if (type === "mcq") {
-          rPayload.mcq_question_count = 20;
-          if (round.custom_question_ids) {
+          if (round.custom_question_ids && round.custom_question_ids.length > 0) {
             rPayload.custom_question_ids = round.custom_question_ids;
+            rPayload.mcq_question_count = round.custom_question_ids.length;
+          } else {
+            rPayload.mcq_question_count = 20;
           }
         } else if (type === "coding") {
           if (round.custom_slugs) {
@@ -995,7 +997,8 @@ export default function NewSessionPage() {
               <button 
                 onClick={() => {
                   const newId = Math.max(...formData.rounds.map(r=>r.id), 0) + 1;
-                  setFormData({...formData, rounds: [...formData.rounds, {id:newId, name:"", interviewer:"", order:newId, result_announcement_date:""}]});
+                  const newOrder = Math.max(...formData.rounds.map(r=>r.order || 0), 0) + 1;
+                  setFormData({...formData, rounds: [...formData.rounds, {id:newId, name:"", interviewer:"", order:newOrder, result_announcement_date:""}]});
                 }}
                 className="w-full py-3 border-2 border-dashed border-blue-300 bg-blue-50 text-[#2563EB] hover:bg-blue-100 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors"
               >

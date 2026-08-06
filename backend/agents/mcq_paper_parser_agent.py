@@ -135,12 +135,13 @@ Exam Paper Text:
         from api.models import MCQQuestion
         created = 0
         skipped = 0
+        ids = []
         for q in questions:
             qt = q.get("question_text", "").strip()
             opts = q.get("options", {})
             if not qt or not opts:
                 continue
-            _, was_created = MCQQuestion.objects.get_or_create(
+            mq, was_created = MCQQuestion.objects.get_or_create(
                 question_text=qt,
                 defaults={
                     "options": opts,
@@ -154,7 +155,8 @@ Exam Paper Text:
                 created += 1
             else:
                 skipped += 1
-        return {"created": created, "skipped": skipped, "total": len(questions)}
+            ids.append(str(mq.id))
+        return {"created": created, "skipped": skipped, "total": len(questions), "ids": ids}
 
     def parse_coding_problems_with_llm(self, raw_text: str) -> list:
         """Send extracted text to LLM and get structured Coding problems back."""

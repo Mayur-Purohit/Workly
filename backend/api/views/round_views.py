@@ -1425,6 +1425,7 @@ def upload_question_paper(request):
                 "questions_extracted": len(questions),
                 "created_in_db": result["created"],
                 "already_existed": result["skipped"],
+                "ids": result["ids"],
                 "preview": questions[:5]
             }))
     except ValueError as ve:
