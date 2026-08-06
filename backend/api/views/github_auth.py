@@ -151,7 +151,7 @@ def recruiter_auth_github(request):
             "email_verified": company.email_verified,
             "phone_verified": company.phone_verified,
             "api_key": masked_secret,
-            "requires_profile_completion": not (company.industry and company.hq_location and company.company_size and company.website_url and company.phone_verified)
+            "requires_profile_completion": not (company.industry and company.hq_location and company.company_size)
         }))
     except ValueError as e:
         return JsonResponse(error_response(str(e)), status=400)
@@ -209,7 +209,7 @@ def seeker_auth_github(request):
             "email_verified": seeker.email_verified,
             "phone_verified": seeker.phone_verified,
             "created_at": seeker.created_at.isoformat() if seeker.created_at else None,
-            "requires_profile_completion": not (seeker.phone and seeker.location and seeker.headline and seeker.phone_verified)
+            "requires_profile_completion": not (seeker.headline)
         }
 
         return JsonResponse(success_response({

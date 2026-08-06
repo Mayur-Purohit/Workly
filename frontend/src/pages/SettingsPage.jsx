@@ -65,7 +65,7 @@ export default function SettingsPage() {
     navigate("/login");
   };
   
-  const [activeTab, setActiveTab] = useState(tabFromUrl || 'api-keys'); // 'profile' | 'api-keys' | 'notifications' | 'account' | 'billing'
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'profile'); // 'profile' | 'api-keys' | 'notifications' | 'account' | 'billing'
   const [copiedKeyId, setCopiedKeyId] = useState(null);
   
   // New key modal state

@@ -91,6 +91,7 @@ def register(request):
             "phone_verified": new_company.phone_verified,
             "logo_path": new_company.logo_path,
             "industry": new_company.industry,
+            "requires_profile_completion": not (new_company.industry and new_company.hq_location and new_company.company_size),
             "hq_location": new_company.hq_location,
             "company_size": new_company.company_size,
             "founded_year": new_company.founded_year,
