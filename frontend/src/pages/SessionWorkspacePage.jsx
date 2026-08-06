@@ -92,9 +92,7 @@ export default function SessionWorkspacePage() {
   const [activeDetailCandidate, setActiveDetailCandidate] = useState(null);
 
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [driveUrl, setDriveUrl] = useState("");
   const [atsFile, setAtsFile] = useState(null);
-  const [googleType, setGoogleType] = useState("drive");
   const [atsFormat, setAtsFormat] = useState("csv");
 
   const { data: session, isLoading } = useQuery({
@@ -355,30 +353,11 @@ export default function SessionWorkspacePage() {
         } catch (err) {
           toast.error("Failed to connect Gmail");
         }
-      } else if (e.data.type === "GDRIVE_AUTH_CODE") {
-        try {
-          await ingestAPI.connectGDrive({ session_id: id, folder_url: driveUrl, auth_code: e.data.code });
-          toast.success("Google Drive connected!");
-          const { job_id } = await ingestAPI.syncGDrive({ session_id: id });
-          addJob(job_id, "gdrive");
-          toast.success("Google Drive sync started!");
-        } catch (err) {
-          toast.error("Failed to connect or sync Google Drive. Provide a valid Drive folder URL.");
-        }
-      } else if (e.data.type === "GFORM_AUTH_CODE") {
-        try {
-          const res = await ingestAPI.connectForm({ session_id: id, sheet_url: driveUrl, auth_code: e.data.code });
-          toast.success("Google Form connected!");
-          addJob(res.job_id, "form");
-          toast.success("Google Form sync started!");
-        } catch (err) {
-          toast.error("Failed to connect or sync Google Form. Provide a valid Google Sheet URL.");
-        }
       }
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [id, queryClient, driveUrl, addJob]);
+  }, [id, queryClient]);
 
   const handleDownloadSample = () => {
     if (atsFormat === "json") {
@@ -430,7 +409,7 @@ export default function SessionWorkspacePage() {
         "Rohan Deshpande,rohan.deshpande@example.com,+91 9988776655,Mumbai,SEO;Google Ads;Power BI,2.5\n" +
         "Priya Sharma,priya.sharma@example.com,+91 9876543210,Bangalore,React;Node.js;TypeScript;Python,4.0\n" +
         "Amit Kumar,amit.kumar@example.com,+91 9123456789,Delhi,Java;Spring Boot;SQL;Docker,3.0";
-      
+
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -539,7 +518,7 @@ export default function SessionWorkspacePage() {
                 {session.status === "completed" ? <CheckCircle2 size={14} /> : session.status === "archived" ? <Archive size={14} /> : <div className="w-2 h-2 rounded-full bg-[var(--google-green)] animate-pulse"></div>}
                 {session.status || "Active"}
               </span>
-              <span 
+              <span
                 className="bg-card text-foreground px-3 py-1.5 rounded-full border border-border text-xs font-bold shadow-sm flex items-center gap-1.5"
                 title={`${session.rounds?.length || 1} total rounds in this session`}
               >
@@ -688,9 +667,9 @@ export default function SessionWorkspacePage() {
 
           {/* UPLOAD TAB */}
           {activeTab === "upload" && (
-            <div className="max-w-5xl space-y-6">
+            <div className="max-w-4xl space-y-6">
               <h3 className="text-xl font-black text-charcoal tracking-tight">How would you like to add candidates?</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 {/* Direct Upload */}
                 <div className="bg-white rounded-2xl p-6 border-2 border-transparent hover:border-accent transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
@@ -794,8 +773,92 @@ export default function SessionWorkspacePage() {
                     </div>
                   )}
                 </div>
+
+
               </div>
 
+              {/* Enterprise Import */}
+              <details className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border-2 border-transparent hover:border-gray-200 transition-colors overflow-hidden group">
+                <summary className="font-bold text-charcoal p-5 cursor-pointer bg-gray-50 flex items-center justify-between text-[15px]">
+                  <span className="flex items-center gap-2">
+                    <Building size={16} className="text-[#2563EB]" />
+                    <span>ATS / Enterprise Import</span>
+                  </span>
+                  <ChevronDown size={20} className="text-gray-400 group-open:rotate-180 transition-transform" />
+                </summary>
+                <div className="p-6 border-t border-gray-100 bg-white">
+                  <div className="flex gap-3 mb-6">
+                    {["csv", "json", "excel"].map((fmt) => (
+                      <button
+                        key={fmt}
+                        onClick={() => {
+                          setAtsFormat(fmt);
+                          setAtsFile(null);
+                        }}
+                        className={`text-xs px-4 py-1.5 rounded-full font-bold transition-all uppercase tracking-wider ${atsFormat === fmt
+                            ? "bg-[#2A2A2A] text-white shadow-sm"
+                            : "text-gray-500 hover:bg-gray-100 border border-gray-200 bg-white"
+                          }`}
+                      >
+                        {fmt}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="bg-blue-50/50 border border-blue-200 text-blue-900 p-4 rounded-xl text-xs mb-5 shadow-sm">
+                    <strong className="block mb-1 text-sm">
+                      {atsFormat === "json" ? "Expected JSON Format (Array of Objects):" : "Expected Columns:"}
+                    </strong>
+                    {atsFormat === "json" ? (
+                      <pre className="font-mono text-[11px] bg-white p-2.5 rounded border border-blue-100 mt-1 overflow-x-auto text-blue-950">
+                        {`[
+  { "name": "Rohan Deshpande", "email": "rohan@example.com", "phone": "+91 9988776655", "location": "Mumbai", "skills": "SEO;Google Ads;Power BI", "experience_years": 2.5 }
+]`}
+                      </pre>
+                    ) : (
+                      <>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">name</span>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">email</span>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">phone</span>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">location</span>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">skills (semicolon-separated)</span>
+                        <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-blue-100 mr-2 mt-2 inline-block">experience_years</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-4 items-stretch h-32" {...getAtsProps()}>
+                    <div className={`border-2 border-dashed rounded-xl flex-1 flex flex-col items-center justify-center cursor-pointer transition-colors ${atsFile ? 'border-accent bg-blue-50' : 'border-gray-300 bg-gray-50/50 hover:bg-gray-50'}`}>
+                      <input {...getAtsInput()} />
+                      <span className="text-2xl mb-2">📄</span>
+                      <span className="text-sm text-gray-500 font-bold">{atsFile ? atsFile.name : `Drop ${atsFormat.toUpperCase()} file here`}</span>
+                    </div>
+                    <div className="flex flex-col justify-center gap-3 min-w-[200px]">
+                      <button
+                        type="button"
+                        onClick={handleDownloadSample}
+                        className="text-accent font-bold text-xs border-2 border-accent bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <Download size={16} /> Download sample {atsFormat.toUpperCase()}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!atsFile) return;
+                          try {
+                            toast.success("Import processing...");
+                            const res = await ingestAPI.importATS(id, atsFile.name.endsWith(".json") ? "json" : atsFile.name.endsWith(".xlsx") || atsFile.name.endsWith(".xls") ? "xlsx" : "csv", atsFile);
+                            toast.success(`Imported ${res.imported} records. Failed: ${res.failed}`);
+                            setAtsFile(null);
+                            queryClient.invalidateQueries({ queryKey: ["candidates", id] });
+                          } catch (e) { toast.error(e.message); }
+                        }}
+                        disabled={!atsFile}
+                        className={`font-bold text-sm px-4 py-2.5 rounded-xl transition-colors ${atsFile ? 'bg-accent text-white hover:bg-[#1D4ED8]' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                      >
+                        Import Records
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </details>
 
               {/* Jobs Tracking */}
               {Object.values(jobs).length > 0 && (
@@ -1607,8 +1670,8 @@ export default function SessionWorkspacePage() {
                           </td>
                           <td className="p-4">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${cand.application_status === 'hired' ? 'bg-green-100 text-green-700' :
-                                cand.application_status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                  'bg-blue-100 text-blue-700'
+                              cand.application_status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                'bg-blue-100 text-blue-700'
                               }`}>
                               {cand.application_status === 'hired' ? 'Hired' : cand.application_status === 'rejected' ? 'Rejected' : 'Active'}
                             </span>

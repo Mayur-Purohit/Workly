@@ -1051,9 +1051,9 @@ function BentoFeatures() {
                 {item.sources && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-5">
                     {item.sources.map((s) => (
-                      <div key={s.label} className="p-2.5 rounded-xl border border-border/60 bg-muted/30 flex items-center gap-2 text-xs min-w-0">
-                        <s.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="font-medium text-foreground truncate flex-1 min-w-0">{s.label}</span>
+                      <div key={s.label} className="p-2.5 rounded-xl border border-border/60 bg-muted/30 flex items-center gap-2 text-xs">
+                        <s.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium text-foreground truncate">{s.label}</span>
                       </div>
                     ))}
                   </div>
