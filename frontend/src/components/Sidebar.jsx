@@ -31,7 +31,7 @@ export default function Sidebar() {
   const handleLogout = () => {
     try {
       authAPI.logout();
-    } catch(e) {
+    } catch (e) {
       clearAuth();
     }
   };
@@ -76,11 +76,10 @@ export default function Sidebar() {
           return (
             <Link key={item.href} to={item.href}>
               <div
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${
-                  isActive
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${isActive
                     ? 'bg-amber-500/15 text-[#2563EB] border-l-2 border-[#2563EB] pl-[10px]'
                     : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                }`}
+                  }`}
               >
                 <Icon size={18} />
                 <span className="text-sm font-medium">{item.label}</span>

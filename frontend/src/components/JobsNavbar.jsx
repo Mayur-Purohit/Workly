@@ -113,8 +113,8 @@ export default function JobsNavbar({ onUploadClick }) {
   return (
     <div className="sticky top-0 z-40 w-full transition-all duration-300 p-0 pointer-events-none">
       <nav className={`mx-auto transition-all duration-300 flex items-center justify-between pointer-events-auto backdrop-blur-xl ${isScrolled
-          ? "max-w-7xl mt-3 rounded-full border border-black/5 bg-white/75 px-8 py-3 shadow-lg dark:bg-zinc-900/80 dark:border-white/10"
-          : "w-full bg-white/70 border-b border-black/5 px-6 py-4 shadow-sm dark:bg-zinc-950/70 dark:border-white/10"
+        ? "max-w-7xl mt-3 rounded-full border border-black/5 bg-white/75 px-8 py-3 shadow-lg dark:bg-zinc-900/80 dark:border-white/10"
+        : "w-full bg-white/70 border-b border-black/5 px-6 py-4 shadow-sm dark:bg-zinc-950/70 dark:border-white/10"
         }`}>
         {/* Brand logo */}
         <div className="flex items-center space-x-8">
@@ -142,8 +142,8 @@ export default function JobsNavbar({ onUploadClick }) {
             <Link
               to="/jobs"
               className={`flex items-center space-x-1.5 px-2.5 lg:px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${isActive('/jobs')
-                  ? 'text-[#111111] bg-gray-100 font-semibold'
-                  : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
+                ? 'text-[#111111] bg-gray-100 font-semibold'
+                : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
                 }`}
             >
               <Home size={16} />
@@ -154,8 +154,8 @@ export default function JobsNavbar({ onUploadClick }) {
               <Link
                 to="/jobs/dashboard"
                 className={`flex items-center space-x-1.5 px-2.5 lg:px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${isActive('/jobs/dashboard')
-                    ? 'text-[#111111] bg-gray-100 font-semibold'
-                    : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
+                  ? 'text-[#111111] bg-gray-100 font-semibold'
+                  : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
                   }`}
               >
                 <LayoutDashboard size={16} />
@@ -166,8 +166,8 @@ export default function JobsNavbar({ onUploadClick }) {
             <Link
               to="/jobs/search"
               className={`flex items-center space-x-1.5 px-2.5 lg:px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${isActive('/jobs/search')
-                  ? 'text-[#111111] bg-gray-100 font-semibold'
-                  : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
+                ? 'text-[#111111] bg-gray-100 font-semibold'
+                : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
                 }`}
             >
               <Briefcase size={16} />
@@ -178,8 +178,8 @@ export default function JobsNavbar({ onUploadClick }) {
               <Link
                 to="/jobs/applications"
                 className={`flex items-center space-x-1.5 px-2.5 lg:px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${isActive('/jobs/applications')
-                    ? 'text-[#111111] bg-gray-100 font-semibold'
-                    : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
+                  ? 'text-[#111111] bg-gray-100 font-semibold'
+                  : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
                   }`}
               >
                 <FolderGit size={16} />
@@ -191,8 +191,8 @@ export default function JobsNavbar({ onUploadClick }) {
               <Link
                 to="/jobs/notifications"
                 className={`flex items-center space-x-1.5 px-2.5 lg:px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${isActive('/jobs/notifications')
-                    ? 'text-[#111111] bg-gray-100 font-semibold'
-                    : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
+                  ? 'text-[#111111] bg-gray-100 font-semibold'
+                  : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
                   }`}
               >
                 <Bell size={16} />
@@ -205,8 +205,8 @@ export default function JobsNavbar({ onUploadClick }) {
               <button
                 onClick={() => setToolsOpen(!toolsOpen)}
                 className={`flex items-center space-x-1.5 px-2.5 lg:px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${isActive('/jobs/resume') || isActive('/jobs/companies') || isActive('/jobs/trends')
-                    ? 'text-[#111111] bg-gray-100 font-semibold'
-                    : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
+                  ? 'text-[#111111] bg-gray-100 font-semibold'
+                  : 'text-[#5c5c5c] hover:text-[#2A2A2A]'
                   }`}
               >
                 <span>Career Tools</span>
@@ -220,8 +220,8 @@ export default function JobsNavbar({ onUploadClick }) {
                       to="/jobs/resume"
                       onClick={() => setToolsOpen(false)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm skeuo-dropdown-item ${isActive('/jobs/resume')
-                          ? 'bg-[#faf9f6] dark:bg-[#212126] text-[#111111] font-semibold dark:text-[#f3f4f6]'
-                          : 'text-[#5c5c5c]'
+                        ? 'bg-[#faf9f6] dark:bg-[#212126] text-[#111111] font-semibold dark:text-[#f3f4f6]'
+                        : 'text-[#5c5c5c]'
                         }`}
                     >
                       <FileText size={14} className="text-gray-400 shrink-0 transition-colors" />
@@ -232,8 +232,8 @@ export default function JobsNavbar({ onUploadClick }) {
                     to="/jobs/companies"
                     onClick={() => setToolsOpen(false)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm skeuo-dropdown-item ${isActive('/jobs/companies')
-                        ? 'bg-[#faf9f6] dark:bg-[#212126] text-[#111111] font-semibold dark:text-[#f3f4f6]'
-                        : 'text-[#5c5c5c]'
+                      ? 'bg-[#faf9f6] dark:bg-[#212126] text-[#111111] font-semibold dark:text-[#f3f4f6]'
+                      : 'text-[#5c5c5c]'
                       }`}
                   >
                     <Building2 size={14} className="text-gray-400 shrink-0 transition-colors" />
@@ -243,8 +243,8 @@ export default function JobsNavbar({ onUploadClick }) {
                     to="/jobs/trends"
                     onClick={() => setToolsOpen(false)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm skeuo-dropdown-item ${isActive('/jobs/trends')
-                        ? 'bg-[#faf9f6] dark:bg-[#212126] text-[#111111] font-semibold dark:text-[#f3f4f6]'
-                        : 'text-[#5c5c5c]'
+                      ? 'bg-[#faf9f6] dark:bg-[#212126] text-[#111111] font-semibold dark:text-[#f3f4f6]'
+                      : 'text-[#5c5c5c]'
                       }`}
                   >
                     <TrendingUp size={14} className="text-gray-400 shrink-0 transition-colors" />

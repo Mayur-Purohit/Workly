@@ -192,7 +192,7 @@ export default function CompleteProfilePage() {
           <span className="text-[11px] font-black tracking-widest text-zinc-500 uppercase">Profile Verification</span>
           <h1 className="text-2xl font-black text-white mt-1">Complete Your Details</h1>
           <p className="text-xs text-zinc-400 mt-2 max-w-sm">
-            You signed in using {role === 'seeker' ? 'Google/GitHub' : 'Social SSO'}. Please complete the required profile details below to access your dashboard.
+            You signed in using {role === 'seeker' ? 'Google' : 'Social SSO'}. Please complete the required profile details below to access your dashboard.
           </p>
         </div>
 

@@ -24,9 +24,7 @@ import {
   Sparkles,
   Zap,
   Mail,
-  HardDrive,
   FileArchive,
-  FormInput,
   Building2,
   FileText,
   Briefcase,
@@ -878,19 +876,17 @@ function BentoFeatures() {
     },
     {
       id: 'intake',
-      title: 'Six-Source Resume Intake',
+      title: 'Multi-Source Resume Intake',
       subtitle: 'Unified Multi-Channel Pipeline',
-      description: 'Unify candidates arriving from direct uploads, ZIP batches, Gmail, Google Drive, Google Forms, and ATS integrations.',
+      description: 'Unify candidates arriving from direct uploads, ZIP batches, Gmail, and ATS integrations.',
       color: 'var(--google-yellow)',
       icon: <Upload className="h-6 w-6 text-[var(--google-yellow)]" />,
       className: 'md:col-span-3',
-      tags: ["6 Intake Channels", "Auto-Deduplication", "Unified Storage"],
+      tags: ["Multi-Channel Intake", "Auto-Deduplication", "Unified Storage"],
       sources: [
         { icon: FileText, label: "Direct Upload", desc: "PDF & Word" },
         { icon: FileArchive, label: "ZIP Batch", desc: "Bulk archives" },
         { icon: Mail, label: "Gmail Sync", desc: "Inbox fetch" },
-        { icon: HardDrive, label: "Google Drive", desc: "Folder sync" },
-        { icon: FormInput, label: "Google Forms", desc: "Live forms" },
         { icon: Building2, label: "ATS Import", desc: "Greenhouse / Lever" },
       ],
       details: (
@@ -905,7 +901,7 @@ function BentoFeatures() {
             </div>
             <div className="p-2.5 rounded-xl bg-muted/50 border border-border/60">
               <div className="font-semibold text-foreground">Live Automated Sync</div>
-              <div className="text-[11px]">Syncs directly with email & Drive</div>
+              <div className="text-[11px]">Syncs directly with email</div>
             </div>
           </div>
         </div>
@@ -1055,9 +1051,9 @@ function BentoFeatures() {
                 {item.sources && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-5">
                     {item.sources.map((s) => (
-                      <div key={s.label} className="p-2.5 rounded-xl border border-border/60 bg-muted/30 flex items-center gap-2 text-xs">
-                        <s.icon className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-medium text-foreground truncate">{s.label}</span>
+                      <div key={s.label} className="p-2.5 rounded-xl border border-border/60 bg-muted/30 flex items-center gap-2 text-xs min-w-0">
+                        <s.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="font-medium text-foreground truncate flex-1 min-w-0">{s.label}</span>
                       </div>
                     ))}
                   </div>
@@ -1082,8 +1078,6 @@ function IngestShowcase({ onNavigateDev }) {
     { icon: FileText, label: "Direct Upload", color: "var(--google-blue)" },
     { icon: FileArchive, label: "ZIP Archive", color: "var(--google-green)" },
     { icon: Mail, label: "Gmail Sync", color: "var(--google-red)" },
-    { icon: HardDrive, label: "Google Drive", color: "var(--google-yellow)" },
-    { icon: FormInput, label: "Google Form", color: "var(--google-blue)" },
     { icon: Building2, label: "ATS Import", color: "var(--google-green)" },
   ];
   return (
@@ -1096,7 +1090,7 @@ function IngestShowcase({ onNavigateDev }) {
             Every channel your candidates use
           </h2>
           <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-            No competitor combines Gmail sync, Google Drive sync, Google Form intake, and ATS import in one platform. Pipe resumes in from six sources — Workly normalizes them into one clean session.
+            No competitor combines Gmail sync and ATS import in one platform. Pipe resumes in from multiple channels — Workly normalizes them into one clean session.
           </p>
           <button onClick={onNavigateDev} className="pill rounded-full mt-6 cursor-pointer inline-flex items-center gap-2 border border-border bg-background px-6 py-2.5 text-sm font-medium hover:bg-muted shadow-sm transition-all">
             See ingest docs <ArrowRight className="w-4 h-4" />
@@ -1129,7 +1123,7 @@ function IngestShowcase({ onNavigateDev }) {
 function WorkflowSection({ liveSession }) {
   const steps = [
     { icon: Briefcase, title: "Create a session", desc: "Define your role requirements — title, description, must-have skills, and evaluation criteria.", color: "var(--google-blue)" },
-    { icon: Upload, title: "Ingest from any source", desc: "Upload directly, sync from Gmail or Drive, accept via Google Forms, or pull from your ATS.", color: "var(--google-yellow)" },
+    { icon: Upload, title: "Ingest from any source", desc: "Upload directly, sync from Gmail, or pull from your ATS.", color: "var(--google-yellow)" },
     { icon: CheckCircle2, title: "Review your shortlist", desc: "AI parses, scores, and ranks every candidate. Fraud checks run automatically. Your shortlist is ready.", color: "var(--google-green)" },
   ];
 

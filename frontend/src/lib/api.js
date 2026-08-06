@@ -113,13 +113,7 @@ export const authAPI = {
     localStorage.setItem("vish_company", JSON.stringify(d))
     return d
   },
-  githubLogin: async (code) => {
-    const d = await req("POST", "/auth/login-github", { code })
-    localStorage.setItem("vish_jwt", d.jwt_token)
-    localStorage.setItem("vish_api_key", d.api_key || "")
-    localStorage.setItem("vish_company", JSON.stringify(d))
-    return d
-  },
+
   getMe: () => req("GET", "/auth/me"),
   updateProfile: (b) => req("POST", "/auth/update-profile", b),
   uploadLogo: (file) => {
@@ -332,14 +326,7 @@ export const seekerAPI = {
     }
     return d;
   },
-  githubLogin: async (code) => {
-    const d = await seekerReq('POST', '/api/v1/seeker/auth/login-github', { code });
-    if (typeof window !== "undefined") {
-      localStorage.setItem('vish_seeker_token', d.seeker_token);
-      localStorage.setItem('vish_seeker_data', JSON.stringify(d.seeker));
-    }
-    return d;
-  },
+
   getMe: () => seekerReq('GET', '/api/v1/seeker/auth/me'),
   updateProfile: (b) => seekerReq('PATCH', '/api/v1/seeker/auth/profile', b),
   uploadAvatar: (file) => {

@@ -204,23 +204,23 @@ export default function SessionsPage() {
                 onClick={() => navigate(`/dashboard/sessions/${session.id}`)}
               >
                 {/* CARD HEADER */}
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start gap-4 w-full">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-3.5 min-w-0 flex-1">
                     <div className="w-12 h-12 rounded-[16px] bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center shrink-0 transition-colors duration-300">
                       <Building size={20} className="transform group-hover:scale-110 transition-transform" />
                     </div>
-                    <div className="flex-1 min-w-0 pt-0.5">
-                      <h3 className="text-[16px] font-bold text-charcoal leading-tight truncate">
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <h3 className="text-[16px] font-bold text-charcoal leading-tight truncate" title={session.job_title || 'Untitled Role'}>
                         {session.job_title || 'Untitled Role'}
                       </h3>
-                      <p className="text-[13px] text-gray-400 font-medium truncate mt-1">
+                      <p className="text-[13px] text-gray-400 font-medium truncate mt-1" title={session.name || 'Q4 hiring • 3 rounds'}>
                         {session.name || 'Q4 hiring • 3 rounds'}
                       </p>
                     </div>
                   </div>
 
                   {/* Actions Dropdown */}
-                  <div className="relative shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button 
                       onClick={() => setActiveMenuId(activeMenuId === session.id ? null : session.id)}
                       className="p-1.5 text-gray-400 hover:text-charcoal hover:bg-gray-100 rounded-full transition-colors"

@@ -17,7 +17,7 @@ import BrevoConversations from './components/BrevoConversations';
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const AuthVerifyPage = lazy(() => import('./pages/AuthVerifyPage'));
-const GitHubCallbackPage = lazy(() => import('./pages/GitHubCallbackPage'));
+
 const DashboardLayout = lazy(() => import('./pages/DashboardLayout'));
 const DashboardHome = lazy(() => import('./pages/DashboardHome'));
 const SessionsPage = lazy(() => import('./pages/SessionsPage'));
@@ -214,7 +214,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/auth/verify" element={<AuthVerifyPage />} />
-          <Route path="/auth/github/callback" element={<GitHubCallbackPage />} />
+
           <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
           <Route path="/auth/complete-profile" element={<CompleteProfilePage />} />
           <Route path="/about" element={<AboutPage />} />

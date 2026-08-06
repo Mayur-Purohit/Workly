@@ -63,7 +63,7 @@ class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
   static getDerivedStateFromError(error) { return { hasError: true }; }
   render() {
-    if (this.state.hasError) return <div className="p-8 w-full"><div className="bg-red-50 text-red-500 font-bold p-6 rounded-xl border border-red-200 flex flex-col items-start gap-3"><h3>Something went wrong.</h3><button onClick={()=>window.location.reload()} className="px-4 py-2 bg-red-100 rounded-lg text-sm">Retry</button></div></div>;
+    if (this.state.hasError) return <div className="p-8 w-full"><div className="bg-red-50 text-red-500 font-bold p-6 rounded-xl border border-red-200 flex flex-col items-start gap-3"><h3>Something went wrong.</h3><button onClick={() => window.location.reload()} className="px-4 py-2 bg-red-100 rounded-lg text-sm">Retry</button></div></div>;
     return this.props.children;
   }
 }
@@ -119,7 +119,7 @@ export default function DeveloperPortalLayout() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0b0b0c] text-foreground font-sans developer-portal-page transition-colors duration-300">
-      
+
       {/* Top App Bar — Google / Recruiter style */}
       <header className="fixed top-0 inset-x-0 z-40 h-16 bg-white dark:bg-[#0b0b0c] border-b border-gray-200 dark:border-[#222226] flex items-center px-4 gap-2 transition-colors duration-300">
         <button
@@ -154,10 +154,9 @@ export default function DeveloperPortalLayout() {
       </header>
 
       {/* Sidebar */}
-      <aside className={`fixed top-16 bottom-0 left-0 z-40 bg-white dark:bg-[#0b0b0c] border-r border-gray-200 dark:border-[#222226] transition-[width] duration-200 ${
-        sidebarCollapsed ? "w-[72px]" : "w-[260px]"
-      } flex flex-col`}>
-        
+      <aside className={`fixed top-16 bottom-0 left-0 z-40 bg-white dark:bg-[#0b0b0c] border-r border-gray-200 dark:border-[#222226] transition-[width] duration-200 ${sidebarCollapsed ? "w-[72px]" : "w-[260px]"
+        } flex flex-col`}>
+
         <div className="flex-1 overflow-y-auto px-2 py-3 hide-scrollbar">
           <div className="flex flex-col gap-1 mb-6">
             {navItems.map((item) => {
@@ -169,11 +168,10 @@ export default function DeveloperPortalLayout() {
                   key={item.href}
                   to={item.href}
                   data-tour={item.tourAttr || undefined}
-                  className={`flex items-center h-12 rounded-full px-3 gap-5 relative group transition-colors duration-200 ${
-                    isActive 
-                      ? "text-[#111111] font-semibold" 
+                  className={`flex items-center h-12 rounded-full px-3 gap-5 relative group transition-colors duration-200 ${isActive
+                      ? "text-[#111111] font-semibold"
                       : "text-charcoal hover:bg-gray-100 font-medium"
-                  } ${sidebarCollapsed ? "justify-center px-0" : ""}`}
+                    } ${sidebarCollapsed ? "justify-center px-0" : ""}`}
                   title={item.name}
                 >
                   {isActive && (
@@ -183,9 +181,8 @@ export default function DeveloperPortalLayout() {
                       transition={{ type: "spring", stiffness: 350, damping: 28 }}
                     />
                   )}
-                  <span className={`w-6 flex items-center justify-center shrink-0 transition-colors duration-200 relative z-10 ${
-                    isActive ? "text-[#111111]" : "text-gray-500 group-hover:text-charcoal"
-                  }`}>
+                  <span className={`w-6 flex items-center justify-center shrink-0 transition-colors duration-200 relative z-10 ${isActive ? "text-[#111111]" : "text-gray-500 group-hover:text-charcoal"
+                    }`}>
                     <Icon size={20} />
                   </span>
                   {showLabel && (
@@ -207,11 +204,10 @@ export default function DeveloperPortalLayout() {
                 <Link
                   key={item.href}
                   to={item.href}
-                  className={`flex items-center h-12 rounded-full px-3 gap-5 relative group transition-colors duration-200 ${
-                    isActive 
-                      ? "text-[#111111] font-semibold" 
+                  className={`flex items-center h-12 rounded-full px-3 gap-5 relative group transition-colors duration-200 ${isActive
+                      ? "text-[#111111] font-semibold"
                       : "text-charcoal hover:bg-gray-100 font-medium"
-                  } ${sidebarCollapsed ? "justify-center px-0" : ""}`}
+                    } ${sidebarCollapsed ? "justify-center px-0" : ""}`}
                   title={item.name}
                 >
                   {isActive && (
@@ -221,9 +217,8 @@ export default function DeveloperPortalLayout() {
                       transition={{ type: "spring", stiffness: 350, damping: 28 }}
                     />
                   )}
-                  <span className={`w-6 flex items-center justify-center shrink-0 transition-colors duration-200 relative z-10 ${
-                    isActive ? "text-[#111111]" : "text-gray-500 group-hover:text-charcoal"
-                  }`}>
+                  <span className={`w-6 flex items-center justify-center shrink-0 transition-colors duration-200 relative z-10 ${isActive ? "text-[#111111]" : "text-gray-500 group-hover:text-charcoal"
+                    }`}>
                     <Icon size={20} />
                   </span>
                   {showLabel && (
@@ -234,43 +229,43 @@ export default function DeveloperPortalLayout() {
                 </Link>
               )
             })}
-             <button
-                onClick={clearAuth}
-                className={`flex items-center h-10 rounded-full px-3 gap-5 text-gray-500 hover:text-red-600 hover:bg-red-50 transition mt-2 text-left w-full ${sidebarCollapsed ? "justify-center px-0" : ""}`}
-                title="Logout"
-              >
-                <span className="w-6 flex items-center justify-center shrink-0">
-                  <LogOut size={18} />
-                </span>
-                {!sidebarCollapsed && <span className="text-sm font-medium">Logout</span>}
-              </button>
-              <button
-                data-tour="dev-help-btn"
-                onClick={startTour}
-                className={`flex items-center h-10 rounded-full px-3 gap-5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition text-left w-full ${sidebarCollapsed ? "justify-center px-0" : ""}`}
-                title="Help & Tour"
-              >
-                <span className="w-6 flex items-center justify-center shrink-0">
-                  <HelpCircle size={18} />
-                </span>
-                {!sidebarCollapsed && <span className="text-sm font-medium">Help & Tour</span>}
-              </button>
+            <button
+              onClick={clearAuth}
+              className={`flex items-center h-10 rounded-full px-3 gap-5 text-gray-500 hover:text-red-600 hover:bg-red-50 transition mt-2 text-left w-full ${sidebarCollapsed ? "justify-center px-0" : ""}`}
+              title="Logout"
+            >
+              <span className="w-6 flex items-center justify-center shrink-0">
+                <LogOut size={18} />
+              </span>
+              {!sidebarCollapsed && <span className="text-sm font-medium">Logout</span>}
+            </button>
+            <button
+              data-tour="dev-help-btn"
+              onClick={startTour}
+              className={`flex items-center h-10 rounded-full px-3 gap-5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition text-left w-full ${sidebarCollapsed ? "justify-center px-0" : ""}`}
+              title="Help & Tour"
+            >
+              <span className="w-6 flex items-center justify-center shrink-0">
+                <HelpCircle size={18} />
+              </span>
+              {!sidebarCollapsed && <span className="text-sm font-medium">Help & Tour</span>}
+            </button>
           </div>
         </div>
 
         {/* User Card - hide when collapsed */}
         {!sidebarCollapsed ? (
           <div className="p-3 border-t border-gray-200 dark:border-[#222226] bg-gray-50/50 dark:bg-zinc-900/50">
-             <UsageProgress />
-              <div className="flex items-center gap-2 pt-3 mt-2 border-t border-gray-200/60">
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm tracking-tighter shrink-0 cursor-default shadow-sm">
-                  {(company_name || developer?.email || "D").substring(0, 2).toUpperCase()}
-                </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-xs font-bold truncate text-charcoal">{company_name || "Developer"}</span>
-                  <span className="text-[10px] text-gray-500 truncate font-semibold">{developer?.email || "developer@example.com"}</span>
-                </div>
+            <UsageProgress />
+            <div className="flex items-center gap-2 pt-3 mt-2 border-t border-gray-200/60">
+              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm tracking-tighter shrink-0 cursor-default shadow-sm">
+                {(company_name || developer?.email || "D").substring(0, 2).toUpperCase()}
               </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-xs font-bold truncate text-charcoal">{company_name || "Developer"}</span>
+                <span className="text-[10px] text-gray-500 truncate font-semibold">{developer?.email || "developer@example.com"}</span>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="p-3 border-t border-gray-200 dark:border-[#222226] bg-gray-50/50 dark:bg-zinc-900/50 flex justify-center">
@@ -282,14 +277,14 @@ export default function DeveloperPortalLayout() {
       </aside>
 
       {/* Main Content */}
-      <main 
+      <main
         className="pt-16 transition-[padding] duration-200 min-h-screen flex-1 bg-white dark:bg-[#0b0b0c] overflow-y-auto"
         style={{ paddingLeft: sidebarCollapsed ? 72 : 260 }}
       >
         <AlertBanner />
         <div className="p-4 sm:p-6 md:p-8 max-w-[1400px] mx-auto">
           <ErrorBoundary>
-            <motion.div key={pathname} initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.08}} className="w-full h-full">
+            <motion.div key={pathname} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.08 }} className="w-full h-full">
               <Outlet />
             </motion.div>
           </ErrorBoundary>

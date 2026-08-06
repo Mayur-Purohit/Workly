@@ -68,22 +68,20 @@ export function TestShell({
                       navigate(`/test/${r.round_type}?token=${r.token}`);
                     }
                   }}
-                  className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                    active
+                  className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium transition-colors ${active
                       ? "bg-blue-50 text-blue-700 border border-blue-100"
                       : isCompleted
-                      ? "text-green-600 hover:bg-gray-50"
-                      : "text-gray-400 cursor-not-allowed"
-                  }`}
+                        ? "text-green-600 hover:bg-gray-50"
+                        : "text-gray-400 cursor-not-allowed"
+                    }`}
                 >
                   <span
-                    className={`grid h-5 w-5 place-items-center rounded-full text-[10px] font-bold ${
-                      active
+                    className={`grid h-5 w-5 place-items-center rounded-full text-[10px] font-bold ${active
                         ? "bg-blue-600 text-white"
                         : isCompleted
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-400"
-                    }`}
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-400"
+                      }`}
                   >
                     {isCompleted ? "✓" : i + 1}
                   </span>

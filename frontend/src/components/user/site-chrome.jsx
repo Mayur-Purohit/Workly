@@ -173,8 +173,8 @@ export function Header() {
   return (
     <div className="sticky top-0 z-40 w-full transition-all duration-300 p-0 pointer-events-none">
       <header className={`mx-auto transition-all duration-300 pointer-events-auto backdrop-blur-xl ${isScrolled
-          ? "max-w-7xl mt-3 rounded-full border border-border bg-background/80 shadow-lg"
-          : "w-full border-b border-border/60 bg-background/80"
+        ? "max-w-7xl mt-3 rounded-full border border-border bg-background/80 shadow-lg"
+        : "w-full border-b border-border/60 bg-background/80"
         }`}>
         <div className={`mx-auto flex max-w-7xl items-center gap-4 py-3 transition-all duration-300 ${isScrolled ? "px-8" : "px-4 sm:px-6"
           }`}>
@@ -207,8 +207,8 @@ export function Header() {
                   to={l.to}
                   data-tour={tourId}
                   className={`pill px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition ${active
-                      ? "bg-muted text-foreground font-medium shadow-sm"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-muted text-foreground font-medium shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                 >
                   {l.label}
@@ -223,8 +223,8 @@ export function Header() {
                   onClick={() => setToolsOpen(!toolsOpen)}
                   data-tour="seeker-nav-career-tools"
                   className={`pill px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition flex items-center gap-1 ${filteredTools.some(l => pathname === l.to)
-                      ? "bg-muted text-foreground font-semibold"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-muted text-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                 >
                   <span>Career Tools</span>
@@ -244,8 +244,8 @@ export function Header() {
                           data-tour={tourId}
                           onClick={() => setToolsOpen(false)}
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm skeuo-dropdown-item ${active
-                              ? "bg-[#faf9f6] dark:bg-[#212126] text-foreground font-semibold"
-                              : "text-muted-foreground"
+                            ? "bg-[#faf9f6] dark:bg-[#212126] text-foreground font-semibold"
+                            : "text-muted-foreground"
                             }`}
                         >
                           <Icon size={14} className="text-muted-foreground shrink-0 transition-colors" />
@@ -264,8 +264,8 @@ export function Header() {
                 to="/jobs/billing"
                 data-tour="seeker-nav-premium-plans"
                 className={`pill px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition flex items-center gap-1.5 ${pathname === "/jobs/billing"
-                    ? "bg-amber-500/10 text-amber-500 font-semibold border border-amber-500/20"
-                    : "text-amber-500 hover:bg-amber-500/5"
+                  ? "bg-amber-500/10 text-amber-500 font-semibold border border-amber-500/20"
+                  : "text-amber-500 hover:bg-amber-500/5"
                   }`}
               >
                 <Sparkles size={14} />
@@ -417,8 +417,8 @@ export function Header() {
                 to={l.to}
                 data-tour={tourId}
                 className={`pill flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-xs font-medium ${active
-                    ? "bg-muted text-foreground font-medium shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-muted text-foreground font-medium shadow-sm"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
               >
                 <Icon className="h-3.5 w-3.5" />

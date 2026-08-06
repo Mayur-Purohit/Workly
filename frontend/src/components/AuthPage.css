@@ -203,25 +203,31 @@
 }
 
 .sso-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
 .sso-btn {
-  height: 42px;
-  border: 1px solid var(--border-light);
+  width: 100%;
+  height: 48px;
+  border: 1.5px solid var(--border-light);
   background: white;
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 10px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   color: #111111;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+}
+
+.sso-btn:hover {
+  background: #fafafa;
+  border-color: #d1d5db;
 }
 
 .dark .sso-btn {
@@ -233,6 +239,7 @@
 .dark .sso-btn:hover {
   background: rgba(255, 255, 255, 0.06) !important;
 }
+
 
 /* Bottom Actions */
 .auth-footer {

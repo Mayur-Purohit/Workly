@@ -601,12 +601,12 @@ export default function DashboardLayout() {
       {/* Side Nav — Material 3 drawer */}
       <aside
         className={`fixed top-16 bottom-0 left-0 z-40 bg-white dark:bg-[#0b0b0c] border-r border-gray-200 dark:border-[#222226] md:border-transparent transition-[width,transform] duration-200 ${isDesktop
-            ? open
-              ? "w-[260px] translate-x-0"
-              : "w-[72px] translate-x-0"
-            : open
-              ? "w-[280px] translate-x-0 shadow-md"
-              : "w-[280px] -translate-x-full"
+          ? open
+            ? "w-[260px] translate-x-0"
+            : "w-[72px] translate-x-0"
+          : open
+            ? "w-[280px] translate-x-0 shadow-md"
+            : "w-[280px] -translate-x-full"
           }`}
       >
         <nav className="py-3 px-2 space-y-1 overflow-y-auto h-[calc(100%-140px)]">
@@ -623,8 +623,8 @@ export default function DashboardLayout() {
                 data-tour={item.tourAttr || undefined}
                 onClick={() => { if (!isDesktop) setOpen(false); }}
                 className={`flex items-center h-12 rounded-full px-3 gap-5 relative group transition-colors duration-200 ${active
-                    ? "text-[#111111] font-semibold"
-                    : "text-charcoal hover:bg-gray-100 font-medium"
+                  ? "text-[#111111] font-semibold"
+                  : "text-charcoal hover:bg-gray-100 font-medium"
                   }`}
                 title={item.label}
               >
