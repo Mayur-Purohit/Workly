@@ -99,8 +99,12 @@ const salaryFilterFn = (salaryRange, minVal, filterCurrencyCode) => {
   if (!parsed.min && !parsed.max) return false;
   
   const jobCurrency = parsed.currency || "USD";
-  const convertedMin = convertSalaryToCurrency(parsed.min || parsed.max, jobCurrency, filterCurrencyCode);
   
+  // STRICT CURRENCY MATCHING
+  // If the user selects INR, they only want to see INR jobs.
+  if (jobCurrency !== filterCurrencyCode) return false;
+  
+  const convertedMin = parsed.min || parsed.max;
   return convertedMin >= minVal;
 };
 

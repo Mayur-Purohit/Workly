@@ -1278,8 +1278,22 @@ function PricingSection({ onStart, plans }) {
               razorpay_signature: "sig_mock_" + Math.random().toString(36).substring(7),
               plan: plan.id
             });
+            
+            // Fetch updated user profile from backend
+            try {
+              const { authAPI } = await import('../lib/api');
+              const { useAuthStore } = await import('../stores/authStore');
+              const updatedMe = await authAPI.getMe();
+              
+              const currentCompany = useAuthStore.getState().company || {};
+              const updatedCompany = { ...currentCompany, ...updatedMe, jwt_token: localStorage.getItem("vish_jwt") };
+              useAuthStore.getState().setAuth(updatedCompany);
+            } catch (authErr) {
+              console.warn("Failed to fetch updated profile after payment", authErr);
+            }
+
             toast.success(`Successfully activated ${plan.name}! (Mock Payment)`);
-            navigate('/dashboard');
+            window.location.href = '/dashboard';
           } catch (err) {
             toast.error("Payment verification failed: " + (err.message || "Unknown error"));
           } finally {
@@ -1312,8 +1326,22 @@ function PricingSection({ onStart, plans }) {
               razorpay_signature: response.razorpay_signature,
               plan: plan.id
             });
+            
+            // Fetch updated user profile from backend
+            try {
+              const { authAPI } = await import('../lib/api');
+              const { useAuthStore } = await import('../stores/authStore');
+              const updatedMe = await authAPI.getMe();
+              
+              const currentCompany = useAuthStore.getState().company || {};
+              const updatedCompany = { ...currentCompany, ...updatedMe, jwt_token: localStorage.getItem("vish_jwt") };
+              useAuthStore.getState().setAuth(updatedCompany);
+            } catch (authErr) {
+              console.warn("Failed to fetch updated profile after payment", authErr);
+            }
+            
             toast.success(`Payment successful! Welcome to ${plan.name}.`);
-            navigate('/dashboard');
+            window.location.href = '/dashboard';
           } catch (err) {
             toast.error("Payment verification failed");
           } finally {
@@ -1367,6 +1395,17 @@ function PricingSection({ onStart, plans }) {
           const price = yearly ? Math.round(rawPrice * 0.8 * 12) : rawPrice;
           const currency = rawPrice > 100 ? '₹' : '$';
           const isSubscribing = subscribingId === p.id;
+          
+          let userTier = "free";
+          try {
+            const vishCompanyStr = localStorage.getItem("vish_company");
+            if (vishCompanyStr) {
+              const comp = JSON.parse(vishCompanyStr);
+              userTier = comp.tier || "free";
+            }
+          } catch(e) {}
+          
+          const isCurrentPlan = userTier === p.id;
 
           return (
             <motion.div key={p.id || p.name} variants={staggerItemVariants}
@@ -1392,15 +1431,23 @@ function PricingSection({ onStart, plans }) {
                 ))}
               </ul>
               <button
-                onClick={() => handleSubscribe(p)}
+                onClick={() => {
+                  if (isCurrentPlan) {
+                    window.location.href = '/dashboard';
+                  } else {
+                    handleSubscribe(p);
+                  }
+                }}
                 disabled={isSubscribing}
-                className={`mt-8 flex items-center justify-center gap-2 h-12 rounded-full font-semibold transition-all cursor-pointer ${p.popular ? "bg-[var(--google-blue)] text-white hover:opacity-90 shadow-md" : "border border-border bg-background hover:bg-muted text-foreground"}`}
+                className={`mt-8 flex items-center justify-center gap-2 h-12 rounded-full font-semibold transition-all cursor-pointer ${isCurrentPlan ? "bg-green-600 text-white hover:opacity-90 shadow-md border-transparent" : p.popular ? "bg-[var(--google-blue)] text-white hover:opacity-90 shadow-md" : "border border-border bg-background hover:bg-muted text-foreground"}`}
               >
                 {isSubscribing ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
                     Connecting...
                   </>
+                ) : isCurrentPlan ? (
+                  "Current Plan"
                 ) : rawPrice === 0 ? (
                   "Start free"
                 ) : (

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { Upload, Archive, Mail, Link as LinkIcon, Download, Zap, Settings, RefreshCw, X, ChevronDown, Check, Trash2, Building, Users, BarChart3, Search, Loader2, ArrowLeft, Network, Briefcase, CheckCircle2, Layers } from 'lucide-react';
+import { Upload, Archive, Mail, Link as LinkIcon, Download, Zap, Settings, RefreshCw, X, ChevronDown, Check, Trash2, Building, Users, BarChart3, Search, Loader2, ArrowLeft, Network, Briefcase, CheckCircle2, Layers, Filter, MapPin } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 
@@ -83,7 +83,7 @@ export default function SessionWorkspacePage() {
   const { highlightedIds } = useCandidateStore();
   const { company } = useAuthStore();
 
-  const isEnterprise = company?.tier?.toLowerCase() === 'enterprise';
+  const isPremiumTier = ['business', 'enterprise'].includes(company?.tier?.toLowerCase());
 
   const [activeTab, setActiveTab] = useState("upload");
   const [activeRound, setActiveRound] = useState(null);
@@ -711,9 +711,13 @@ export default function SessionWorkspacePage() {
 
                 {/* ZIP Archive — Premium Feature */}
                 <div className="relative">
-                  {!isEnterprise ? (
-                    <PremiumBadge tooltip="Bulk ZIP upload is available on the Enterprise plan">
-                      <div className="bg-white rounded-2xl p-6 border-2 border-transparent shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                  {!isPremiumTier ? (
+                    <div className="relative group">
+                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-2xl border border-dashed border-gray-200 m-[1px]">
+                        <span className="bg-charcoal text-white text-[11px] font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-widest shadow-sm">Premium</span>
+                        <p className="text-[13px] text-charcoal font-semibold text-center max-w-[200px]">Bulk ZIP upload is available on premium plans</p>
+                      </div>
+                      <div className="bg-white rounded-2xl p-6 border-2 border-transparent shadow-[0_2px_8px_rgba(0,0,0,0.04)] opacity-50">
                         <Archive size={32} className="text-accent mb-3" />
                         <h4 className="font-bold text-charcoal text-lg mb-1">ZIP Upload</h4>
                         <p className="text-xs text-charcoal mb-4 font-medium">Upload a ZIP containing all resume files</p>
@@ -721,7 +725,7 @@ export default function SessionWorkspacePage() {
                           <p className="text-sm font-bold text-gray-500">Drop ZIP file here</p>
                         </div>
                       </div>
-                    </PremiumBadge>
+                    </div>
                   ) : (
                     <div className="bg-white rounded-2xl p-6 border-2 border-transparent hover:border-accent transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                       <Archive size={32} className="text-accent mb-3" />
