@@ -1,0 +1,218 @@
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Google+Sans+Text:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #ffffff;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --text: #202124;
+  --card: #FFFFFF;
+  --success: #34A853;
+  --danger: #EA4335;
+  --muted: #5f6368;
+  --sidebar: #202124;
+  --google-blue: #4285F4;
+  --google-red: #EA4335;
+  --google-yellow: #FBBC05;
+  --google-green: #34A853;
+  --font-sans: "Google Sans Text", "Roboto", "Inter", system-ui, sans-serif;
+  --font-display: "Google Sans", "Space Grotesk", "Roboto", "Inter", system-ui, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Shimmer animation for skeletons */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Score ring animation */
+@keyframes fillRing {
+  from {
+    stroke-dashoffset: 100;
+  }
+
+  to {
+    stroke-dashoffset: var(--target-offset);
+  }
+}
+
+/* Horizontal marquee animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+}
+
+/* ── Dark Mode Overrides ──────────────────────────────────────────────────── */
+.dark {
+  --bg: #0b0b0c;
+  --accent: #f3f4f6;
+  --accent-dark: #e5e7eb;
+  --text: #f3f4f6;
+  --card: #131316;
+  --muted: #1c1c22;
+  --muted-foreground: #9ca3af;
+  --sidebar: #131316;
+  --border: #222226;
+}
+
+.dark body {
+  background-color: #0b0b0c !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .text-accent,
+.dark .text-accent-dark,
+.dark .hover\:text-accent:hover,
+.dark .hover\:text-accent-dark:hover {
+  color: #f3f4f6 !important;
+}
+
+.dark .bg-accent {
+  background-color: #f3f4f6 !important;
+  color: #0b0b0c !important;
+}
+
+.dark .hover\:bg-accent:hover,
+.dark .hover\:bg-accent-dark:hover {
+  background-color: #e5e7eb !important;
+}
+
+.dark .bg-accent-dark {
+  background-color: #e5e7eb !important;
+}
+
+.dark .border-accent,
+.dark .hover\:border-accent:hover {
+  border-color: #222226 !important;
+}
+
+.dark [class*="bg-accent\/10"] {
+  background-color: rgba(243, 244, 246, 0.1) !important;
+  color: #f3f4f6 !important;
+}
+
+.dark [class*="bg-accent\/20"] {
+  background-color: rgba(243, 244, 246, 0.2) !important;
+}
+
+.dark [class*="bg-accent\/5"] {
+  background-color: rgba(243, 244, 246, 0.05) !important;
+}
+
+.dark [class*="border-accent\/"] {
+  border-color: rgba(243, 244, 246, 0.15) !important;
+}
+
+/* Dark mode: global utility overrides */
+.dark .bg-white,
+.dark .bg-white\/50,
+.dark .bg-white\/80 {
+  background-color: var(--card) !important;
+}
+
+.dark .bg-cream {
+  background-color: var(--bg) !important;
+}
+
+.dark .bg-gray-50,
+.dark [class*="bg-gray-50"] {
+  background-color: var(--bg) !important;
+}
+
+.dark .bg-gray-100,
+.dark [class*="bg-gray-100"] {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.dark .bg-blue-50,
+.dark .bg-blue-100,
+.dark .bg-blue-200,
+.dark [class*="bg-blue-50"],
+.dark [class*="bg-blue-100"] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .bg-\[\#FAFAFA\],
+.dark .bg-\[\#FAFAFA\]\/50,
+.dark .bg-\[\#FAFAFA\]\/80 {
+  background-color: var(--bg) !important;
+}
+
+.dark .border-gray-200,
+.dark .border-gray-100,
+.dark .border-slate-200,
+.dark .border-slate-100,
+.dark .border-\[\#e6dfcd\],
+.dark .border-\[\#f5f4ef\] {
+  border-color: var(--border) !important;
+}
+
+.dark .border-blue-100,
+.dark .border-blue-100\/50 {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.dark .text-charcoal,
+.dark .text-\[\#111111\],
+.dark .text-\[\#2A2A2A\],
+.dark .text-\[\#5c5c5c\],
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700,
+.dark .text-slate-600,
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: var(--foreground) !important;
+}
+
+.dark .text-gray-500,
+.dark .text-gray-400,
+.dark .text-slate-500,
+.dark .text-slate-400 {
+  color: #9ca3af !important;
+}
+
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-100:hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark textarea,
+.dark input {
+  color: var(--foreground) !important;
+}

@@ -1,0 +1,644 @@
+import { useState, useEffect } from "react";
+import { Link, useParams, useLocation } from "react-router-dom";
+import { Header, Footer } from "../../components/user/site-chrome";
+import { CompanyLogo } from "../../components/user/company-logo";
+import { seekerAPI } from "../../lib/api";
+import LoadingSkeleton from "../../components/LoadingSkeleton";
+import { ArrowLeft, Bookmark, Share2, MapPin, Clock, Briefcase, DollarSign, CheckCircle2, Star, BookOpen, TrendingUp, Award, XCircle } from "lucide-react";
+import toast from "react-hot-toast";
+import { BookmarkIconButton } from "../../components/ui/bookmark-icon-button";
+
+export default function UserJobDetail() {
+  const { jobId } = useParams();
+  const [job, setJob] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [related, setRelated] = useState([]);
+  
+  const location = useLocation();
+  const passedJobInfo = location.state?.jobInfo;
+
+  useEffect(() => {
+    if (!jobId) return;
+    setLoading(true);
+    seekerAPI.getJob(jobId)
+      .then((data) => {
+        let reqs = [];
+        if (data.skill_alignment?.missing) {
+          const isDictKeys = data.skill_alignment.missing.includes("inferred_role") || data.skill_alignment.missing.includes("required_skills");
+          if (isDictKeys && data.inferred_skills && typeof data.inferred_skills === "object") {
+            reqs = data.inferred_skills.required_skills || [];
+          } else {
+            reqs = data.skill_alignment.missing;
+          }
+        } else if (data.inferred_skills) {
+          if (Array.isArray(data.inferred_skills)) {
+            reqs = data.inferred_skills;
+          } else if (typeof data.inferred_skills === "object") {
+            reqs = data.inferred_skills.required_skills || [];
+          }
+        }
+
+        const inferredTags = Array.isArray(data.inferred_skills)
+          ? data.inferred_skills
+          : (typeof data.inferred_skills === "object" ? (data.inferred_skills.required_skills || []) : []);
+
+        const mappedJob = {
+          id: data.id,
+          companyId: data.company_id,
+          company: data.company_name,
+          title: data.job_title,
+          location: data.location || "Remote",
+          type: data.employment_type || "Full-time",
+          posted: data.created_at ? new Date(data.created_at).toLocaleDateString() : "Just now",
+          salary: data.salary_range || "Not Disclosed",
+          description: data.full_description || data.job_description,
+          logoColor: "#4F46E5",
+          logoPath: data.company_logo_path,
+          responsibilities: data.responsibilities || 
+            (typeof data.inferred_skills === "object" ? data.inferred_skills.key_responsibilities : null) || [
+            "Analyze requirements and design system specifications",
+            "Write high quality, testable, and self-documenting code",
+            "Participate in design meetings and code reviews",
+            "Collaborate with multi-disciplinary teams of designers and engineers"
+          ],
+          requirements: reqs,
+          tags: inferredTags,
+          applied: data.applied || false,
+          can_reapply: data.can_reapply || false,
+          isSaved: data.is_saved || false,
+          skillAlignment: data.skill_alignment,
+        };
+        setJob(mappedJob);
+      })
+      .catch((err) => {
+        const msg = (err?.message || err || "").toString().toLowerCase();
+        if (err?.status === 404 || msg.includes("404") || msg.includes("not found") || msg.includes("no longer active")) {
+          console.warn("Job not found (404): It may have been removed.");
+        } else {
+          console.error("Job details fetch error:", err);
+          toast.error("Failed to load job details");
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [jobId]);
+
+  const handleSave = async () => {
+    if (!job || saving) return;
+    setSaving(true);
+    try {
+      const isCurrentlySaved = job.isSaved;
+      await seekerAPI.saveJob(job.id, !isCurrentlySaved);
+      setJob({ ...job, isSaved: !isCurrentlySaved });
+      toast.success(isCurrentlySaved ? "Job unsaved" : "Job saved!");
+    } catch (err) {
+      toast.error(err.message || "Failed to save job");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col justify-between">
+        <Header />
+        <div className="flex-1 mx-auto max-w-7xl w-full px-6 py-10 space-y-8">
+          <LoadingSkeleton width="100px" height="20px" />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="rounded-3xl border border-border bg-card p-6 md:p-8 space-y-6">
+                <div className="flex items-center gap-4">
+                  <LoadingSkeleton width="64px" height="64px" borderRadius="16px" />
+                  <div className="space-y-2">
+                    <LoadingSkeleton width="220px" height="28px" />
+                    <LoadingSkeleton width="140px" height="16px" />
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-4 pt-4 border-t border-border">
+                  {[1, 2, 3, 4].map(i => (
+                    <LoadingSkeleton key={i} width="100px" height="32px" className="pill" />
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-border bg-card p-6 md:p-8 space-y-4">
+                <LoadingSkeleton width="150px" height="24px" />
+                <div className="space-y-2">
+                  <LoadingSkeleton width="100%" height="16px" />
+                  <LoadingSkeleton width="100%" height="16px" />
+                  <LoadingSkeleton width="90%" height="16px" />
+                  <LoadingSkeleton width="60%" height="16px" />
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-1 space-y-6">
+              <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
+                <LoadingSkeleton width="100%" height="40px" className="pill" />
+                <LoadingSkeleton width="100%" height="40px" className="pill" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col justify-between">
+        <Header />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12">
+          <div className="w-full max-w-md bg-card border border-border rounded-3xl p-8 text-center space-y-6 shadow-sm">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 mb-2">
+              <XCircle className="h-8 w-8 text-red-500" />
+            </div>
+            
+            {passedJobInfo ? (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center gap-3">
+                  <CompanyLogo name={passedJobInfo.company} logoPath={passedJobInfo.logoPath} color="#4F46E5" size={48} />
+                  <div>
+                    <h2 className="text-xl font-display font-semibold">{passedJobInfo.title}</h2>
+                    <p className="text-sm text-muted-foreground">{passedJobInfo.company}</p>
+                  </div>
+                </div>
+                
+                {passedJobInfo.status && (
+                  <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Status: {passedJobInfo.status}
+                  </div>
+                )}
+                
+                <p className="text-sm text-muted-foreground leading-relaxed pt-2">
+                  This job posting was closed or unpublished by the recruiter. Your status in the pipeline is recorded safely, but detailed requirements for this past listing are no longer accessible.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <h2 className="text-xl font-display font-semibold">Position No Longer Available</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  This job listing has been removed or closed by the employer. It may still show in your applications history.
+                </p>
+              </div>
+            )}
+            
+            <div className="pt-4 flex flex-col sm:flex-row gap-3 w-full justify-center">
+              <Link to="/jobs/dashboard" className="pill bg-muted text-foreground px-6 py-2.5 text-sm font-medium hover:bg-muted/80 transition-colors">
+                ← My Applications
+              </Link>
+              <Link to="/jobs/search" className="pill bg-primary text-primary-foreground px-6 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity">
+                Find New Jobs →
+              </Link>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="mx-auto max-w-7xl px-6 pt-8">
+        <Link to="/jobs/search" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> All jobs
+        </Link>
+      </div>
+
+      <section className="mx-auto max-w-7xl px-6 py-8">
+        <div className="rounded-[2rem] border border-border bg-card p-6 sm:p-10">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-5 sm:flex sm:items-center sm:justify-between">
+            <div className="flex items-start gap-5 sm:items-center">
+              <CompanyLogo name={job.company} logoPath={job.logoPath} color={job.logoColor} size={72} />
+              <div className="min-w-0">
+                <Link to={job.companyId ? `/jobs/companies/${job.companyId}` : "/jobs/companies"} className="text-sm font-medium text-muted-foreground hover:text-foreground">
+                  {job.company}
+                </Link>
+                <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight sm:text-4xl">{job.title}</h1>
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{job.location}</span>
+                  <span className="flex items-center gap-1.5"><Briefcase className="h-4 w-4" />{job.type}</span>
+                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" />{job.posted}</span>
+                  <span className="flex items-center gap-1.5">
+                    {job.salary && (job.salary.includes("₹") || job.salary.toLowerCase().includes("lpa") || job.salary.toLowerCase().includes("inr")) ? (
+                      <span className="font-semibold text-muted-foreground mr-0.5 text-sm">₹</span>
+                    ) : (
+                      <DollarSign className="h-4 w-4" />
+                    )}
+                    {job.salary && job.salary.startsWith("₹") ? job.salary.substring(1) : job.salary}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 flex flex-wrap items-center gap-2 sm:mt-8">
+            {job.applied ? (
+              <span className="pill inline-flex items-center gap-2 bg-muted px-6 py-3 text-sm font-medium text-muted-foreground">
+                Applied
+              </span>
+            ) : job.can_reapply ? (
+              <Link to={`/jobs/apply/${job.id}`} className="pill inline-flex items-center gap-2 bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 shadow-sm">
+                Re-apply now
+              </Link>
+            ) : (
+              <Link to={`/jobs/apply/${job.id}`} className="pill inline-flex items-center gap-2 bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90">
+                Apply now
+              </Link>
+            )}
+            <BookmarkIconButton isSaved={job.isSaved} onClick={handleSave} />
+            <button
+              onClick={() => {
+                const url = window.location.href;
+                if (navigator.share) {
+                  navigator.share({ title: job.title || 'Job', url }).catch(() => {});
+                } else if (navigator.clipboard) {
+                  navigator.clipboard.writeText(url)
+                    .then(() => alert('Job link copied to clipboard!'))
+                    .catch(() => {
+                      // fallback for insecure context
+                      const ta = document.createElement('textarea');
+                      ta.value = url;
+                      document.body.appendChild(ta);
+                      ta.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(ta);
+                      alert('Job link copied to clipboard!');
+                    });
+                } else {
+                  const ta = document.createElement('textarea');
+                  ta.value = url;
+                  document.body.appendChild(ta);
+                  ta.select();
+                  document.execCommand('copy');
+                  document.body.removeChild(ta);
+                  alert('Job link copied to clipboard!');
+                }
+              }}
+              className="pill inline-flex items-center gap-2 border border-border bg-background px-4 py-3 text-sm font-medium hover:bg-muted"
+            >
+              <Share2 className="h-4 w-4" /> Share
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
+          <div className="space-y-8 rounded-[2rem] border border-border bg-card p-6 sm:p-10">
+            <div>
+              <h2 className="font-display text-xl font-semibold tracking-tight">About the role</h2>
+              <div className="mt-4">
+                <FormattedDescription text={job.description} />
+              </div>
+            </div>
+            {job.responsibilities && job.responsibilities.length > 0 && (
+              <div>
+                <h2 className="font-display text-xl font-semibold tracking-tight">What you'll do</h2>
+                <ul className="mt-3 space-y-2">
+                  {job.responsibilities.map((r) => (
+                    <li key={r} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--google-green)]" /> {r}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {job.requirements && job.requirements.length > 0 && (
+              <div>
+                <h2 className="font-display text-xl font-semibold tracking-tight">Required Skills / Requirements</h2>
+                <ul className="mt-3 space-y-2">
+                  {job.requirements.map((r) => (
+                    <li key={r} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--google-blue)]" /> {r}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {job.tags && job.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {job.tags.map((t) => (
+                  <span key={t} className="pill bg-muted px-3 py-1 text-xs">{t}</span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <aside className="space-y-4">
+            <div className="rounded-3xl border border-border bg-card p-6">
+              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Job Summary</div>
+              <dl className="mt-4 space-y-3 text-sm">
+                {[
+                  ["Posted", job.posted],
+                  ["Type", job.type],
+                  ["Location", job.location],
+                  ["Salary", job.salary],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex items-center justify-between">
+                    <dt className="text-muted-foreground">{k}</dt>
+                    <dd className="font-medium">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            {/* Skills Gap Analysis */}
+            {job.skillAlignment && (
+              <div className="rounded-3xl border border-border bg-card p-6 space-y-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display font-semibold text-sm text-charcoal">Skills Gap Analysis</h3>
+                  <span className="text-[10px] font-bold text-accent px-2 py-0.5 rounded-full bg-accent/10">
+                    {job.skillAlignment.match_pct}% Match
+                  </span>
+                </div>
+                
+                {/* Progress bar */}
+                <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-accent h-full rounded-full transition-all duration-500"
+                    style={{ width: `${job.skillAlignment.match_pct}%` }}
+                  />
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  {/* Matched skills */}
+                  {job.skillAlignment.matched?.length > 0 && (
+                    <div>
+                      <div className="font-semibold text-[10px] text-emerald-600 mb-2 flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>Skills you have</span>
+                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-[9px] font-bold">
+                          {job.skillAlignment.matched.length}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {job.skillAlignment.matched.slice(0, 8).map((skill) => (
+                          <span key={skill} className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-medium border border-emerald-100 inline-flex items-center gap-1">
+                            <CheckCircle2 className="h-2.5 w-2.5 shrink-0" /> {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Missing skills */}
+                  {job.skillAlignment.missing?.length > 0 && (
+                    <div>
+                      <div className="font-semibold text-[10px] text-amber-600 mb-2 flex items-center gap-1.5">
+                        <BookOpen className="h-3 w-3" />
+                        <span>Skills to learn</span>
+                        <span className="px-1.5 py-0.5 rounded-full bg-amber-50 text-[9px] font-bold">
+                          {job.skillAlignment.missing.length}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {job.skillAlignment.missing.slice(0, 8).map((skill) => (
+                          <span key={skill} className="px-2 py-1 bg-amber-50/50 text-amber-700 rounded-lg text-[10px] font-medium border border-amber-100 inline-flex items-center gap-1">
+                            <BookOpen className="h-2.5 w-2.5 shrink-0" /> {skill}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Course suggestions */}
+                      <div className="mt-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 space-y-1.5">
+                        <div className="text-[10px] font-bold text-charcoal">Recommended resources:</div>
+                        <ul className="space-y-1 text-[10px] text-muted-foreground">
+                          {job.skillAlignment.missing.slice(0, 3).map((skill) => (
+                            <li key={skill} className="flex items-center justify-between">
+                              <span>Learn {skill}</span>
+                              <a
+                                href={`https://www.coursera.org/courses?query=${encodeURIComponent(skill)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-accent hover:underline font-semibold"
+                              >
+                                Find courses &rarr;
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <Link
+              to={job.companyId ? `/jobs/companies/${job.companyId}` : "/jobs/companies"}
+              className="block rounded-3xl border border-border bg-card p-6 transition hover:google-shadow"
+            >
+              <div className="flex items-center gap-3">
+                <CompanyLogo name={job.company} logoPath={job.logoPath} color={job.logoColor} size={44} />
+                <div>
+                  <div className="font-display font-semibold">{job.company}</div>
+                  <div className="text-xs text-muted-foreground">View company profile</div>
+                </div>
+              </div>
+            </Link>
+          </aside>
+        </div>
+      </section>
+
+      <Footer />
+    </div>
+  );
+}
+
+function FormattedDescription({ text }) {
+  if (!text) return null;
+
+  const lines = text.split("\n").map(l => l.trim());
+  const elements = [];
+  let currentList = [];
+  let listType = "bullet";
+  let listAccent = "blue";
+
+  const flushList = () => {
+    if (currentList.length > 0) {
+      elements.push({
+        type: "list",
+        items: [...currentList],
+        listType,
+        accent: listAccent
+      });
+      currentList = [];
+    }
+  };
+
+  let metaItems = [];
+  const flushMeta = () => {
+    if (metaItems.length > 0) {
+      elements.push({
+        type: "meta-grid",
+        items: [...metaItems]
+      });
+      metaItems = [];
+    }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (!line) {
+      flushList();
+      flushMeta();
+      continue;
+    }
+
+    // Skip divider lines (=== or --- or similar)
+    if (/^[=\-_*]{4,}$/.test(line)) {
+      flushList();
+      flushMeta();
+      continue;
+    }
+
+    // 1. Check for Checkmark Emojis (✅, ✔️, ✔, ☑️, ☑)
+    const checkMatch = line.match(/^(?:✅|✔️|✔|☑️|☑)\s*(.*)/u);
+    if (checkMatch) {
+      flushMeta();
+      currentList.push({ text: checkMatch[1], icon: "check" });
+      continue;
+    }
+
+    // 2. Check for Star Emojis (⭐, 🌟, ✨)
+    const starMatch = line.match(/^(?:⭐|🌟|✨)\s*(.*)/u);
+    if (starMatch) {
+      flushMeta();
+      currentList.push({ text: starMatch[1], icon: "star" });
+      continue;
+    }
+
+    // 3. Check for standard bullet list item (starts with -, *, •, +)
+    const bulletMatch = line.match(/^[-*•+]\s+(.*)/);
+    if (bulletMatch) {
+      flushMeta();
+      currentList.push({ text: bulletMatch[1], icon: "bullet" });
+      continue;
+    }
+
+    // 4. Check for numbered list item (starts with 1., 2.)
+    const numMatch = line.match(/^(\d+)\.\s+(.*)/);
+    if (numMatch) {
+      flushMeta();
+      currentList.push({ text: numMatch[2], icon: "number", num: numMatch[1] });
+      continue;
+    }
+
+    // Check for key-value pair (e.g. COMPANY: BuildFast)
+    // Avoid matching URLs
+    const kvMatch = line.match(/^([A-Z0-9_\s]{3,25}):\s+(.*)/);
+    if (kvMatch && !line.startsWith("http")) {
+      flushList();
+      metaItems.push({ key: kvMatch[1], value: kvMatch[2] });
+      continue;
+    }
+
+    // Plain text or Header
+    flushList();
+    flushMeta();
+
+    // A header is uppercase, short (fewer than 50 chars), and has at least one letter
+    const isHeader = (line.length < 50 && line === line.toUpperCase() && /[A-Z]/.test(line)) || line.endsWith(":");
+    if (isHeader) {
+      const headerText = line.endsWith(":") ? line.slice(0, -1) : line;
+      const lowerH = headerText.toLowerCase();
+
+      if (lowerH.includes("do") || lowerH.includes("responsibility") || lowerH.includes("expect")) {
+        listAccent = "green";
+      } else if (lowerH.includes("require") || lowerH.includes("skill") || lowerH.includes("eligibility")) {
+        listAccent = "blue";
+      } else {
+        listAccent = "blue";
+      }
+
+      elements.push({
+        type: "header",
+        text: headerText
+      });
+    } else {
+      elements.push({
+        type: "paragraph",
+        text: line
+      });
+    }
+  }
+
+  flushList();
+  flushMeta();
+
+  return (
+    <div className="space-y-4">
+      {elements.map((el, i) => {
+        if (el.type === "header") {
+          return (
+            <h3 key={i} className="font-display text-base font-semibold text-[#202124] mt-6 first:mt-0 tracking-tight">
+              {el.text}
+            </h3>
+          );
+        }
+        if (el.type === "paragraph") {
+          return (
+            <p key={i} className="text-sm leading-relaxed text-[#5f6368]">
+              {el.text}
+            </p>
+          );
+        }
+        if (el.type === "list") {
+          return (
+            <ul key={i} className="space-y-2.5 my-2">
+              {el.items.map((item, idx) => {
+                let iconElement = null;
+                if (item.icon === "check") {
+                  iconElement = <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#1e8e3e]" />;
+                } else if (item.icon === "star") {
+                  iconElement = <Star className="mt-0.5 h-4 w-4 shrink-0 fill-[#f9ab00] text-[#f9ab00]" />;
+                } else if (item.icon === "number") {
+                  iconElement = (
+                    <span className="mt-0.5 text-[10px] font-bold text-[#1967d2] shrink-0 w-4 h-4 rounded-full bg-[#e8f0fe] flex items-center justify-center font-mono">
+                      {item.num}
+                    </span>
+                  );
+                } else {
+                  iconElement = (
+                    <CheckCircle2 className={`mt-0.5 h-4 w-4 shrink-0 ${
+                      el.accent === "green" ? "text-[#1e8e3e]" : "text-[#1a73e8]"
+                    }`} />
+                  );
+                }
+                return (
+                  <li key={idx} className="flex items-start gap-2.5 text-sm text-[#5f6368]">
+                    {iconElement}
+                    <span>{item.text}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          );
+        }
+        if (el.type === "meta-grid") {
+          return (
+            <div key={i} className="bg-[#f1f3f4] rounded-2xl border border-border p-5 my-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {el.items.map((item, idx) => (
+                <div key={idx} className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-[#5f6368] uppercase tracking-wider">
+                    {item.key.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+                  </span>
+                  <span className="text-sm font-semibold text-[#202124]">
+                    {item.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        }
+        return null;
+      })}
+    </div>
+  );
+}

@@ -1,0 +1,104 @@
+# Environment variables and secrets (CRITICAL for deployed projects)
+.env
+.env.*
+*.env
+backend/.env
+backend/.env.*
+backend/.env.local
+frontend/.env
+frontend/.env.*
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+*.pem
+*.key
+*.secret
+
+# Python & Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+backend/venv/
+backend/.venv/
+backend/env/
+venv/
+.venv/
+env/
+backend/db.sqlite3
+backend/db.sqlite3-journal
+backend/uploads/
+backend/photos/
+backend/media/
+dump.rdb
+
+# Node.js & Frontend (Vite/React)
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/dist_ssr/
+frontend/.vite/
+.vite/
+.eslintcache
+frontend/.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDEs, OS & Tooling
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+*.log.*
+/tmp/
+backend_output.log
+/backend_output.log
+.gemini/
+.antigravity/
+.agentic/
+.agents/
+
+# Testing & Coverage
+celerybeat-schedule
+celerybeat.pid
+.coverage
+.pytest_cache/
+htmlcov/
+dummy.pdf
+backend/test_resume_2col.pdf
+backend/scratch/
+/*.pdf
+*.pdf
+*.bak
+testsprite_tests/tmp/config.json
+
+# ML Model artifacts & heavy datasets
+backend/models/*.pkl
+backend/models/ner_resume_parser/
+backend/datasets/Salary.csv
+backend/datasets/DSL-StrongPasswordData.csv
+backend/datasets/Resume/
+
+# Excluded design & legacy folders per workspace rules
+inspiration_ui/
+OK/
+OLD ONES/
+TESTINAL/
+
+# Ignore markdown files per workspace rules
+*.md
+# But keep essential project documentation
+!README.md
+!CONTRIBUTING.md
+!SECURITY.md
+!LICENSE
+!frontend/README.md

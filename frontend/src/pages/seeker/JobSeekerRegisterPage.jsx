@@ -1,0 +1,337 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { publicAPI, seekerAPI } from '../../lib/api';
+import { useSeekerAuthStore } from '../../stores/seekerAuthStore';
+import toast from 'react-hot-toast';
+import { Eye, EyeOff, Upload, Sparkles, Loader2 } from 'lucide-react';
+import VerificationModal from '../../components/VerificationModal';
+
+export default function JobSeekerRegisterPage() {
+  const navigate = useNavigate();
+  const setAuth = useSeekerAuthStore(s => s.setAuth);
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', location: '', headline: '' });
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [verifyTarget, setVerifyTarget] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [parsingResume, setParsingResume] = useState(false);
+  const [resumeData, setResumeData] = useState(null);
+  const fileInputRef = useRef(null);
+  const googleClientRef = useRef(null);
+
+  useEffect(() => {
+    const initGoogle = () => {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (window.google && clientId) {
+        googleClientRef.current = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: "openid email profile",
+          callback: async (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              setLoading(true);
+              try {
+                const data = await seekerAPI.googleLogin(tokenResponse.access_token);
+                if (data.seeker?.requires_profile_completion) {
+                  localStorage.removeItem("vish_seeker_token");
+                  localStorage.removeItem("vish_seeker_data");
+                  sessionStorage.setItem('temp_oauth_data', JSON.stringify({ role: 'seeker', data }));
+                  navigate('/auth/complete-profile');
+                  return;
+                }
+                setAuth(data);
+                toast.success('Signed up successfully with Google!');
+                navigate('/jobs/dashboard');
+              } catch (err) {
+                toast.error(err.message || 'Google signup failed');
+              } finally {
+                setLoading(false);
+              }
+            }
+          }
+        });
+      }
+    };
+
+    if (window.google) {
+      initGoogle();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = initGoogle;
+      document.body.appendChild(script);
+    }
+  }, [navigate, setAuth]);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ['.pdf', '.docx', '.doc', '.txt'];
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!allowed.includes(ext)) {
+      toast.error('Please upload a PDF, DOCX, DOC, or TXT file');
+      return;
+    }
+
+    setParsingResume(true);
+    const toastId = toast.loading('Parsing resume with AI...');
+
+    try {
+      const data = await publicAPI.parseResume(file);
+      
+      setForm(prev => ({
+        ...prev,
+        full_name: data.full_name || prev.full_name,
+        email: data.email || prev.email,
+        location: data.location || prev.location,
+        headline: data.headline || prev.headline,
+      }));
+      if (data.raw_parsed_data) {
+        setResumeData(data.raw_parsed_data);
+      }
+
+      toast.success('Resume parsed! Form details auto-filled.', { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to parse resume', { id: toastId });
+    } finally {
+      setParsingResume(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handle = async (e) => {
+    e.preventDefault();
+    if (!isEmailVerified) { toast.error('Please verify your email address first'); return; }
+    if (form.password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
+    setLoading(true);
+    try {
+      const data = await seekerAPI.register({ ...form, resume_data: resumeData || {} });
+      setAuth(data);
+      localStorage.setItem('vish_seeker_token', data.seeker_token);
+      localStorage.setItem('vish_seeker_data', JSON.stringify(data.seeker));
+      toast.success('Account created! Welcome to Workly!');
+      navigate('/jobs/dashboard');
+    } catch (err) {
+      toast.error(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center relative bg-bg overflow-hidden font-sans py-12">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-100 via-bg to-bg opacity-70"></div>
+      
+      <div className="w-full max-w-md bg-white rounded-3xl p-8 relative z-10 shadow-2xl shadow-gray-200/50 border border-gray-100 m-4">
+        <div className="flex flex-col items-center mb-6">
+          <span className="text-gray-500 text-[14px] font-medium mb-1">Job Seeker Portal</span>
+          <h1 className="text-3xl font-black tracking-tight text-accent">Create Account</h1>
+        </div>
+
+        {/* Resume Auto-Fill Banner */}
+        <div className="mb-5 p-3.5 bg-gradient-to-r from-accent/10 via-accent/5 to-purple-500/10 border border-accent/20 rounded-2xl flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center shrink-0 shadow-md shadow-accent/20">
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-charcoal flex items-center gap-1">
+                Auto-fill from Resume
+                <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 bg-accent/20 text-accent rounded-md">Fast</span>
+              </p>
+              <p className="text-[11px] text-gray-500 font-medium">Upload PDF/DOCX to fill details automatically</p>
+            </div>
+          </div>
+          
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            accept=".pdf,.docx,.doc,.txt" 
+            className="hidden" 
+          />
+          
+          <button
+            type="button"
+            disabled={parsingResume || loading}
+            onClick={() => fileInputRef.current?.click()}
+            className="px-3.5 py-2 bg-white border border-accent/30 text-accent hover:bg-accent hover:text-white rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+          >
+            {parsingResume ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                <span>Parsing...</span>
+              </>
+            ) : (
+              <>
+                <Upload size={14} />
+                <span>Upload</span>
+              </>
+            )}
+          </button>
+        </div>
+
+
+        <form onSubmit={handle} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-semibold text-charcoal">Full Name *</label>
+            <input 
+              type="text" 
+              placeholder="Daksh Bhavsar" 
+              value={form.full_name}
+              onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))}
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all placeholder:text-gray-400 font-medium"
+              required 
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-semibold text-charcoal">Email Address *</label>
+            <div className="flex gap-2" style={{ display: 'flex', gap: '8px' }}>
+              <input 
+                type="email" 
+                placeholder="you@example.com" 
+                value={form.email}
+                disabled={isEmailVerified}
+                onChange={e => {
+                  setForm(p => ({ ...p, email: e.target.value }));
+                  setIsEmailVerified(false);
+                }}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all placeholder:text-gray-400 font-medium"
+                required 
+                style={{ flex: 1 }}
+              />
+              {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && (
+                <button
+                  type="button"
+                  disabled={isEmailVerified}
+                  onClick={() => {
+                    setVerifyTarget({ type: 'email', value: form.email.trim(), role: 'seeker', isSignup: true });
+                  }}
+                  className={`px-4 text-xs font-bold rounded-xl transition-all ${
+                    isEmailVerified 
+                      ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-800/50 cursor-default'
+                      : 'bg-accent text-white hover:bg-accent-dark'
+                  }`}
+                  style={{ minWidth: '85px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {isEmailVerified ? 'Verified ✓' : 'Verify'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold text-charcoal">Location</label>
+              <input 
+                type="text" 
+                placeholder="Ahmedabad, India" 
+                value={form.location}
+                onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all placeholder:text-gray-400 font-medium"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold text-charcoal">Password *</label>
+              <div className="relative w-full">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="Min. 8 chars" 
+                  value={form.password}
+                  onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all placeholder:text-gray-400 font-medium pr-12"
+                  required 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-semibold text-charcoal">Headline</label>
+            <input 
+              type="text" 
+              placeholder="e.g. Full Stack Developer · 3 years exp" 
+              value={form.headline}
+              onChange={e => setForm(p => ({ ...p, headline: e.target.value }))}
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all placeholder:text-gray-400 font-medium"
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full mt-2 bg-accent text-white py-3 rounded-xl font-bold tracking-wide hover:bg-accent-dark transition-all shadow-md shadow-accent/20 hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
+          >
+            {loading ? "Creating account..." : "Create Account"}
+          </button>
+
+          <div className="relative my-2 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <span className="relative px-3 bg-white text-xs font-semibold text-gray-400 uppercase tracking-widest">or</span>
+          </div>
+
+          <button 
+            type="button" 
+            disabled={loading}
+            onClick={() => {
+              if (googleClientRef.current) {
+                googleClientRef.current.requestAccessToken();
+              } else {
+                toast.error("Google Auth is loading. Please try again in a moment.");
+              }
+            }}
+            className="w-full flex items-center justify-center gap-2.5 bg-white border border-gray-200 text-charcoal py-3 rounded-xl font-bold tracking-wide hover:bg-gray-50 transition-all shadow-sm hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" className="w-4.5 h-4.5">
+              <path d="M21.35,11.1H12v2.7h5.38C17,14.93,15.76,15.9,14.15,16.5l2.2,2.2c2.6-2.4,4.1-5.9,4.1-10C22.45,12.3,22,11.6,21.35,11.1z" fill="#4285F4" />
+              <path d="M12,20.45c2.6,0,4.8-.85,6.4-2.3l-2.2-2.2c-.85.6-2,1-3.3,1c-3.15,0-5.8-2.15-6.75-5.05L3.9,13.9A10.45,10.45,0,0,0,12,20.45z" fill="#34A853" />
+              <path d="M5.25,12.1a6.4,6.4,0,0,1,0-3.8L3.05,6A10.45,10.45,0,0,0,3.05,16.2z" fill="#FBBC05" />
+              <path d="M12,5.25c1.8,0,3.2.6,4.05,1.4l2-2A10.35,10.35,0,0,0,12,1.55a10.45,10.45,0,0,0-8.1,4.45L6.1,8.1C7.05,5.2,9.7,3.15,12,5.25z" fill="#EA4335" />
+            </svg>
+            <span>Sign Up with Google</span>
+          </button>
+
+
+        </form>
+
+        <div className="mt-8 text-center border-t border-gray-100 pt-6 flex flex-col gap-2">
+          <p className="text-sm text-gray-500 font-medium">
+            Already have an account? <Link to="/jobs/login" className="text-accent hover:text-accent-dark font-bold">Sign In</Link>
+          </p>
+          <p className="text-xs text-gray-400 font-medium">
+            Are you a company? <Link to="/register" className="text-[#6366f1] hover:text-[#4f46e5] font-bold">Company Register →</Link>
+          </p>
+        </div>
+      </div>
+      {verifyTarget && (
+        <VerificationModal
+          isOpen={true}
+          onClose={() => setVerifyTarget(null)}
+          type={verifyTarget.type}
+          value={verifyTarget.value}
+          role={verifyTarget.role}
+          isSignup={verifyTarget.isSignup}
+          userEmail={form.email}
+          onSuccess={() => {
+            if (verifyTarget.type === 'email') {
+              setIsEmailVerified(true);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}

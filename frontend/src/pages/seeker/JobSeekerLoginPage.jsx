@@ -1,0 +1,175 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { seekerAPI } from '../../lib/api';
+import { useSeekerAuthStore } from '../../stores/seekerAuthStore';
+import toast from 'react-hot-toast';
+import { Eye, EyeOff } from 'lucide-react';
+
+export default function JobSeekerLoginPage() {
+  const navigate = useNavigate();
+  const setAuth = useSeekerAuthStore(s => s.setAuth);
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const googleClientRef = useRef(null);
+
+  useEffect(() => {
+    const initGoogle = () => {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (window.google && clientId) {
+        googleClientRef.current = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: "openid email profile",
+          callback: async (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              setLoading(true);
+              try {
+                const data = await seekerAPI.googleLogin(tokenResponse.access_token);
+                if (data.seeker?.requires_profile_completion) {
+                  localStorage.removeItem("vish_seeker_token");
+                  localStorage.removeItem("vish_seeker_data");
+                  sessionStorage.setItem('temp_oauth_data', JSON.stringify({ role: 'seeker', data }));
+                  navigate('/auth/complete-profile');
+                  return;
+                }
+                setAuth(data);
+                toast.success(`Welcome, ${data.seeker.full_name}!`);
+                navigate('/jobs/dashboard');
+              } catch (err) {
+                toast.error(err.message || 'Google login failed');
+              } finally {
+                setLoading(false);
+              }
+            }
+          }
+        });
+      }
+    };
+
+    if (window.google) {
+      initGoogle();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = initGoogle;
+      document.body.appendChild(script);
+    }
+  }, [navigate, setAuth]);
+
+  const handle = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const data = await seekerAPI.login(form);
+      setAuth(data);
+      localStorage.setItem('vish_seeker_token', data.seeker_token);
+      localStorage.setItem('vish_seeker_data', JSON.stringify(data.seeker));
+      toast.success(`Welcome back, ${data.seeker.full_name}!`);
+      navigate('/jobs/dashboard');
+    } catch (err) {
+      toast.error(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center relative bg-bg overflow-hidden font-sans">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-100 via-bg to-bg opacity-70"></div>
+      
+      <div className="w-full max-w-md bg-white rounded-3xl p-8 relative z-10 shadow-2xl shadow-gray-200/50 border border-gray-100 m-4">
+        <div className="flex flex-col items-center mb-8">
+          <span className="text-gray-500 text-[14px] font-medium mb-1">Job Seeker Portal</span>
+          <h1 className="text-3xl font-black tracking-tight text-accent">Workly</h1>
+        </div>
+
+        <form onSubmit={handle} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-semibold text-charcoal">Email Address</label>
+            <input 
+              type="email" 
+              placeholder="you@example.com" 
+              value={form.email}
+              onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all placeholder:text-gray-400 font-medium"
+              required 
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-semibold text-charcoal">Password</label>
+              <button type="button" onClick={() => navigate('/seeker/forgot-password?type=seeker')} className="text-xs text-gray-500 hover:text-accent font-medium">Forgot password?</button>
+            </div>
+            <div className="relative w-full">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="••••••••" 
+                value={form.password}
+                onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all placeholder:text-gray-400 font-medium pr-12"
+                required 
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full mt-2 bg-accent text-white py-3.5 rounded-xl font-bold tracking-wide hover:bg-accent-dark transition-all shadow-md shadow-accent/20 hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
+          >
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
+
+          <div className="relative my-2 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <span className="relative px-3 bg-white text-xs font-semibold text-gray-400 uppercase tracking-widest">or</span>
+          </div>
+
+          <button 
+            type="button" 
+            disabled={loading}
+            onClick={() => {
+              if (googleClientRef.current) {
+                googleClientRef.current.requestAccessToken();
+              } else {
+                toast.error("Google Auth is loading. Please try again in a moment.");
+              }
+            }}
+            className="w-full flex items-center justify-center gap-2.5 bg-white border border-gray-200 text-charcoal py-3.5 rounded-xl font-bold tracking-wide hover:bg-gray-50 transition-all shadow-sm hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" className="w-4.5 h-4.5">
+              <path d="M21.35,11.1H12v2.7h5.38C17,14.93,15.76,15.9,14.15,16.5l2.2,2.2c2.6-2.4,4.1-5.9,4.1-10C22.45,12.3,22,11.6,21.35,11.1z" fill="#4285F4" />
+              <path d="M12,20.45c2.6,0,4.8-.85,6.4-2.3l-2.2-2.2c-.85.6-2,1-3.3,1c-3.15,0-5.8-2.15-6.75-5.05L3.9,13.9A10.45,10.45,0,0,0,12,20.45z" fill="#34A853" />
+              <path d="M5.25,12.1a6.4,6.4,0,0,1,0-3.8L3.05,6A10.45,10.45,0,0,0,3.05,16.2z" fill="#FBBC05" />
+              <path d="M12,5.25c1.8,0,3.2.6,4.05,1.4l2-2A10.35,10.35,0,0,0,12,1.55a10.45,10.45,0,0,0-8.1,4.45L6.1,8.1C7.05,5.2,9.7,3.15,12,5.25z" fill="#EA4335" />
+            </svg>
+            <span>Sign In with Google</span>
+          </button>
+
+
+        </form>
+
+        <div className="mt-8 text-center border-t border-gray-100 pt-6 flex flex-col gap-2">
+          <p className="text-sm text-gray-500 font-medium">
+            New seeker? <Link to="/jobs/register" className="text-accent hover:text-accent-dark font-bold">Create an account →</Link>
+          </p>
+          <p className="text-xs text-gray-400 font-medium">
+            Are you a company? <Link to="/login" className="text-indigo-600 hover:text-indigo-800 font-bold">Company Login →</Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

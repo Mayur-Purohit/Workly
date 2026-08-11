@@ -1,0 +1,132 @@
+:root {
+  --text: #202124;
+  --text-secondary: #5f6368;
+  --bg: #ffffff;
+  --border: #e5e7eb;
+  --border-light: #e5e7eb;
+  --accent: #1a73e8;
+  --accent-light: #e8f0fe;
+  --sans: 'Google Sans Text', 'Roboto', 'Inter', system-ui, -apple-system, sans-serif;
+  --display: 'Google Sans', 'Space Grotesk', system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+/* ── Dark Mode Overrides ──────────────────────────────────────────────────── */
+.dark {
+  --text: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --bg: #0b0b0c;
+  --border: #222226;
+  --border-light: #222226;
+  --accent: #4285f4;
+  --accent-light: #131316;
+}
+
+/* ── Skeuomorphic Dropdown & Items ───────────────────────────────────────── */
+
+/* Skeuomorphic dropdown panel */
+.skeuo-dropdown-panel {
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+  border: 1px solid #d1c9b7 !important;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.08),
+    0 8px 10px -6px rgba(0, 0, 0, 0.08),
+    inset 0 1.5px 0px rgba(255, 255, 255, 1.0) !important;
+}
+
+.dark .skeuo-dropdown-panel {
+  background-color: #161619 !important;
+  border-color: #2a2a30 !important;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.25),
+    0 8px 10px -6px rgba(0, 0, 0, 0.25),
+    inset 0 1.5px 0px rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Skeuomorphic dropdown item */
+.skeuo-dropdown-item {
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: 1px solid transparent !important;
+  background-color: transparent !important;
+}
+
+.skeuo-dropdown-item:hover {
+  transform: translateY(-2px) !important;
+  background-color: #faf9f6 !important;
+  border-color: #d1c9b7 !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.08),
+    0 2px 4px -1px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 1.0) !important;
+}
+
+.dark .skeuo-dropdown-item:hover {
+  background-color: #212126 !important;
+  border-color: #383840 !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.2),
+    0 2px 4px -1px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+.skeuo-dropdown-item:active {
+  transform: translateY(1px) !important;
+  background-color: #f1ebd9 !important;
+  border-color: #bfae95 !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .skeuo-dropdown-item:active {
+  background-color: #101012 !important;
+  border-color: #1c1c20 !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Force the text/icon to turn blue on active */
+.skeuo-dropdown-item:active,
+.skeuo-dropdown-item:active * {
+  color: #2563eb !important;
+}
+
+/* Developer Landing Page Steps Shadow */
+.dev-step-circle {
+  box-shadow: 0 20px 25px -5px rgba(229, 231, 235, 0.5), 0 8px 10px -6px rgba(229, 231, 235, 0.5) !important;
+}
+
+.dark .dev-step-circle {
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.22) !important;
+}
