@@ -78,7 +78,6 @@
 ### 🔧 Technical Highlights
 - 🤖 **Multi-Agent AI Architecture** — 15+ specialized AI agents for parsing, matching, scoring, interviews, and recommendations
 - 🔄 **LLM Failover System** — Automatic key rotation with cascading fallback: Gemini → Groq → OpenAI
-- 📊 **Vector Embeddings** — Sentence-transformer embeddings with ChromaDB for semantic resume-job matching
 - 🛡️ **Security Middleware** — Custom Django middleware for security headers, exception sanitization, and API usage logging
 - ⚡ **Background Processing** — Celery workers with Redis broker for async resume parsing and bulk operations
 - 🔐 **JWT + API Key Auth** — Dual authentication system with Redis-backed token blacklisting and rate limiting
@@ -128,7 +127,7 @@
   </tr>
   <tr>
     <td>🔍 Vector Search</td>
-    <td>ChromaDB, Google Embeddings</td>
+    <td>Google Embeddings</td>
     <td>Semantic similarity for resume-job matching</td>
   </tr>
   <tr>
